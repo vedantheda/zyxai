@@ -10,10 +10,21 @@ import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useBookkeeping } from '@/hooks/useBookkeeping'
 import { BookkeepingLoadingSkeleton, TransactionListSkeleton, MobileTransactionSkeleton } from '@/components/bookkeeping/BookkeepingLoadingSkeleton'
 
-// Lazy load heavy components for better performance
-const TransactionManager = lazy(() => import('@/components/bookkeeping/TransactionManager').then(module => ({ default: module.TransactionManager })))
-const FinancialCharts = lazy(() => import('@/components/bookkeeping/FinancialCharts').then(module => ({ default: module.FinancialCharts })))
-const MobileTransactionList = lazy(() => import('@/components/bookkeeping/MobileTransactionCard').then(module => ({ default: module.MobileTransactionList })))
+// Lazy load heavy components for better performance with preloading
+const TransactionManager = lazy(() =>
+  import('@/components/bookkeeping/TransactionManager').then(module => ({ default: module.TransactionManager }))
+)
+const FinancialCharts = lazy(() =>
+  import('@/components/bookkeeping/FinancialCharts').then(module => ({ default: module.FinancialCharts }))
+)
+const MobileTransactionList = lazy(() =>
+  import('@/components/bookkeeping/MobileTransactionCard').then(module => ({ default: module.MobileTransactionList }))
+)
+
+// Preload components on hover/interaction
+const preloadTransactionManager = () => import('@/components/bookkeeping/TransactionManager')
+const preloadFinancialCharts = () => import('@/components/bookkeeping/FinancialCharts')
+const preloadMobileTransactionList = () => import('@/components/bookkeeping/MobileTransactionCard')
 import { useToast } from '@/hooks/use-toast'
 import { formatDateOnly } from '@/lib/utils'
 import { Transaction, TransactionFilters, BulkOperation } from '@/types/bookkeeping'

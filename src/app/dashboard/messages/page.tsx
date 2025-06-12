@@ -23,6 +23,8 @@ import { useToast } from '@/components/ui/toast'
 export default function MessagesPage() {
   const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
   const { addToast } = useToast()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   // Show loading during session sync
   if (sessionLoading || !isSessionReady) {
@@ -33,8 +35,6 @@ export default function MessagesPage() {
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view messages" />
   }
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   // Check if user is client or admin
   const isClient = user?.role === 'client'

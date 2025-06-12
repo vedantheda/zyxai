@@ -107,18 +107,7 @@ const aiInsights = [
   },
 ]
 
-function DashboardPageContent() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
-
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
-    return <LoadingScreen text="Loading dashboard..." />
-  }
-
-  // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view dashboard" />
-  }
+function DashboardPageContent({ user }: { user: any }) {
 
   // If user is a client, show client dashboard
   if (user?.role === 'client') {
@@ -250,10 +239,10 @@ function DashboardPageContent() {
 
   // Redirect to pipeline for tax professionals (admin users)
   useEffect(() => {
-    if (isSessionReady && user && user.role !== 'client') {
+    if (user && user.role !== 'client') {
       window.location.href = '/pipeline'
     }
-  }, [isSessionReady, user])
+  }, [user])
 
   // Simple mock data instead of complex hooks
   const dashboardData = {
@@ -547,5 +536,5 @@ export default function DashboardPage() {
     return <LoadingScreen text="Please log in to view dashboard" />
   }
 
-  return <DashboardPageContent />
+  return <DashboardPageContent user={user} />
 }

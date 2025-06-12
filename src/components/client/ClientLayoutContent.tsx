@@ -13,7 +13,8 @@ import {
   X,
   Phone,
   Mail,
-  Calendar
+  Calendar,
+  Brain
 } from 'lucide-react'
 
 
@@ -71,18 +72,30 @@ export function ClientLayoutContent({ children, user }: ClientLayoutContentProps
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <div className="lg:hidden bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-          <h1 className="font-semibold text-foreground">Neuronize</h1>
+        <div className="lg:hidden bg-background/95 backdrop-blur border-b px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground">Neuronize</h1>
+            </div>
+          </div>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="icon">
               <Bell className="w-4 h-4" />
+              {unreadMessages > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </Badge>
+              )}
             </Button>
           </div>
         </div>

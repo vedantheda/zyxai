@@ -44,7 +44,7 @@ import {
   Star,
   History
 } from 'lucide-react'
-import { useRequireAuth } from '@/contexts/AuthContext'
+import { useSessionSync } from '@/hooks/useSessionSync'
 import { supabase } from '@/lib/supabase'
 import DocumentManager from '@/components/documents/DocumentManager'
 import TaskManager from '@/components/tasks/TaskManager'
@@ -156,7 +156,7 @@ interface ActivityItem {
 }
 
 export default function ClientDetailPage() {
-  const { user, loading: authLoading } = useRequireAuth()
+  const { user, loading: authLoading, isSessionReady, isAuthenticated } = useSessionSync()
   const params = useParams()
   const router = useRouter()
   const { navigateInstantly } = useInstantNavigation()
@@ -173,7 +173,7 @@ export default function ClientDetailPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user || !clientId) return
+    if (!isAuthenticated || !user || !clientId) return
 
     const fetchClientData = async () => {
       // Check cache first
@@ -313,7 +313,7 @@ export default function ClientDetailPage() {
     }
 
     fetchClientData()
-  }, [user, clientId])
+  }, [isAuthenticated, user, clientId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -373,12 +373,22 @@ export default function ClientDetailPage() {
     return { completed, inProgress, pending, overdue, total: tasks.length }
   }
 
-  if (authLoading || loading) {
+  if (authLoading || !isSessionReady || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-muted-foreground">Loading client details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Please log in to view client details</p>
         </div>
       </div>
     )

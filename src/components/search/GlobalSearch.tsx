@@ -67,6 +67,7 @@ export default function GlobalSearch({
   const [open, setOpen] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
+  const popoverContentRef = useRef<HTMLDivElement>(null)
 
   const searchFilters = [
     { key: 'client', label: 'Clients', icon: User },
@@ -270,9 +271,30 @@ export default function GlobalSearch({
     setQuery(value)
   }, [])
 
-  const handleFocus = useCallback(() => {
+  const handleFocus = useCallback((e: React.FocusEvent) => {
+    e.preventDefault()
     setOpen(true)
   }, [])
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setOpen(true)
+    searchRef.current?.focus()
+  }, [])
+
+  // Handle popover open change - prevent rapid open/close cycles
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    // Prevent rapid toggling by adding a small delay
+    if (!newOpen && open) {
+      // Only close if we're not in the middle of an interaction
+      setTimeout(() => {
+        setOpen(false)
+      }, 50)
+    } else if (newOpen) {
+      setOpen(true)
+    }
+  }, [open])
 
   const toggleFilter = useCallback((filterKey: string) => {
     setSelectedFilters(prev =>
@@ -280,10 +302,14 @@ export default function GlobalSearch({
         ? prev.filter(f => f !== filterKey)
         : [...prev, filterKey]
     )
+    // Keep the popover open when toggling filters
+    setOpen(true)
   }, [])
 
   const clearFilters = useCallback(() => {
     setSelectedFilters([])
+    // Keep the popover open when clearing filters
+    setOpen(true)
   }, [])
 
   const handleResultClick = useCallback((result: SearchResult) => {
@@ -302,11 +328,30 @@ export default function GlobalSearch({
     }
   }
 
+  // Keyboard shortcut (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchRef.current?.focus()
+        setOpen(true)
+      }
+      // Escape to close
+      if (e.key === 'Escape' && open) {
+        setOpen(false)
+        searchRef.current?.blur()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
   return (
-    <div className={`relative ${className}`}>
-      <Popover open={open} onOpenChange={setOpen}>
+    <div className={`relative min-w-[500px] ${className}`}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
-          <div className="relative">
+          <div className="relative w-full" onClick={(e) => e.stopPropagation()}>
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               ref={searchRef}
@@ -315,15 +360,32 @@ export default function GlobalSearch({
               value={query}
               onChange={handleQueryChange}
               onFocus={handleFocus}
-              className="pl-10 pr-20"
+              onClick={handleClick}
+              className="w-full pl-10 pr-4 h-10 bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-primary/50 transition-all duration-200"
             />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
-              ⌘K
-            </div>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-[600px] p-0" align="start">
-          <Command>
+        <PopoverContent
+          ref={popoverContentRef}
+          className="w-[600px] p-0"
+          align="start"
+          side="bottom"
+          sideOffset={4}
+          onPointerDownOutside={(e) => {
+            // Only prevent if clicking on search input
+            if (searchRef.current?.contains(e.target as Node)) {
+              e.preventDefault()
+              return
+            }
+            // Allow normal closing for other outside clicks
+            setOpen(false)
+          }}
+          onEscapeKeyDown={() => {
+            setOpen(false)
+            searchRef.current?.blur()
+          }}
+        >
+          <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search everything..."
               value={query}
@@ -331,7 +393,10 @@ export default function GlobalSearch({
             />
 
             {showFilters && (
-              <div className="flex items-center space-x-2 p-3 border-b">
+              <div
+                className="flex items-center space-x-2 p-3 border-b"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Filter className="w-4 h-4 text-muted-foreground" />
                 <div className="flex flex-wrap gap-2">
                   {searchFilters.map(filter => (
@@ -339,7 +404,11 @@ export default function GlobalSearch({
                       key={filter.key}
                       variant={selectedFilters.includes(filter.key) ? "default" : "outline"}
                       size="sm"
-                      onClick={() => toggleFilter(filter.key)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        toggleFilter(filter.key)
+                      }}
                       className="h-6 text-xs"
                     >
                       <filter.icon className="w-3 h-3 mr-1" />
@@ -350,7 +419,11 @@ export default function GlobalSearch({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={clearFilters}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        clearFilters()
+                      }}
                       className="h-6 text-xs"
                     >
                       <X className="w-3 h-3 mr-1" />
@@ -361,7 +434,7 @@ export default function GlobalSearch({
               </div>
             )}
 
-            <CommandList>
+            <CommandList onClick={(e) => e.stopPropagation()}>
               {loading ? (
                 <div className="flex items-center justify-center py-6">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>

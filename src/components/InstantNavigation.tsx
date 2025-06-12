@@ -1,29 +1,43 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
-
+import { useCallback, useEffect, useRef } from 'react'
 // INSTANT NAVIGATION - NO MORE SLOW ROUTING!
 export const useInstantNavigation = () => {
   const router = useRouter()
+  const navigationTimeoutRef = useRef<NodeJS.Timeout>()
 
   const navigateInstantly = useCallback((href: string) => {
-    // Prefetch the route immediately
+    // Clear any existing timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current)
+    }
+
+    // Prefetch the route immediately if not already prefetched
     router.prefetch(href)
-    
-    // Navigate with optimistic UI
+
+    // Navigate immediately - NO LOADING POPUP
     router.push(href)
   }, [router])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return { navigateInstantly }
 }
 
 // Enhanced Link component with instant navigation
-export const InstantLink = ({ 
-  href, 
-  children, 
+export const InstantLink = ({
+  href,
+  children,
   className,
-  ...props 
+  ...props
 }: {
   href: string
   children: React.ReactNode
@@ -38,7 +52,7 @@ export const InstantLink = ({
   }, [href, navigateInstantly])
 
   return (
-    <a 
+    <a
       href={href}
       onClick={handleClick}
       className={className}
@@ -50,11 +64,11 @@ export const InstantLink = ({
 }
 
 // Button with instant navigation
-export const InstantButton = ({ 
-  href, 
-  children, 
+export const InstantButton = ({
+  href,
+  children,
   onClick,
-  ...props 
+  ...props
 }: {
   href?: string
   children: React.ReactNode

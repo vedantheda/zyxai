@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/lib/supabase'
 import { apiRateLimit, authRateLimit, createRateLimitHeaders } from '@/lib/rateLimit'
+import { validateCSRFRequest } from '@/lib/security/csrfProtection'
+import { logAuditEvent, extractAuditContext, AUDIT_ACTIONS, RESOURCE_TYPES } from '@/lib/security/auditLogger'
 
 // Create Supabase client for server-side operations
 const supabase = createClient<Database>(
@@ -21,6 +23,7 @@ export interface SecurityConfig {
   rateLimit?: 'auth' | 'api' | 'none'
   validateInput?: boolean
   corsOrigin?: string
+  requireCSRF?: boolean
 }
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -50,9 +53,10 @@ export async function withApiSecurity(
     requireAuth = true,
     allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     rateLimit = 'api',
-    corsOrigin = process.env.NODE_ENV === 'production' 
+    corsOrigin = process.env.NODE_ENV === 'production'
       ? process.env.NEXT_PUBLIC_APP_URL || 'https://neuronize.app'
-      : 'http://localhost:3000'
+      : 'http://localhost:3000',
+    requireCSRF = true
   } = config
 
   // CORS headers
@@ -72,14 +76,50 @@ export async function withApiSecurity(
     )
   }
 
+  // CSRF Protection
+  if (requireCSRF) {
+    const csrfValidation = validateCSRFRequest(request)
+    if (!csrfValidation.valid) {
+      // Log CSRF violation
+      const auditContext = extractAuditContext(request)
+      await logAuditEvent(
+        auditContext,
+        AUDIT_ACTIONS.SECURITY_VIOLATION,
+        RESOURCE_TYPES.SYSTEM,
+        { violation_type: 'csrf_validation_failed', error: csrfValidation.error },
+        { severity: 'high', status: 'failure' }
+      )
+
+      throw new ApiSecurityError(
+        csrfValidation.error || 'CSRF validation failed',
+        403,
+        corsHeaders
+      )
+    }
+  }
+
   // Rate limiting
   let rateLimitHeaders = {}
   if (rateLimit !== 'none') {
     const limiter = rateLimit === 'auth' ? authRateLimit : apiRateLimit
     const rateLimitResult = await limiter.check(request)
     rateLimitHeaders = createRateLimitHeaders(rateLimitResult)
-    
+
     if (!rateLimitResult.success) {
+      // Log rate limit violation
+      const auditContext = extractAuditContext(request)
+      await logAuditEvent(
+        auditContext,
+        AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
+        RESOURCE_TYPES.SYSTEM,
+        {
+          limit_type: rateLimit,
+          requests_made: rateLimitResult.count,
+          limit: rateLimitResult.limit
+        },
+        { severity: 'medium', status: 'warning' }
+      )
+
       throw new ApiSecurityError(
         'Too many requests. Please try again later.',
         429,
@@ -98,7 +138,7 @@ export async function withApiSecurity(
   // Authentication check
   if (requireAuth) {
     const authHeader = request.headers.get('authorization')
-    
+
     if (!authHeader?.startsWith('Bearer ')) {
       throw new ApiSecurityError(
         'Authorization header required',
@@ -108,10 +148,10 @@ export async function withApiSecurity(
     }
 
     const token = authHeader.substring(7)
-    
+
     try {
       const { data: { user }, error } = await supabase.auth.getUser(token)
-      
+
       if (error || !user) {
         throw new ApiSecurityError(
           'Invalid or expired token',
@@ -147,25 +187,25 @@ export function handleApiError(error: unknown, fallbackHeaders: Record<string, s
 
   if (error instanceof ApiSecurityError) {
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message 
+      {
+        success: false,
+        error: error.message
       },
-      { 
-        status: error.statusCode, 
-        headers: error.headers || fallbackHeaders 
+      {
+        status: error.statusCode,
+        headers: error.headers || fallbackHeaders
       }
     )
   }
 
   return NextResponse.json(
-    { 
-      success: false, 
-      error: 'Internal server error' 
+    {
+      success: false,
+      error: 'Internal server error'
     },
-    { 
-      status: 500, 
-      headers: fallbackHeaders 
+    {
+      status: 500,
+      headers: fallbackHeaders
     }
   )
 }
@@ -200,7 +240,7 @@ export function validateCSRF(request: NextRequest): boolean {
     'https://localhost:3000'
   ].filter(Boolean)
 
-  return allowedOrigins.some(allowed => 
+  return allowedOrigins.some(allowed =>
     origin === allowed || referer?.startsWith(allowed + '/')
   )
 }

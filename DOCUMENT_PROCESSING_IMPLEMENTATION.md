@@ -39,7 +39,7 @@ We have successfully implemented a **comprehensive, production-ready Document Pr
 ## 🤖 **AI PROCESSING SERVICES**
 
 ### **OCR Service (`src/lib/ai-processing/OCRService.ts`)**
-- **Google Vision API integration** with your API key: `AIzaSyDvuMW42dcei6ruEGIakuNl0uPN7GXNXlw`
+- **Google Vision API integration** (configure your API key in environment variables)
 - **Multi-stage processing**: Text detection → Document analysis → Form field extraction
 - **Table detection** and structured data extraction
 - **Confidence scoring** for all extracted elements

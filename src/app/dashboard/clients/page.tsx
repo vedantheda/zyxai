@@ -74,7 +74,7 @@ import {
   User,
   BarChart3
 } from 'lucide-react'
-import { useRequireAuth } from '@/contexts/AuthContext'
+import { useSessionSync } from '@/hooks/useSessionSync'
 import { useClients } from '@/hooks/useSupabaseData'
 import { getFromCache, setCache } from '@/lib/globalCache'
 import Link from 'next/link'
@@ -124,7 +124,7 @@ interface SortState {
 
 export default function ClientsPage() {
   console.log('🔥 DASHBOARD CLIENTS PAGE - LOADING')
-  const { user, loading: authLoading } = useRequireAuth()
+  const { user, loading: authLoading, isSessionReady, isAuthenticated } = useSessionSync()
   const { clients: allClients, loading: clientsLoading, error: clientsError, addClient, updateClient, retryFetch } = useClients()
 
   // Enhanced state management
@@ -319,7 +319,7 @@ export default function ClientsPage() {
     setPriorityFilter(value)
   }, [])
 
-  if (authLoading || clientsLoading) {
+  if (authLoading || !isSessionReady || clientsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -338,6 +338,16 @@ export default function ClientsPage() {
               Taking too long? Click to retry
             </Button>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Please log in to view clients</p>
         </div>
       </div>
     )

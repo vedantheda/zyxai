@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useFastNavigation } from '@/hooks/useFastNavigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -24,6 +25,7 @@ interface GlobalSidebarProps {
 export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarProps) {
   const pathname = usePathname()
   const { user, signOut } = useAuth()
+  const { navigate, prefetchOnHover } = useFastNavigation()
 
   const handleSignOut = async () => {
     await signOut()
@@ -96,9 +98,14 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
               {showDivider && (
                 <div className="my-4 border-t border-border"></div>
               )}
-              <Link
+              <a
                 href={item.href}
-                className={`group flex items-start space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate(item.href)
+                }}
+                onMouseEnter={() => prefetchOnHover(item.href)}
+                className={`group flex items-start space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 cursor-pointer ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -120,7 +127,7 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
                     {item.description}
                   </div>
                 </div>
-              </Link>
+              </a>
             </div>
           )
         })}

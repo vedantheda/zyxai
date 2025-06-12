@@ -2,11 +2,13 @@
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Bell, Plus } from 'lucide-react'
+import { Menu, Bell, Plus, Brain, Search } from 'lucide-react'
+import Link from 'next/link'
 import { useSessionSync } from '@/hooks/useSessionSync'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import NotificationCenter from '@/components/notifications/NotificationCenter'
 import GlobalSearch from '@/components/search/GlobalSearch'
+import { MobileSearchTrigger } from '@/components/search/MobileSearch'
 import { ClientLayoutContent } from '@/components/client/ClientLayoutContent'
 import { GlobalSidebar } from '@/components/layout/GlobalSidebar'
 
@@ -25,9 +27,9 @@ interface HeaderProps {
 
 function Header({ userRole, showQuickActions = true, customActions }: HeaderProps) {
   return (
-    <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center space-x-4">
-        {/* Mobile menu */}
+    <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+        {/* Mobile menu button */}
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="md:hidden">
@@ -39,21 +41,45 @@ function Header({ userRole, showQuickActions = true, customActions }: HeaderProp
           </SheetContent>
         </Sheet>
 
-        {/* Search */}
-        <div className="hidden md:block">
-          <GlobalSearch className="w-64" />
+        {/* Logo - visible on mobile when sidebar is hidden */}
+        <div className="flex items-center space-x-3 md:hidden">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <Brain className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Neuronize</h1>
+        </div>
+
+        {/* Search - Enhanced for better UX */}
+        <div className="hidden md:block flex-1 max-w-none">
+          <GlobalSearch
+            className="w-full"
+            placeholder="Search clients, documents, tasks..."
+          />
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Mobile search button */}
+        <MobileSearchTrigger>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Search className="h-5 w-5" />
+          </Button>
+        </MobileSearchTrigger>
+
         {/* Custom Actions */}
         {customActions}
 
         {/* Default Quick Actions - Admin Only */}
         {showQuickActions && userRole === 'admin' && !customActions && (
-          <Button size="sm" className="hidden md:flex">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Client
+          <Button
+            size="sm"
+            className="hidden sm:flex bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all duration-200 hover:shadow-md"
+            asChild
+          >
+            <Link href="/dashboard/clients/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Client
+            </Link>
           </Button>
         )}
 

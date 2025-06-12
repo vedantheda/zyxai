@@ -16,6 +16,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
+  refreshSession: () => Promise<{ error: AuthError | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -483,6 +484,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
+  const refreshSession = async () => {
+    console.log('🔐 AuthContext: Starting session refresh')
+    try {
+      const { data, error } = await supabase.auth.refreshSession()
+
+      if (error) {
+        console.error('🔐 AuthContext: Session refresh error:', error)
+        return { error }
+      }
+
+      if (data.session) {
+        console.log('🔐 AuthContext: Session refreshed successfully')
+        // Session will be updated automatically by the auth state change listener
+        return { error: null }
+      } else {
+        console.error('🔐 AuthContext: Session refresh succeeded but no session returned')
+        return { error: { message: 'Session refresh failed - no session returned' } as AuthError }
+      }
+    } catch (err) {
+      console.error('🔐 AuthContext: Session refresh exception:', err)
+      const error = err instanceof Error ? { message: err.message } as AuthError : { message: 'Session refresh failed' } as AuthError
+      return { error }
+    }
+  }
+
   const value = {
     user,
     session,
@@ -492,6 +518,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     resetPassword,
+    refreshSession,
   }
 
   return (

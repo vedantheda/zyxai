@@ -16,6 +16,7 @@ export function useSessionSync() {
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const retryCountRef = useRef(0)
   const maxRetries = 3
+  const fastSyncRef = useRef(false)
 
   useEffect(() => {
     // Clear any existing timeouts
@@ -125,10 +126,10 @@ export function useSessionSync() {
         }
       }
 
-      // Add a small delay to ensure everything is settled
+      // Fast sync optimization - reduce delay for better UX
       syncTimeoutRef.current = setTimeout(() => {
         syncSession()
-      }, 150)
+      }, 50) // Reduced from 150ms to 50ms
     } else if (user && session && syncAttemptedRef.current) {
       // Already synced, mark as ready
       if (process.env.NODE_ENV === 'development') {

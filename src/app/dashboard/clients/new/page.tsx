@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ArrowLeft, Save, UserPlus } from 'lucide-react'
-import { useRequireAuth } from '@/contexts/AuthContext'
+import { useSessionSync } from '@/hooks/useSessionSync'
 import { useClients } from '@/hooks/useSupabaseData'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -108,7 +108,7 @@ export default function NewClientPage() {
 
   const handleInputChange = (field: keyof ClientFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))

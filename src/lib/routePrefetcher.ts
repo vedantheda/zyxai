@@ -7,23 +7,45 @@ import { useEffect } from 'react'
 const COMMON_ROUTES = [
   '/dashboard',
   '/dashboard/clients',
+  '/dashboard/clients/new',
   '/dashboard/documents',
   '/dashboard/tasks',
   '/dashboard/workflows',
+  '/dashboard/bookkeeping',
+  '/dashboard/document-processing',
+  '/dashboard/messages',
   '/pipeline',
   '/documents',
   '/clients',
+  '/clients/new',
   '/workflows',
   '/document-processing',
+  '/tasks',
+  '/bookkeeping',
+]
+
+// High-priority routes that should be prefetched immediately
+const HIGH_PRIORITY_ROUTES = [
+  '/dashboard',
+  '/dashboard/clients',
+  '/pipeline',
+]
+
+// Routes to prefetch on hover/interaction
+const INTERACTION_ROUTES = [
+  '/dashboard/clients/new',
+  '/dashboard/documents',
+  '/dashboard/tasks',
+  '/dashboard/bookkeeping',
 ]
 
 export const useRoutePrefetcher = () => {
   const router = useRouter()
 
   useEffect(() => {
-    // Prefetch all common routes immediately
-    const prefetchRoutes = async () => {
-      for (const route of COMMON_ROUTES) {
+    // Prefetch high-priority routes immediately
+    const prefetchHighPriority = async () => {
+      for (const route of HIGH_PRIORITY_ROUTES) {
         try {
           router.prefetch(route)
         } catch (error) {
@@ -32,8 +54,25 @@ export const useRoutePrefetcher = () => {
       }
     }
 
-    // Start prefetching after a short delay
-    const timer = setTimeout(prefetchRoutes, 100)
+    // Prefetch all common routes with staggered timing
+    const prefetchCommonRoutes = async () => {
+      for (let i = 0; i < COMMON_ROUTES.length; i++) {
+        const route = COMMON_ROUTES[i]
+        setTimeout(() => {
+          try {
+            router.prefetch(route)
+          } catch (error) {
+            // Silently fail - prefetch is optional
+          }
+        }, i * 50) // Stagger by 50ms each
+      }
+    }
+
+    // Start high-priority prefetching immediately
+    prefetchHighPriority()
+
+    // Start common routes prefetching after a short delay
+    const timer = setTimeout(prefetchCommonRoutes, 200)
     return () => clearTimeout(timer)
   }, [router])
 

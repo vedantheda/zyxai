@@ -9,6 +9,8 @@ import { ToastProvider } from "@/components/ui/toast";
 import { RoutePrefetcher } from "@/components/RoutePrefetcher";
 import { HydrationProvider } from "@/components/providers/HydrationProvider";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
+import { SessionTimeoutWarning } from "@/components/security/SessionTimeoutWarning";
+import { NavigationPerformanceMonitor } from "@/components/performance/NavigationPerformanceMonitor";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -81,6 +83,8 @@ export default function RootLayout({
                 <TRPCProvider>
                   <ToastProvider>
                     <RoutePrefetcher />
+                    <NavigationPerformanceMonitor />
+                    <SessionTimeoutWarning />
                     <ClientBody>{children}</ClientBody>
                   </ToastProvider>
                 </TRPCProvider>

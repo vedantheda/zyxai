@@ -14,14 +14,14 @@ export default function AboutPage() {
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
             <div className="badge mb-6">Explore Our Journey</div>
             <h1 className="mb-6">
-              <span className="block">Pioneering AI Innovation</span>
-              <span className="block">with Revolution!</span>
+              <span className="block">Pioneering Performance Marketing</span>
+              <span className="block text-gradient">with Notch!</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl">
-              Reboot is your trusted agency for creative strategy. We specialize in cutting-edge digital business solutions.
+              Notch is your trusted partner for performance marketing solutions. We specialize in creating scroll-stopping content that drives measurable results.
             </p>
             <Button asChild size="lg">
-              <Link href="#about">View About Reboot</Link>
+              <Link href="#about">Learn About Notch</Link>
             </Button>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function AboutPage() {
           <div className="flex flex-col md:flex-row gap-12 items-center">
             <div className="w-full md:w-1/2">
               <div className="mb-6">
-                <div className="badge mb-4">About Nubien</div>
+                <div className="badge mb-4">About Notch</div>
                 <img
                   src="https://ext.same-assets.com/3700402891/3061093526.svg"
                   alt="Icon"
@@ -50,11 +50,11 @@ export default function AboutPage() {
                 />
               </div>
               <h2 className="mb-6">
-                <span className="block">Shaping Tomorrow</span>
-                <span className="block">With Bold Ideas</span>
+                <span className="block">Transforming Marketing</span>
+                <span className="block">With Performance-Driven Content</span>
               </h2>
               <p className="text-muted-foreground mb-8">
-                Nubien is a next-gen AI agency template built for bold visionaries, researchers, and builders shaping the future of intelligence.
+                Notch is a leading performance marketing agency built for brands, marketers, and businesses seeking better engagement, conversion, and ROI from their digital marketing efforts.
               </p>
             </div>
 
@@ -67,14 +67,14 @@ export default function AboutPage() {
                     className="w-10 h-10"
                   />
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Innovate</h3>
-                    <h4 className="text-lg font-medium mb-3">Built for Cutting-Edge AI Teams</h4>
+                    <h3 className="text-xl font-bold mb-1">Create</h3>
+                    <h4 className="text-lg font-medium mb-3">Built for Modern Digital Marketers</h4>
                     <p className="text-muted-foreground text-sm">
-                      Whether you're developing LLMs, intelligent tools, or autonomous agents, Nubien gives you a launch-ready site that speaks the language of innovation. The layout is purpose-built to help you showcase your services, and vision clearly.
+                      Whether you're managing a brand, e-commerce store, or specialized business, Notch provides marketing solutions that speak the language of modern consumers. Our strategies are purpose-built to help you capture attention and drive conversions.
                     </p>
                     <div className="flex gap-3 mt-4">
-                      <div className="px-3 py-1 bg-muted rounded-full text-xs">AI Agency</div>
-                      <div className="px-3 py-1 bg-muted rounded-full text-xs">Future Ready</div>
+                      <div className="px-3 py-1 bg-muted rounded-full text-xs">Content Creation</div>
+                      <div className="px-3 py-1 bg-muted rounded-full text-xs">Performance-Driven</div>
                     </div>
                   </div>
                 </div>
@@ -88,14 +88,14 @@ export default function AboutPage() {
                     className="w-10 h-10"
                   />
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Trust</h3>
-                    <h4 className="text-lg font-medium mb-3">Designed to Build Instant Trust</h4>
+                    <h3 className="text-xl font-bold mb-1">Measure</h3>
+                    <h4 className="text-lg font-medium mb-3">Designed for Marketing Performance</h4>
                     <p className="text-muted-foreground text-sm">
-                      Nubien is crafted with clean typography, smooth transitions, and modern layouts that convey credibility at first glance. Perfect for agencies and startups needing to look established and reliable from day one.
+                      Notch is crafted with analytics, optimization, and results at its core. Our marketing solutions are designed to track performance while providing seamless experiences for brands and their customers alike.
                     </p>
                     <div className="flex gap-3 mt-4">
-                      <div className="px-3 py-1 bg-muted rounded-full text-xs">Trust By Design</div>
-                      <div className="px-3 py-1 bg-muted rounded-full text-xs">Modern UX</div>
+                      <div className="px-3 py-1 bg-muted rounded-full text-xs">Data-Driven</div>
+                      <div className="px-3 py-1 bg-muted rounded-full text-xs">ROI Focused</div>
                     </div>
                   </div>
                 </div>
@@ -124,12 +124,12 @@ export default function AboutPage() {
                 alt="Icon"
                 className="w-10 h-10 mb-4"
               />
-              <h2 className="mb-6">Scales With Your Vision</h2>
+              <h2 className="mb-6">Scales With Your Marketing Needs</h2>
               <p className="text-muted-foreground mb-8">
-                From product launches to team showcases and case studies, Nubien is flexible and scalable. As your agency grows, the template adapts—so your site evolves without needing a redesign.
+                From startups to enterprise brands, Notch solutions are flexible and scalable. As your marketing needs grow, our strategies adapt—so your campaigns evolve with your business goals.
               </p>
               <Button asChild>
-                <Link href="/contact">Book an Appointment</Link>
+                <Link href="/contact">Get Started Today</Link>
               </Button>
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function AboutPage() {
           <div className="flex flex-col md:flex-row gap-12 items-center">
             <div className="w-full md:w-1/2">
               <div className="mb-6">
-                <div className="badge mb-4">About Nubien</div>
+                <div className="badge mb-4">Notch Solutions</div>
                 <img
                   src="https://ext.same-assets.com/3700402891/2959825768.svg"
                   alt="Icon"
@@ -150,29 +150,29 @@ export default function AboutPage() {
                 />
               </div>
               <h2 className="mb-6">
-                <span className="block">Elevate Brands with</span>
-                <span className="block">Innovation Tech!</span>
+                <span className="block">Elevate Your Brand with</span>
+                <span className="block">Performance Marketing!</span>
               </h2>
 
               <div className="space-y-6">
                 <div className="bg-card border border-border/50 rounded-lg p-6">
-                  <h4 className="text-xl font-bold mb-2">Smart Digital Solutions</h4>
+                  <h4 className="text-xl font-bold mb-2">Scroll-Stopping Content</h4>
                   <p className="text-muted-foreground">
-                    We combine technology and creativity to build future-ready solutions that help businesses thrive in a competitive landscape.
+                    We combine creative expertise and data-driven insights to build attention-grabbing content that helps brands stand out in crowded feeds.
                   </p>
                 </div>
 
                 <div className="bg-card border border-border/50 rounded-lg p-6">
-                  <h4 className="text-xl font-bold mb-2">Elevating Brands with Strategy</h4>
+                  <h4 className="text-xl font-bold mb-2">Improving Marketing ROI</h4>
                   <p className="text-muted-foreground">
-                    Our expertise in branding, marketing, and design ensures your business stands out, leaving a lasting impact on your audience.
+                    Our expertise in performance marketing and analytics ensures your campaigns can provide optimal engagement while improving conversion efficiency.
                   </p>
                 </div>
               </div>
 
               <div className="mt-8">
                 <Button asChild>
-                  <Link href="/contact">Book an Appointment</Link>
+                  <Link href="/contact">Get a Free Consultation</Link>
                 </Button>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function AboutPage() {
             <div className="w-full md:w-1/2 flex justify-center">
               <div className="bg-card border border-border/50 rounded-lg p-8 w-full max-w-md">
                 <span className="block text-sm text-muted-foreground mb-2">Trusted by</span>
-                <span className="block text-2xl font-bold mb-8">900+ People Rated</span>
+                <span className="block text-2xl font-bold mb-8">500+ Global Brands</span>
 
                 <div className="grid grid-cols-3 gap-4">
                   {teamCircles.map((id) => (

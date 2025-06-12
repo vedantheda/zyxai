@@ -12,17 +12,17 @@ export default function ContactPage() {
       <section className="py-20 md:py-28 relative overflow-hidden">
         <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
-            <div className="badge mb-6">24/7</div>
+            <div className="badge mb-6">Get In Touch</div>
             <h1 className="mb-6">
-              <span className="block">Have Any Doubts? We</span>
-              <span className="block">are Ready to Help.</span>
+              <span className="block">Ready to Plug Into</span>
+              <span className="block text-gradient">Performance Marketing?</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl">
-              Whether you need guidance, support,<br />
-              or a fresh start, our team is ready to assist you.
+              Let's discuss how Notch can help your brand create scroll-stopping content that drives measurable results.<br />
+              Fill out the form below and we'll get back to you within 24 hours.
             </p>
             <Button asChild size="lg">
-              <a href="#contact-form">Fill The Form Out!</a>
+              <a href="#contact-form">Contact Us Now</a>
             </Button>
           </div>
         </div>
@@ -102,22 +102,22 @@ export default function ContactPage() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="company-type" className="block text-sm font-medium mb-2">
-                    What's the type of your company?*
+                  <label htmlFor="service-type" className="block text-sm font-medium mb-2">
+                    What service are you interested in?*
                   </label>
                   <div className="relative">
                     <select
-                      id="company-type"
+                      id="service-type"
                       className="w-full h-10 px-3 py-2 bg-muted/50 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                       required
                       suppressHydrationWarning
                       defaultValue=""
                     >
-                      <option value="" disabled>Select category</option>
-                      <option value="startup">Startup</option>
-                      <option value="smb">Small Business</option>
-                      <option value="enterprise">Enterprise</option>
-                      <option value="agency">Agency</option>
+                      <option value="" disabled>Select a service</option>
+                      <option value="social">Social Media Marketing</option>
+                      <option value="content">Content Creation</option>
+                      <option value="performance">Performance Marketing</option>
+                      <option value="strategy">Marketing Strategy</option>
                       <option value="other">Other</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -143,7 +143,7 @@ export default function ContactPage() {
               </div>
 
               <Button type="submit" className="w-full" size="lg">
-                Submit Now
+                Send Your Message
               </Button>
             </form>
           </div>

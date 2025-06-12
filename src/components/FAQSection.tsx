@@ -8,28 +8,28 @@ import Link from "next/link";
 export function FAQSection() {
   const faqs = [
     {
-      question: "What services does Nubien offer?",
-      answer: "Nubien offers a comprehensive range of digital services including web design and development, branding, UI/UX design, digital marketing, SEO optimization, and mobile app development."
+      question: "What performance marketing services does Notch offer?",
+      answer: "Notch offers a comprehensive suite of performance marketing services including paid search (PPC), paid social, programmatic advertising, conversion rate optimization, analytics and attribution, email marketing, and performance content creation. We specialize in campaigns that capture attention in the first 0.5 seconds and drive measurable results."
     },
     {
-      question: "How long does a typical web project take?",
-      answer: "The timeline for web projects varies depending on complexity and scope. A simple website might take 2-4 weeks, while more complex projects with custom functionality can take 2-3 months or more."
+      question: "How do you measure campaign performance?",
+      answer: "We establish clear KPIs aligned with your business objectives at the beginning of each campaign. We track performance using advanced analytics tools and provide transparent reporting on metrics like ROAS, CPA, conversion rates, and revenue attribution. Our data-driven approach ensures we can continuously optimize for better results."
     },
     {
-      question: "Do you work with clients internationally?",
-      answer: "Yes, we work with clients around the world. Our digital-first approach allows us to collaborate effectively regardless of location, using video calls, project management tools, and regular updates."
+      question: "What platforms and channels do you work with?",
+      answer: "We work across all major digital marketing platforms including Google Ads, Meta (Facebook/Instagram), TikTok, LinkedIn, Twitter, Amazon, and programmatic networks. We recommend the optimal channel mix based on your target audience, objectives, and budget."
     },
     {
       question: "What is your pricing structure?",
-      answer: "We offer customized pricing based on project requirements. We can work with fixed-price quotes for well-defined projects or time-and-materials billing for more flexible engagements."
+      answer: "We offer flexible pricing models including percentage of ad spend, fixed retainers, and performance-based arrangements. Our pricing is transparent and tailored to your business size, campaign complexity, and growth objectives. We'll provide detailed options during our initial consultation."
     },
     {
-      question: "Do you provide ongoing support after launch?",
-      answer: "Yes, we offer various maintenance and support packages to ensure your digital products remain secure, up-to-date, and optimized for performance over time."
+      question: "How quickly can we expect to see results?",
+      answer: "While some improvements can be seen within the first few weeks, meaningful performance marketing results typically develop over 2-3 months as we gather data, test different approaches, and optimize campaigns. We provide regular updates and transparent reporting throughout the process."
     },
     {
-      question: "How do you handle revisions during the design process?",
-      answer: "Our process includes dedicated revision rounds at key project milestones. We value collaborative feedback and work closely with clients to ensure the final product meets their vision and business goals."
+      question: "Do you work with businesses of all sizes?",
+      answer: "Yes, we work with businesses from startups to enterprise-level companies. We tailor our approach based on your business size, industry, objectives, and budget. Our strategies scale effectively whether you're investing $5,000 or $500,000 per month in your marketing campaigns."
     }
   ];
 
@@ -43,9 +43,13 @@ export function FAQSection() {
     <section id="faq" className="py-20 bg-muted/30">
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center px-4 py-1 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4 mx-auto">
+            <span className="w-2 h-2 rounded-full bg-primary mr-2"></span>
+            FAQ
+          </div>
           <h2 className="text-3xl font-bold tracking-tighter mb-4">Frequently Asked Questions</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Find answers to common questions about our services, process, and working relationship.
+            Find answers to common questions about our performance marketing services, process, and how we can help your brand drive measurable results.
           </p>
         </div>
 
@@ -85,4 +89,4 @@ export function FAQSection() {
       </div>
     </section>
   );
-} 
+}

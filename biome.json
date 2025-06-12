@@ -22,27 +22,27 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedVariables": "off"
+        "noUnusedVariables": "warn"
       },
       "nursery": {
-        "noImgElement": "off"
+        "noImgElement": "warn"
       },
       "a11y": {
-        "noAutofocus": "off",
-        "noDistractingElements": "off",
-        "noHeaderScope": "off",
-        "noInteractiveElementToNoninteractiveRole": "off",
-        "noLabelWithoutControl": "off",
-        "noNoninteractiveElementToInteractiveRole": "off",
-        "noNoninteractiveTabindex": "off",
-        "noPositiveTabindex": "off",
-        "noRedundantAlt": "off",
-        "noRedundantRoles": "off",
-        "noSvgWithoutTitle": "off",
-        "useAltText": "off",
-        "useKeyWithClickEvents": "off",
-        "useKeyWithMouseEvents": "off",
-        "useButtonType": "off"
+        "noAutofocus": "warn",
+        "noDistractingElements": "warn",
+        "noHeaderScope": "warn",
+        "noInteractiveElementToNoninteractiveRole": "warn",
+        "noLabelWithoutControl": "warn",
+        "noNoninteractiveElementToInteractiveRole": "warn",
+        "noNoninteractiveTabindex": "warn",
+        "noPositiveTabindex": "warn",
+        "noRedundantAlt": "warn",
+        "noRedundantRoles": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useAltText": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useKeyWithMouseEvents": "warn",
+        "useButtonType": "warn"
       }
     }
   },

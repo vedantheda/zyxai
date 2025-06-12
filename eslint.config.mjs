@@ -13,10 +13,18 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      "@typescript-eslint/no-unused-vars": "off",
-      "react/no-unescaped-entities": "off",
-      "@next/next/no-img-element": "off",
-      "jsx-a11y/alt-text": "off",
+      // Allow unused variables with underscore prefix
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
+      // Enable proper React and accessibility rules
+      "react/no-unescaped-entities": "warn",
+      "@next/next/no-img-element": "warn",
+      "jsx-a11y/alt-text": "warn",
     },
   },
 ];

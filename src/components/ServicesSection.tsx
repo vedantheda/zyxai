@@ -7,19 +7,19 @@ import Link from "next/link";
 export function ServicesSection() {
   const services = [
     {
-      title: "Website Design",
-      description: "Beautiful, responsive websites that engage visitors and convert them into customers.",
-      features: ["Custom UI/UX Design", "Responsive Layout", "Mobile-first Approach", "Brand Integration"]
+      title: "E-commerce Growth",
+      description: "Performance marketing strategies that drive traffic, increase conversions, and maximize revenue for online stores.",
+      features: ["Conversion Rate Optimization", "Shopping Ads", "Retargeting Campaigns", "Customer Journey Analysis"]
     },
     {
-      title: "Web Development",
-      description: "High-performance websites built with modern technologies for optimal user experience.",
-      features: ["Next.js Development", "E-commerce Solutions", "CMS Integration", "Performance Optimization"]
+      title: "Lead Generation",
+      description: "Data-driven campaigns that attract high-quality leads and nurture them through your sales funnel efficiently.",
+      features: ["Targeted Lead Ads", "Landing Page Optimization", "Marketing Automation", "Lead Scoring"]
     },
     {
-      title: "Brand Strategy",
-      description: "Comprehensive brand strategies that help you stand out in your market.",
-      features: ["Brand Identity", "Market Research", "Positioning Strategy", "Visual Guidelines"]
+      title: "Brand Performance",
+      description: "Strategic campaigns that build brand awareness while driving measurable business results and ROI.",
+      features: ["Performance Branding", "Attribution Modeling", "Cross-Channel Campaigns", "Competitive Analysis"]
     }
   ];
 
@@ -27,9 +27,13 @@ export function ServicesSection() {
     <section id="services" className="py-20 bg-muted/30">
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tighter mb-4">Featured Services</h2>
+          <div className="inline-flex items-center justify-center px-4 py-1 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4 mx-auto">
+            <span className="w-2 h-2 rounded-full bg-primary mr-2"></span>
+            CASE STUDIES
+          </div>
+          <h2 className="text-3xl font-bold tracking-tighter mb-4">Our Proven Results</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            We specialize in creating exceptional digital experiences that drive business growth.
+            We combine data-driven strategy with creative execution to deliver performance marketing campaigns that drive measurable business growth and ROI.
           </p>
         </div>
 
@@ -55,4 +59,4 @@ export function ServicesSection() {
       </div>
     </section>
   );
-} 
+}

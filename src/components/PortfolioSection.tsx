@@ -6,34 +6,34 @@ import Link from "next/link";
 export function PortfolioSection() {
   const portfolioItems = [
     {
-      title: "Modern E-commerce",
-      category: "Web Development",
-      image: "bg-gradient-to-br from-purple-500 to-blue-600"
+      title: "Lifestyle Brand Campaign",
+      category: "Video Production",
+      image: "bg-gradient-to-br from-orange-500 to-orange-600"
     },
     {
-      title: "Corporate Rebrand",
-      category: "Brand Identity",
-      image: "bg-gradient-to-br from-green-500 to-teal-600"
+      title: "Tech Startup Launch",
+      category: "Social Media Content",
+      image: "bg-gradient-to-br from-orange-600 to-orange-700"
     },
     {
-      title: "Mobile App Design",
-      category: "UI/UX Design",
-      image: "bg-gradient-to-br from-red-500 to-orange-600"
+      title: "Food & Beverage Series",
+      category: "Photography",
+      image: "bg-gradient-to-br from-orange-700 to-orange-800"
     },
     {
-      title: "Marketing Platform",
-      category: "Web Development",
-      image: "bg-gradient-to-br from-blue-500 to-cyan-600"
+      title: "Fashion Lookbook",
+      category: "Creative Direction",
+      image: "bg-gradient-to-br from-orange-500 to-orange-700"
     },
     {
-      title: "Portfolio Website",
-      category: "Web Design",
-      image: "bg-gradient-to-br from-amber-500 to-yellow-600"
+      title: "Product Launch Campaign",
+      category: "Integrated Marketing",
+      image: "bg-gradient-to-br from-orange-600 to-orange-800"
     },
     {
-      title: "Brand Guidelines",
-      category: "Branding",
-      image: "bg-gradient-to-br from-pink-500 to-rose-600"
+      title: "Brand Identity Refresh",
+      category: "Graphic Design",
+      image: "bg-gradient-to-br from-orange-700 to-orange-900"
     }
   ];
 
@@ -41,9 +41,13 @@ export function PortfolioSection() {
     <section id="portfolio" className="py-20">
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tighter mb-4">Our Portfolio</h2>
+          <div className="inline-flex items-center justify-center px-4 py-1 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4 mx-auto">
+            <span className="w-2 h-2 rounded-full bg-primary mr-2"></span>
+            WORK/PORTFOLIO
+          </div>
+          <h2 className="text-3xl font-bold tracking-tighter mb-4">Our Creative Work</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Explore our recent projects and see how we've helped businesses transform their digital presence.
+            Explore our portfolio of scroll-stopping content that has helped brands capture attention and drive engagement.
           </p>
         </div>
 
@@ -55,7 +59,7 @@ export function PortfolioSection() {
                 <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                 <p className="text-sm opacity-80 mb-4">{item.category}</p>
                 <Button variant="outline" size="sm" className="text-white border-white hover:bg-white/20">
-                  View Project
+                  View Solution
                 </Button>
               </div>
             </div>
@@ -64,10 +68,10 @@ export function PortfolioSection() {
 
         <div className="mt-12 text-center">
           <Button asChild>
-            <Link href="/portfolio">View All Projects</Link>
+            <Link href="/portfolio">View All Solutions</Link>
           </Button>
         </div>
       </div>
     </section>
   );
-} 
+}

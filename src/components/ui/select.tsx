@@ -1,35 +1,28 @@
 "use client"
-
 import * as React from "react"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-
 interface SelectProps {
   value?: string
   onValueChange?: (value: string) => void
   children: React.ReactNode
 }
-
 interface SelectTriggerProps {
   className?: string
   children: React.ReactNode
 }
-
 interface SelectContentProps {
   className?: string
   children: React.ReactNode
 }
-
 interface SelectItemProps {
   value: string
   children: React.ReactNode
   className?: string
 }
-
 interface SelectValueProps {
   placeholder?: string
 }
-
 const SelectContext = React.createContext<{
   value?: string
   onValueChange?: (value: string) => void
@@ -39,10 +32,8 @@ const SelectContext = React.createContext<{
   open: false,
   setOpen: () => {},
 })
-
 const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
   const [open, setOpen] = React.useState(false)
-
   return (
     <SelectContext.Provider value={{ value, onValueChange, open, setOpen }}>
       <div className="relative">
@@ -51,11 +42,9 @@ const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
     </SelectContext.Provider>
   )
 }
-
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, children, ...props }, ref) => {
     const { open, setOpen } = React.useContext(SelectContext)
-
     return (
       <button
         ref={ref}
@@ -74,18 +63,14 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   }
 )
 SelectTrigger.displayName = "SelectTrigger"
-
 const SelectValue: React.FC<SelectValueProps> = ({ placeholder }) => {
   const { value } = React.useContext(SelectContext)
   return <span>{value || placeholder}</span>
 }
-
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
     const { open } = React.useContext(SelectContext)
-
     if (!open) return null
-
     return (
       <div
         ref={ref}
@@ -103,16 +88,13 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   }
 )
 SelectContent.displayName = "SelectContent"
-
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
   ({ className, children, value, ...props }, ref) => {
     const { onValueChange, setOpen } = React.useContext(SelectContext)
-
     const handleClick = () => {
       onValueChange?.(value)
       setOpen(false)
     }
-
     return (
       <div
         ref={ref}
@@ -129,7 +111,6 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
   }
 )
 SelectItem.displayName = "SelectItem"
-
 export {
   Select,
   SelectTrigger,

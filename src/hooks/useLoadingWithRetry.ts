@@ -1,7 +1,5 @@
 'use client'
-
 import { useState, useCallback, useRef, useEffect } from 'react'
-
 interface UseLoadingWithRetryOptions {
   maxRetries?: number
   retryDelay?: number
@@ -10,7 +8,6 @@ interface UseLoadingWithRetryOptions {
   onSuccess?: () => void
   onTimeout?: () => void
 }
-
 interface LoadingState {
   isLoading: boolean
   error: Error | null
@@ -18,7 +15,6 @@ interface LoadingState {
   isRetrying: boolean
   hasTimedOut: boolean
 }
-
 export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
   const {
     maxRetries = 3,
@@ -28,7 +24,6 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
     onSuccess,
     onTimeout
   } = options
-
   const [state, setState] = useState<LoadingState>({
     isLoading: false,
     error: null,
@@ -36,11 +31,9 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
     isRetrying: false,
     hasTimedOut: false
   })
-
   const timeoutRef = useRef<NodeJS.Timeout>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   const abortControllerRef = useRef<AbortController>()
-
   // Cleanup function
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -56,17 +49,14 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
       abortControllerRef.current = undefined
     }
   }, [])
-
   // Execute function with retry logic
   const execute = useCallback(async <T>(
     asyncFunction: (signal?: AbortSignal) => Promise<T>
   ): Promise<T> => {
     cleanup()
-
     return new Promise<T>((resolve, reject) => {
       const attemptExecution = async (attemptNumber: number) => {
         console.log(`🔄 Loading attempt ${attemptNumber}/${maxRetries + 1}`)
-        
         setState(prev => ({
           ...prev,
           isLoading: true,
@@ -75,28 +65,22 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
           isRetrying: attemptNumber > 1,
           hasTimedOut: false
         }))
-
         // Create new abort controller for this attempt
         abortControllerRef.current = new AbortController()
         const signal = abortControllerRef.current.signal
-
         // Set timeout for this attempt
         timeoutRef.current = setTimeout(() => {
-          console.warn(`⏰ Loading timeout after ${timeout}ms (attempt ${attemptNumber})`)
-          
+          `)
           setState(prev => ({
             ...prev,
             hasTimedOut: true,
             isLoading: false
           }))
-
           if (abortControllerRef.current) {
             abortControllerRef.current.abort()
           }
-
           if (attemptNumber <= maxRetries) {
             console.log(`🔄 Retrying due to timeout... (${attemptNumber}/${maxRetries})`)
-            
             retryTimeoutRef.current = setTimeout(() => {
               attemptExecution(attemptNumber + 1)
             }, retryDelay * attemptNumber) // Exponential backoff
@@ -107,10 +91,8 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
             reject(timeoutError)
           }
         }, timeout)
-
         try {
           const result = await asyncFunction(signal)
-          
           // Success - cleanup and resolve
           cleanup()
           setState(prev => ({
@@ -120,55 +102,42 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
             isRetrying: false,
             hasTimedOut: false
           }))
-          
-          console.log(`✅ Loading successful on attempt ${attemptNumber}`)
           onSuccess?.()
           resolve(result)
-          
         } catch (error) {
           const err = error instanceof Error ? error : new Error('Unknown error')
-          
-          console.error(`❌ Loading failed on attempt ${attemptNumber}:`, err.message)
-          
           // If aborted, don't retry
           if (signal.aborted) {
             console.log('🛑 Operation was aborted')
             return
           }
-          
           setState(prev => ({
             ...prev,
             error: err,
             isLoading: false,
             isRetrying: false
           }))
-          
           onError?.(err, attemptNumber)
-          
           // Retry if we haven't exceeded max attempts
           if (attemptNumber <= maxRetries) {
             console.log(`🔄 Retrying due to error... (${attemptNumber}/${maxRetries})`)
-            
             setState(prev => ({
               ...prev,
               isRetrying: true
             }))
-            
             retryTimeoutRef.current = setTimeout(() => {
               attemptExecution(attemptNumber + 1)
             }, retryDelay * attemptNumber) // Exponential backoff
           } else {
-            console.error(`💥 All retry attempts exhausted (${maxRetries + 1} total)`)
+            `)
             reject(err)
           }
         }
       }
-
       // Start first attempt
       attemptExecution(1)
     })
   }, [maxRetries, retryDelay, timeout, onError, onSuccess, onTimeout, cleanup])
-
   // Reset function
   const reset = useCallback(() => {
     cleanup()
@@ -180,12 +149,10 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
       hasTimedOut: false
     })
   }, [cleanup])
-
   // Cleanup on unmount
   useEffect(() => {
     return cleanup
   }, [cleanup])
-
   return {
     ...state,
     execute,

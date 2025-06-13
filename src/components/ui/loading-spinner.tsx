@@ -1,14 +1,11 @@
 'use client'
-
 import { cn } from '@/lib/utils'
 import { memo } from 'react'
-
 interface LoadingSpinnerProps {
   className?: string
   size?: 'sm' | 'md' | 'lg'
   text?: string
 }
-
 const LoadingSpinnerComponent = ({
   className,
   size = 'md',
@@ -19,7 +16,6 @@ const LoadingSpinnerComponent = ({
     md: 'w-8 h-8',
     lg: 'w-12 h-12'
   }
-
   return (
     <div className={cn("flex flex-col items-center space-y-4", className)}>
       <div className="relative">
@@ -34,13 +30,10 @@ const LoadingSpinnerComponent = ({
     </div>
   )
 }
-
 export const LoadingSpinner = memo(LoadingSpinnerComponent)
-
 interface LoadingScreenProps {
   text?: string
 }
-
 const LoadingScreenComponent = ({
   text = 'Loading...'
 }: LoadingScreenProps) => {
@@ -50,5 +43,4 @@ const LoadingScreenComponent = ({
     </div>
   )
 }
-
 export const LoadingScreen = memo(LoadingScreenComponent)

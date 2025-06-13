@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -36,7 +35,6 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useRouter } from 'next/navigation'
-
 interface SearchResult {
   id: string
   type: 'client' | 'task' | 'document' | 'notification'
@@ -47,13 +45,11 @@ interface SearchResult {
   metadata?: Record<string, any>
   relevance: number
 }
-
 interface GlobalSearchProps {
   placeholder?: string
   className?: string
   showFilters?: boolean
 }
-
 export default function GlobalSearch({
   placeholder = "Search clients, documents, tasks...",
   className = "",
@@ -68,14 +64,12 @@ export default function GlobalSearch({
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
   const popoverContentRef = useRef<HTMLDivElement>(null)
-
   const searchFilters = [
     { key: 'client', label: 'Clients', icon: User },
     { key: 'task', label: 'Tasks', icon: CheckSquare },
     { key: 'document', label: 'Documents', icon: FileText },
     { key: 'notification', label: 'Notifications', icon: Calendar }
   ]
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -88,11 +82,9 @@ export default function GlobalSearch({
         searchRef.current?.blur()
       }
     }
-
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
-
   // Debounce search to prevent excessive API calls
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -102,17 +94,13 @@ export default function GlobalSearch({
         setResults([])
       }
     }, 300) // 300ms debounce
-
     return () => clearTimeout(timeoutId)
   }, [query, selectedFilters])
-
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!user) return
-
     setLoading(true)
     try {
       const searchResults: SearchResult[] = []
-
       // Search clients
       if (selectedFilters.length === 0 || selectedFilters.includes('client')) {
         const { data: clients } = await supabase
@@ -121,7 +109,6 @@ export default function GlobalSearch({
           .eq('user_id', user.id)
           .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
           .limit(10)
-
         clients?.forEach(client => {
           searchResults.push({
             id: client.id,
@@ -135,7 +122,6 @@ export default function GlobalSearch({
           })
         })
       }
-
       // Search tasks
       if (selectedFilters.length === 0 || selectedFilters.includes('task')) {
         const { data: tasks } = await supabase
@@ -147,7 +133,6 @@ export default function GlobalSearch({
           .eq('user_id', user.id)
           .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
           .limit(10)
-
         tasks?.forEach(task => {
           searchResults.push({
             id: task.id,
@@ -161,7 +146,6 @@ export default function GlobalSearch({
           })
         })
       }
-
       // Search documents
       if (selectedFilters.length === 0 || selectedFilters.includes('document')) {
         const { data: documents } = await supabase
@@ -173,7 +157,6 @@ export default function GlobalSearch({
           .eq('user_id', user.id)
           .or(`name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
           .limit(10)
-
         documents?.forEach(doc => {
           searchResults.push({
             id: doc.id,
@@ -187,7 +170,6 @@ export default function GlobalSearch({
           })
         })
       }
-
       // Search notifications
       if (selectedFilters.length === 0 || selectedFilters.includes('notification')) {
         const { data: notifications } = await supabase
@@ -197,7 +179,6 @@ export default function GlobalSearch({
           .eq('archived', false)
           .or(`title.ilike.%${searchQuery}%,message.ilike.%${searchQuery}%`)
           .limit(5)
-
         notifications?.forEach(notification => {
           searchResults.push({
             id: notification.id,
@@ -211,25 +192,20 @@ export default function GlobalSearch({
           })
         })
       }
-
       // Sort by relevance
       searchResults.sort((a, b) => b.relevance - a.relevance)
       setResults(searchResults.slice(0, 20))
     } catch (error) {
-      console.error('Search error:', error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }, [user, selectedFilters])
-
   const calculateRelevance = useCallback((query: string, fields: (string | null | undefined)[]): number => {
     const lowerQuery = query.toLowerCase()
     let score = 0
-
     fields.forEach(field => {
       if (!field) return
       const lowerField = field.toLowerCase()
-
       // Exact match gets highest score
       if (lowerField === lowerQuery) score += 100
       // Starts with query gets high score
@@ -239,10 +215,8 @@ export default function GlobalSearch({
       // Word boundary match gets bonus
       if (new RegExp(`\\b${lowerQuery}`, 'i').test(field)) score += 10
     })
-
     return score
   }, [])
-
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -250,39 +224,32 @@ export default function GlobalSearch({
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }, [])
-
   const formatTimeAgo = useCallback((dateString: string): string => {
     const date = new Date(dateString)
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
-
     if (diffInMinutes < 1) return 'Just now'
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
     return `${Math.floor(diffInMinutes / 1440)}d ago`
   }, [])
-
   // Memoized change handlers to prevent focus loss
   const handleQueryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
   }, [])
-
   const handleCommandValueChange = useCallback((value: string) => {
     setQuery(value)
   }, [])
-
   const handleFocus = useCallback((e: React.FocusEvent) => {
     e.preventDefault()
     setOpen(true)
   }, [])
-
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setOpen(true)
     searchRef.current?.focus()
   }, [])
-
   // Handle popover open change - prevent rapid open/close cycles
   const handleOpenChange = useCallback((newOpen: boolean) => {
     // Prevent rapid toggling by adding a small delay
@@ -295,7 +262,6 @@ export default function GlobalSearch({
       setOpen(true)
     }
   }, [open])
-
   const toggleFilter = useCallback((filterKey: string) => {
     setSelectedFilters(prev =>
       prev.includes(filterKey)
@@ -305,19 +271,16 @@ export default function GlobalSearch({
     // Keep the popover open when toggling filters
     setOpen(true)
   }, [])
-
   const clearFilters = useCallback(() => {
     setSelectedFilters([])
     // Keep the popover open when clearing filters
     setOpen(true)
   }, [])
-
   const handleResultClick = useCallback((result: SearchResult) => {
     setOpen(false)
     setQuery('')
     router.push(result.url)
   }, [router])
-
   const getResultIcon = (type: string) => {
     switch (type) {
       case 'client': return <User className="w-4 h-4 text-purple-600" />
@@ -327,7 +290,6 @@ export default function GlobalSearch({
       default: return <Search className="w-4 h-4" />
     }
   }
-
   // Keyboard shortcut (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -342,11 +304,9 @@ export default function GlobalSearch({
         searchRef.current?.blur()
       }
     }
-
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [open])
-
   return (
     <div className={`relative min-w-[500px] ${className}`}>
       <Popover open={open} onOpenChange={handleOpenChange}>
@@ -391,7 +351,6 @@ export default function GlobalSearch({
               value={query}
               onValueChange={handleCommandValueChange}
             />
-
             {showFilters && (
               <div
                 className="flex items-center space-x-2 p-3 border-b"
@@ -433,7 +392,6 @@ export default function GlobalSearch({
                 </div>
               </div>
             )}
-
             <CommandList onClick={(e) => e.stopPropagation()}>
               {loading ? (
                 <div className="flex items-center justify-center py-6">
@@ -444,7 +402,6 @@ export default function GlobalSearch({
                   <CommandEmpty>
                     {query.length < 2 ? 'Type at least 2 characters to search' : 'No results found'}
                   </CommandEmpty>
-
                   {results.length > 0 && (
                     <CommandGroup heading={`${results.length} result${results.length !== 1 ? 's' : ''}`}>
                       {results.map((result) => (

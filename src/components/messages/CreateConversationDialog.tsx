@@ -1,17 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, User, MessageSquare, Send } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { Search, User, MessageSquare, Send, X } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthProvider'
 
 interface Client {
   id: string
@@ -50,20 +47,28 @@ export function CreateConversationDialog({
 
   const loadClients = async () => {
     try {
+      console.log('🔍 Loading clients...', { hasSession: !!session, hasToken: !!session?.access_token })
       setLoading(true)
-      
+
       const response = await fetch('/api/clients', {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
         }
       })
 
+      console.log('📡 Clients API response:', { status: response.status, ok: response.ok })
+
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Clients loaded:', { count: data.clients?.length || 0, clients: data.clients })
         setClients(data.clients || [])
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ Clients API error:', { status: response.status, error: errorData })
+        setClients([]) // Set empty array on error
       }
     } catch (error) {
-      console.error('Error loading clients:', error)
+      console.error('❌ Error loading clients:', error)
     } finally {
       setLoading(false)
     }
@@ -79,7 +84,7 @@ export function CreateConversationDialog({
         subject.trim(),
         initialMessage.trim() || undefined
       )
-      
+
       // Reset form
       setSelectedClient(null)
       setSubject('')
@@ -114,21 +119,40 @@ export function CreateConversationDialog({
       .slice(0, 2)
   }
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <MessageSquare className="w-5 h-5" />
-            <span>Start New Conversation</span>
-          </DialogTitle>
-        </DialogHeader>
+  if (!open) return null
 
-        <div className="space-y-6">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={handleClose}
+      />
+
+      {/* Dialog */}
+      <div className="relative bg-background border rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <div className="flex items-center space-x-2">
+            <MessageSquare className="w-5 h-5" />
+            <h2 className="text-lg font-semibold">Start New Conversation</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClose}
+            className="h-8 w-8 p-0"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(80vh-120px)]">
           {/* Client Selection */}
           <div className="space-y-3">
             <Label>Select Client</Label>
-            
+
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -167,7 +191,7 @@ export function CreateConversationDialog({
 
             {/* Client List */}
             {!selectedClient && (
-              <ScrollArea className="h-48 border rounded-lg">
+              <div className="h-48 border rounded-lg overflow-y-auto">
                 {loading ? (
                   <div className="p-4 text-center text-muted-foreground">
                     Loading clients...
@@ -207,7 +231,7 @@ export function CreateConversationDialog({
                     ))}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             )}
           </div>
 
@@ -237,25 +261,26 @@ export function CreateConversationDialog({
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={!selectedClient || !subject.trim() || creating}
-            >
-              {creating ? (
-                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              {creating ? 'Creating...' : 'Start Conversation'}
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Footer */}
+        <div className="flex justify-end space-x-3 p-6 border-t bg-muted/20">
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreate}
+            disabled={!selectedClient || !subject.trim() || creating}
+          >
+            {creating ? (
+              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            {creating ? 'Creating...' : 'Start Conversation'}
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }

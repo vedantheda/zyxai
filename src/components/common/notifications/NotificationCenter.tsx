@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,7 +29,6 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthProvider'
-
 interface Notification {
   id: string
   user_id: string
@@ -45,22 +43,18 @@ interface Notification {
   created_at: string
   read_at?: string
 }
-
 interface NotificationCenterProps {
   showAsDropdown?: boolean
   maxHeight?: string
 }
-
 export default function NotificationCenter({ showAsDropdown = true, maxHeight = "400px" }: NotificationCenterProps) {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
-
   useEffect(() => {
     if (!user) return
     fetchNotifications()
-
     // DISABLED: Real-time subscription was causing window focus issues
     // const subscription = supabase
     //   .channel('notifications')
@@ -77,15 +71,12 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
     //     }
     //   )
     //   .subscribe()
-
     // return () => {
     //   subscription.unsubscribe()
     // }
   }, [user])
-
   const fetchNotifications = useCallback(async () => {
     if (!user) return
-
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -94,18 +85,14 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
         .eq('archived', false)
         .order('created_at', { ascending: false })
         .limit(50)
-
       if (error) throw error
-
       setNotifications(data || [])
       setUnreadCount(data?.filter(n => !n.read).length || 0)
     } catch (error) {
-      console.error('Error fetching notifications:', error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }, [user])
-
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
       const { error } = await supabase
@@ -116,9 +103,7 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
         })
         .eq('id', notificationId)
         .eq('user_id', user?.id)
-
       if (error) throw error
-
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId
@@ -128,16 +113,12 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
       )
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
-      console.error('Error marking notification as read:', error)
-    }
+      }
   }, [user])
-
   const markAllAsRead = useCallback(async () => {
     try {
       const unreadIds = notifications.filter(n => !n.read).map(n => n.id)
-
       if (unreadIds.length === 0) return
-
       const { error } = await supabase
         .from('notifications')
         .update({
@@ -146,18 +127,14 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
         })
         .in('id', unreadIds)
         .eq('user_id', user?.id)
-
       if (error) throw error
-
       setNotifications(prev =>
         prev.map(n => ({ ...n, read: true, read_at: new Date().toISOString() }))
       )
       setUnreadCount(0)
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
-    }
+      }
   }, [notifications, user])
-
   const archiveNotification = useCallback(async (notificationId: string) => {
     try {
       const { error } = await supabase
@@ -165,20 +142,15 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
         .update({ archived: true })
         .eq('id', notificationId)
         .eq('user_id', user?.id)
-
       if (error) throw error
-
       setNotifications(prev => prev.filter(n => n.id !== notificationId))
-
       const notification = notifications.find(n => n.id === notificationId)
       if (notification && !notification.read) {
         setUnreadCount(prev => Math.max(0, prev - 1))
       }
     } catch (error) {
-      console.error('Error archiving notification:', error)
-    }
+      }
   }, [notifications, user])
-
   const getNotificationIcon = useCallback((type: string) => {
     switch (type) {
       case 'success': return <CheckCircle className="w-4 h-4 text-green-600" />
@@ -191,7 +163,6 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
       default: return <Info className="w-4 h-4 text-blue-600" />
     }
   }, [])
-
   const getNotificationColor = useCallback((type: string) => {
     switch (type) {
       case 'success': return 'border-l-green-500'
@@ -204,18 +175,15 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
       default: return 'border-l-blue-500'
     }
   }, [])
-
   const formatTimeAgo = useCallback((dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
-
     if (diffInMinutes < 1) return 'Just now'
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
     return `${Math.floor(diffInMinutes / 1440)}d ago`
   }, [])
-
   const NotificationList = () => (
     <div className="space-y-2">
       {loading ? (
@@ -290,7 +258,6 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
       )}
     </div>
   )
-
   if (showAsDropdown) {
     return (
       <DropdownMenu>
@@ -340,7 +307,6 @@ export default function NotificationCenter({ showAsDropdown = true, maxHeight = 
       </DropdownMenu>
     )
   }
-
   return (
     <Card>
       <CardHeader>

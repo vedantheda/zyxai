@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useFastNavigation } from '@/hooks/useFastNavigation'
+import { useSignOut } from '@/hooks/useSignOut'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -14,59 +15,68 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Brain, Settings, LogOut } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthProvider'
 import { adminNavigation, clientNavigation, adminNavigationDividers, type NavigationItem } from '@/config/navigation'
+import { useMemo, useCallback } from 'react'
 
 interface GlobalSidebarProps {
   className?: string
   userRole?: 'admin' | 'client'
 }
 
+
+
 export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarProps) {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { navigate, prefetchOnHover } = useFastNavigation()
+  const { signOut } = useSignOut()
 
-  const handleSignOut = async () => {
-    await signOut()
-  }
-
-  const getUserInitials = () => {
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`
+  // Memoize user data calculations to prevent unnecessary re-renders
+  const userInitials = useMemo(() => {
+    if (user?.full_name) {
+      const names = user.full_name.split(' ')
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[1][0]}`
+      }
+      return names[0][0] || 'U'
     }
     if (user?.email) {
       return user.email.substring(0, 2).toUpperCase()
     }
     return 'U'
-  }
+  }, [user?.full_name, user?.email])
 
-  const getUserName = () => {
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
-    }
-    if (user?.email) {
-      // Extract name from email if no metadata
-      const emailName = user.email.split('@')[0]
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
-    }
-    return 'User'
-  }
+  const userName = useMemo(() => {
+    return user?.full_name || user?.email?.split('@')[0] || 'User'
+  }, [user?.full_name, user?.email])
 
-  const getOrganizationName = () => {
-    return user?.user_metadata?.organization_name || 'Tax Practice'
-  }
+  const organizationName = useMemo(() => {
+    return 'Tax Practice'
+  }, [])
 
-  const getPracticeRole = () => {
+  const practiceRole = useMemo(() => {
     if (userRole === 'client') {
       return 'Client'
     }
-    return user?.user_metadata?.role || 'Tax Professional'
-  }
+    const role = user?.role
+    if (role === 'admin') return 'Tax Professional'
+    if (role === 'tax_professional') return 'Tax Professional'
+    return role || 'Tax Professional'
+  }, [userRole, user?.role])
 
-  // Get navigation based on user role
-  const navigation = userRole === 'client' ? clientNavigation : adminNavigation
-  const showDividers = userRole === 'admin' ? adminNavigationDividers : []
+  // Memoize navigation data
+  const navigation = useMemo(() => {
+    return userRole === 'client' ? clientNavigation : adminNavigation
+  }, [userRole])
+
+  const showDividers = useMemo(() => {
+    return userRole === 'admin' ? adminNavigationDividers : []
+  }, [userRole])
+
+  const handleSignOut = useCallback(async () => {
+    await signOut('/signin')
+  }, [signOut])
 
   return (
     <div className={`flex flex-col h-full bg-card border-r ${className}`}>
@@ -139,13 +149,13 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start space-x-3 p-3">
               <Avatar className="w-8 h-8">
-                <AvatarImage src={user?.user_metadata?.avatar_url} />
-                <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                <AvatarImage src={user?.avatar_url} />
+                <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium">{getUserName()}</p>
-                <p className="text-xs text-muted-foreground">{getPracticeRole()}</p>
-                <p className="text-xs text-muted-foreground">{getOrganizationName()}</p>
+                <p className="text-sm font-medium">{userName}</p>
+                <p className="text-xs text-muted-foreground">{practiceRole}</p>
+                <p className="text-xs text-muted-foreground">{organizationName}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>

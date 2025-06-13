@@ -1,38 +1,83 @@
-# new-example
+# 🏢 Neuronize - Professional Tax Practice Management
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 🎯 Overview
+Enterprise-grade tax practice management system with AI-powered document processing, client management, and automated workflows.
 
-## Getting Started
+## ✨ Key Features
+- 🤖 **AI Document Processing** - Automated OCR and data extraction
+- 👥 **Client Management** - Complete client lifecycle management
+- 📄 **Document Management** - Secure document storage and processing
+- 💬 **Communication Hub** - Integrated messaging system
+- 📊 **Pipeline Management** - Visual workflow tracking
+- 💰 **Bookkeeping Integration** - Financial data management
+- 📈 **Analytics & Reporting** - Business intelligence dashboard
 
-First, run the development server:
+## 🚀 Quick Start
 
+### Prerequisites
+- Node.js 18+
+- PostgreSQL (via Supabase)
+- Google Vision API key (for AI processing)
+
+### Installation
 ```bash
+# Clone repository
+git clone <repository-url>
+cd neuronize
+
+# Install dependencies
+npm install
+
+# Setup environment
+cp .env.example .env.local
+# Configure your environment variables
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GOOGLE_VISION_API_KEY=your_google_vision_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📚 Documentation
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 🚀 [Features Documentation](./docs/features/)
+- 🏢 [Development Guide](./docs/development/)
+- 🔒 [Security Documentation](./docs/security/)
+- 🚀 [Deployment Guide](./docs/deployment/)
 
-## Learn More
+## 🏗️ Architecture
+- **Frontend**: Next.js 14 with TypeScript
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL (Supabase)
+- **Authentication**: Supabase Auth
+- **AI Processing**: Google Vision API + OpenRouter
+- **Styling**: Tailwind CSS + shadcn/ui
 
-To learn more about Next.js, take a look at the following resources:
+## 🧪 Testing
+```bash
+# Run unit tests
+npm run test
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run E2E tests
+npm run test:e2e
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run with coverage
+npm run test:coverage
+```
 
-## Deploy on Vercel
+## 🚀 Deployment
+See [Production Deployment Checklist](./docs/deployment/production-checklist.md) for detailed deployment instructions.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📄 License
+Private - All rights reserved
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🤝 Contributing
+This is a private project. Please follow the established coding standards and documentation practices.

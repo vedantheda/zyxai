@@ -51,13 +51,11 @@ export interface ClientProfile {
     carryoverItems: CarryoverItem[]
   }
 }
-
 export interface CarryoverItem {
   type: 'capital_loss' | 'charitable' | 'net_operating_loss' | 'foreign_tax_credit'
   amount: number
   expirationYear?: number
 }
-
 export interface ChecklistItem {
   id: string
   category: string
@@ -74,20 +72,17 @@ export interface ChecklistItem {
   completionCriteria: string[]
   helpResources: HelpResource[]
 }
-
 export interface ReminderSchedule {
   type: 'email' | 'sms' | 'portal'
   daysBefore: number
   message: string
 }
-
 export interface HelpResource {
   type: 'video' | 'article' | 'faq' | 'contact'
   title: string
   url?: string
   description: string
 }
-
 export interface PersonalizedChecklist {
   clientId: string
   taxYear: number
@@ -99,7 +94,6 @@ export interface PersonalizedChecklist {
   overallStatus: 'not_started' | 'in_progress' | 'review_ready' | 'completed'
   nextActions: NextAction[]
 }
-
 export interface ChecklistCategory {
   name: string
   description: string
@@ -108,7 +102,6 @@ export interface ChecklistCategory {
   estimatedTime: number
   priority: number
 }
-
 export interface NextAction {
   action: string
   priority: 'urgent' | 'high' | 'medium' | 'low'
@@ -116,16 +109,13 @@ export interface NextAction {
   estimatedTime: number
   category: string
 }
-
 export class PersonalizedChecklistEngine {
   private documentRequirements: Map<string, DocumentRequirement>
   private deadlineCalendar: Map<string, Date>
-
   constructor() {
     this.documentRequirements = this.initializeDocumentRequirements()
     this.deadlineCalendar = this.initializeDeadlineCalendar()
   }
-
   /**
    * Generate personalized checklist based on client profile
    */
@@ -142,51 +132,40 @@ export class PersonalizedChecklistEngine {
       overallStatus: 'not_started',
       nextActions: this.generateNextActions(categories)
     }
-
     return checklist
   }
-
   /**
    * Build checklist categories based on client profile
    */
   private buildChecklistCategories(clientProfile: ClientProfile, taxYear: number): ChecklistCategory[] {
     const categories: ChecklistCategory[] = []
-
     // Income Documents Category
     categories.push(this.buildIncomeDocumentsCategory(clientProfile, taxYear))
-
     // Deduction Documents Category
     categories.push(this.buildDeductionDocumentsCategory(clientProfile, taxYear))
-
     // Business Documents Category (if applicable)
     if (clientProfile.incomeProfile.hasBusinessIncome || clientProfile.incomeProfile.hasSelfEmploymentIncome) {
       categories.push(this.buildBusinessDocumentsCategory(clientProfile, taxYear))
     }
-
     // Investment Documents Category (if applicable)
     if (clientProfile.incomeProfile.hasInvestmentIncome) {
       categories.push(this.buildInvestmentDocumentsCategory(clientProfile, taxYear))
     }
-
     // Prior Year Items Category
     if (clientProfile.priorYearInfo.carryoverItems.length > 0) {
       categories.push(this.buildPriorYearCategory(clientProfile, taxYear))
     }
-
     // Estimated Payments Category
     if (clientProfile.incomeProfile.estimatedAGI > 50000) {
       categories.push(this.buildEstimatedPaymentsCategory(clientProfile, taxYear))
     }
-
     return categories
   }
-
   /**
    * Build income documents category
    */
   private buildIncomeDocumentsCategory(clientProfile: ClientProfile, taxYear: number): ChecklistCategory {
     const items: ChecklistItem[] = []
-
     if (clientProfile.incomeProfile.hasW2Income) {
       items.push({
         id: 'w2-documents',
@@ -210,7 +189,6 @@ export class PersonalizedChecklistEngine {
         ]
       })
     }
-
     if (clientProfile.incomeProfile.hasSelfEmploymentIncome) {
       items.push({
         id: '1099-nec-documents',
@@ -231,7 +209,6 @@ export class PersonalizedChecklistEngine {
         helpResources: []
       })
     }
-
     if (clientProfile.incomeProfile.hasInvestmentIncome) {
       items.push({
         id: 'investment-income-documents',
@@ -252,7 +229,6 @@ export class PersonalizedChecklistEngine {
         helpResources: []
       })
     }
-
     return {
       name: 'Income Documents',
       description: 'Essential income documentation for tax preparation',
@@ -262,13 +238,11 @@ export class PersonalizedChecklistEngine {
       priority: 1
     }
   }
-
   /**
    * Build deduction documents category
    */
   private buildDeductionDocumentsCategory(clientProfile: ClientProfile, taxYear: number): ChecklistCategory {
     const items: ChecklistItem[] = []
-
     if (clientProfile.deductionProfile.hasMortgageInterest) {
       items.push({
         id: 'mortgage-interest-1098',
@@ -289,7 +263,6 @@ export class PersonalizedChecklistEngine {
         helpResources: []
       })
     }
-
     if (clientProfile.deductionProfile.hasCharitableContributions) {
       items.push({
         id: 'charitable-contributions',
@@ -310,7 +283,6 @@ export class PersonalizedChecklistEngine {
         helpResources: []
       })
     }
-
     if (clientProfile.deductionProfile.hasEducationExpenses) {
       items.push({
         id: 'education-expenses-1098t',
@@ -331,7 +303,6 @@ export class PersonalizedChecklistEngine {
         helpResources: []
       })
     }
-
     return {
       name: 'Deduction Documents',
       description: 'Documents needed to maximize your tax deductions',
@@ -341,13 +312,11 @@ export class PersonalizedChecklistEngine {
       priority: 2
     }
   }
-
   /**
    * Build business documents category
    */
   private buildBusinessDocumentsCategory(clientProfile: ClientProfile, taxYear: number): ChecklistCategory {
     const items: ChecklistItem[] = []
-
     items.push({
       id: 'business-income-expenses',
       category: 'Business Documents',
@@ -366,7 +335,6 @@ export class PersonalizedChecklistEngine {
       completionCriteria: ['All receipts organized', 'Expenses categorized'],
       helpResources: []
     })
-
     if (clientProfile.businessProfile?.hasBusinessVehicle) {
       items.push({
         id: 'vehicle-mileage-log',
@@ -387,7 +355,6 @@ export class PersonalizedChecklistEngine {
         helpResources: []
       })
     }
-
     return {
       name: 'Business Documents',
       description: 'Business-related documentation for Schedule C',
@@ -397,13 +364,11 @@ export class PersonalizedChecklistEngine {
       priority: 1
     }
   }
-
   /**
    * Build investment documents category
    */
   private buildInvestmentDocumentsCategory(clientProfile: ClientProfile, taxYear: number): ChecklistCategory {
     const items: ChecklistItem[] = []
-
     items.push({
       id: 'brokerage-statements',
       category: 'Investment Documents',
@@ -422,7 +387,6 @@ export class PersonalizedChecklistEngine {
       completionCriteria: ['All brokerage statements received', 'Cost basis verified'],
       helpResources: []
     })
-
     return {
       name: 'Investment Documents',
       description: 'Investment and capital gains documentation',
@@ -432,13 +396,11 @@ export class PersonalizedChecklistEngine {
       priority: 2
     }
   }
-
   /**
    * Build prior year category
    */
   private buildPriorYearCategory(clientProfile: ClientProfile, taxYear: number): ChecklistCategory {
     const items: ChecklistItem[] = []
-
     items.push({
       id: 'prior-year-return',
       category: 'Prior Year Items',
@@ -455,7 +417,6 @@ export class PersonalizedChecklistEngine {
       completionCriteria: ['Prior year return provided'],
       helpResources: []
     })
-
     return {
       name: 'Prior Year Items',
       description: 'Items carried over from previous tax years',
@@ -465,13 +426,11 @@ export class PersonalizedChecklistEngine {
       priority: 3
     }
   }
-
   /**
    * Build estimated payments category
    */
   private buildEstimatedPaymentsCategory(clientProfile: ClientProfile, taxYear: number): ChecklistCategory {
     const items: ChecklistItem[] = []
-
     items.push({
       id: 'estimated-payment-records',
       category: 'Estimated Payments',
@@ -488,7 +447,6 @@ export class PersonalizedChecklistEngine {
       completionCriteria: ['All payment records collected'],
       helpResources: []
     })
-
     return {
       name: 'Estimated Payments',
       description: 'Quarterly estimated tax payment documentation',
@@ -498,40 +456,32 @@ export class PersonalizedChecklistEngine {
       priority: 4
     }
   }
-
   /**
    * Initialize document requirements mapping
    */
   private initializeDocumentRequirements(): Map<string, DocumentRequirement> {
     const requirements = new Map<string, DocumentRequirement>()
-    
     // Add document requirements here
     // This would be expanded based on tax law requirements
-    
     return requirements
   }
-
   /**
    * Initialize deadline calendar
    */
   private initializeDeadlineCalendar(): Map<string, Date> {
     const deadlines = new Map<string, Date>()
     const currentYear = new Date().getFullYear()
-    
     deadlines.set('w2_deadline', new Date(currentYear, 0, 31)) // January 31
     deadlines.set('1099_deadline', new Date(currentYear, 0, 31)) // January 31
     deadlines.set('filing_deadline', new Date(currentYear, 3, 15)) // April 15
-    
     return deadlines
   }
-
   /**
    * Calculate total estimated time for checklist completion
    */
   private calculateTotalTime(categories: ChecklistCategory[]): number {
     return categories.reduce((total, category) => total + category.estimatedTime, 0)
   }
-
   /**
    * Get critical deadlines for the tax year
    */
@@ -541,13 +491,11 @@ export class PersonalizedChecklistEngine {
       new Date(taxYear + 1, 3, 15), // Filing deadline
     ]
   }
-
   /**
    * Generate next actions based on current checklist state
    */
   private generateNextActions(categories: ChecklistCategory[]): NextAction[] {
     const actions: NextAction[] = []
-    
     for (const category of categories) {
       for (const item of category.items) {
         if (item.status === 'not_started' && item.priority === 'critical') {
@@ -561,10 +509,8 @@ export class PersonalizedChecklistEngine {
         }
       }
     }
-    
     return actions.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()).slice(0, 5)
   }
-
   /**
    * Update checklist item status
    */
@@ -572,7 +518,6 @@ export class PersonalizedChecklistEngine {
     // Implementation would update the database
     console.log(`Updating item ${itemId} in checklist ${checklistId} to status: ${status}`)
   }
-
   /**
    * Get checklist progress summary
    */
@@ -587,15 +532,13 @@ export class PersonalizedChecklistEngine {
     const criticalItemsRemaining = allItems.filter(
       item => item.status !== 'completed' && item.priority === 'critical'
     )
-    
     const remainingItems = allItems.filter(item => item.status !== 'completed')
     const estimatedTimeRemaining = remainingItems.reduce((total, item) => {
       // Estimate time based on automation level
-      const baseTime = item.automationLevel === 'full' ? 5 : 
+      const baseTime = item.automationLevel === 'full' ? 5 :
                       item.automationLevel === 'partial' ? 15 : 30
       return total + baseTime
     }, 0)
-
     return {
       totalItems: allItems.length,
       completedItems: completedItems.length,
@@ -604,7 +547,6 @@ export class PersonalizedChecklistEngine {
     }
   }
 }
-
 interface DocumentRequirement {
   documentType: string
   required: boolean

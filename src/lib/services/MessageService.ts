@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import {
   Conversation,
   Message,
@@ -23,7 +23,7 @@ export class MessageService {
   // Conversation Management
   async getConversations(filters: MessageFilters = {}): Promise<PaginatedConversations> {
     try {
-      let query = supabase
+      let query = supabaseAdmin
         .from('conversations')
         .select(`
           *,
@@ -90,7 +90,7 @@ export class MessageService {
 
   async getConversation(conversationId: string): Promise<Conversation | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('conversations')
         .select(`
           *,
@@ -128,13 +128,19 @@ export class MessageService {
   async createConversation(request: CreateConversationRequest): Promise<Conversation> {
     try {
       // Verify the client exists
-      const { data: client, error: clientError } = await supabase
+      console.log('🔍 MessageService: Looking for client:', { clientId: request.clientId })
+
+      const { data: client, error: clientError } = await supabaseAdmin
         .from('clients')
-        .select('id')
+        .select('id, name, email')
         .eq('id', request.clientId)
         .single()
 
-      console.log('Client lookup:', { clientId: request.clientId, client, clientError })
+      console.log('🔍 MessageService: Client lookup result:', {
+        clientId: request.clientId,
+        client,
+        clientError
+      })
 
       if (clientError || !client) {
         console.error('Client not found:', { clientError, client, clientId: request.clientId })
@@ -142,7 +148,7 @@ export class MessageService {
       }
 
       // Create conversation
-      const { data: conversation, error: convError } = await supabase
+      const { data: conversation, error: convError } = await supabaseAdmin
         .from('conversations')
         .insert({
           client_id: request.clientId,
@@ -156,7 +162,7 @@ export class MessageService {
       if (convError) throw convError
 
       // Add participants
-      await supabase
+      await supabaseAdmin
         .from('message_participants')
         .insert([
           {
@@ -191,7 +197,7 @@ export class MessageService {
     updates: UpdateConversationRequest
   ): Promise<Conversation> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('conversations')
         .update({
           ...updates,
@@ -217,12 +223,10 @@ export class MessageService {
     before?: string
   ): Promise<PaginatedMessages> {
     try {
-      let query = supabase
+      let query = supabaseAdmin
         .from('messages')
         .select(`
-          *,
-          sender:profiles(id, first_name, last_name, email, avatar_url, role),
-          attachments:message_attachments(*)
+          *
         `)
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: false })
@@ -253,7 +257,7 @@ export class MessageService {
   async sendMessage(request: SendMessageRequest): Promise<Message> {
     try {
       // Determine sender type based on user role
-      const { data: profile } = await supabase
+      const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('role')
         .eq('id', this.userId)
@@ -262,7 +266,7 @@ export class MessageService {
       const senderType = profile?.role === 'client' ? 'client' : 'admin'
 
       // Create message
-      const { data: message, error: messageError } = await supabase
+      const { data: message, error: messageError } = await supabaseAdmin
         .from('messages')
         .insert({
           conversation_id: request.conversationId,
@@ -273,8 +277,7 @@ export class MessageService {
           metadata: request.metadata || {}
         })
         .select(`
-          *,
-          sender:profiles(id, first_name, last_name, email, avatar_url, role)
+          *
         `)
         .single()
 
@@ -297,7 +300,7 @@ export class MessageService {
 
   async markAsRead(conversationId: string): Promise<number> {
     try {
-      const { data, error } = await supabase.rpc('mark_messages_as_read', {
+      const { data, error } = await supabaseAdmin.rpc('mark_messages_as_read', {
         conversation_id_param: conversationId,
         user_id_param: this.userId
       })
@@ -314,7 +317,7 @@ export class MessageService {
   async getUnreadCount(conversationId?: string): Promise<number> {
     try {
       if (conversationId) {
-        const { count, error } = await supabase
+        const { count, error } = await supabaseAdmin
           .from('messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conversationId)
@@ -324,7 +327,7 @@ export class MessageService {
         if (error) throw error
         return count || 0
       } else {
-        const { data, error } = await supabase.rpc('get_unread_message_count', {
+        const { data, error } = await supabaseAdmin.rpc('get_unread_message_count', {
           user_id_param: this.userId
         })
 
@@ -378,7 +381,7 @@ export class MessageService {
 
   // Helper methods
   private async getConversationCount(status?: string): Promise<number> {
-    let query = supabase
+    let query = supabaseAdmin
       .from('conversations')
       .select('*', { count: 'exact', head: true })
 
@@ -392,7 +395,7 @@ export class MessageService {
   }
 
   private async getMessageCountSince(since: Date): Promise<number> {
-    const { count, error } = await supabase
+    const { count, error } = await supabaseAdmin
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', since.toISOString())
@@ -402,7 +405,7 @@ export class MessageService {
   }
 
   private async getConversationCountSince(since: Date): Promise<number> {
-    const { count, error } = await supabase
+    const { count, error } = await supabaseAdmin
       .from('conversations')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', since.toISOString())
@@ -445,10 +448,10 @@ export class MessageService {
       senderType: data.sender_type,
       content: data.content,
       messageType: data.message_type,
-      attachments: (data.attachments || []).map(this.mapAttachment),
-      isRead: data.is_read,
+      attachments: [], // Temporarily disabled until we fix the relationship
+      isRead: data.is_read || false,
       readAt: data.read_at ? new Date(data.read_at) : undefined,
-      isEdited: data.is_edited,
+      isEdited: data.is_edited || false,
       editedAt: data.edited_at ? new Date(data.edited_at) : undefined,
       metadata: data.metadata || {},
       createdAt: new Date(data.created_at),
@@ -459,7 +462,13 @@ export class MessageService {
         email: data.sender.email,
         avatarUrl: data.sender.avatar_url,
         role: data.sender.role
-      } : undefined
+      } : {
+        id: data.sender_id,
+        name: 'Unknown User',
+        email: '',
+        avatarUrl: undefined,
+        role: data.sender_type || 'user'
+      }
     }
   }
 

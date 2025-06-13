@@ -9,7 +9,6 @@ export interface TaxPlanningProfile {
   business: BusinessProfile
   demographics: DemographicProfile
 }
-
 export interface IncomeProfile {
   wages: number
   selfEmploymentIncome: number
@@ -21,7 +20,6 @@ export interface IncomeProfile {
   otherIncome: number
   estimatedAGI: number
 }
-
 export interface DeductionProfile {
   standardDeduction: number
   itemizedDeductions: {
@@ -34,7 +32,6 @@ export interface DeductionProfile {
   businessDeductions: number
   retirementContributions: number
 }
-
 export interface CreditProfile {
   childTaxCredit: number
   earnedIncomeCredit: number
@@ -43,7 +40,6 @@ export interface CreditProfile {
   foreignTaxCredit: number
   otherCredits: number
 }
-
 export interface InvestmentProfile {
   capitalGains: number
   capitalLosses: number
@@ -52,7 +48,6 @@ export interface InvestmentProfile {
   retirementAccountBalances: number
   taxableInvestmentBalances: number
 }
-
 export interface BusinessProfile {
   businessType: 'sole_prop' | 'partnership' | 'llc' | 's_corp' | 'c_corp' | 'none'
   businessIncome: number
@@ -61,7 +56,6 @@ export interface BusinessProfile {
   hasEmployees: boolean
   payrollExpenses: number
 }
-
 export interface DemographicProfile {
   age: number
   spouseAge?: number
@@ -70,7 +64,6 @@ export interface DemographicProfile {
   healthSavingsAccount: boolean
   educationSavings: boolean
 }
-
 export interface TaxOptimizationRecommendation {
   id: string
   category: 'deduction' | 'credit' | 'timing' | 'structure' | 'retirement' | 'investment'
@@ -86,7 +79,6 @@ export interface TaxOptimizationRecommendation {
   confidence: number
   relatedForms: string[]
 }
-
 export interface TaxProjection {
   taxYear: number
   estimatedTaxLiability: number
@@ -103,7 +95,6 @@ export interface TaxProjection {
     alternativeMinimumTax: number
   }
 }
-
 export interface TaxPlanningReport {
   clientId: string
   generatedAt: Date
@@ -115,7 +106,6 @@ export interface TaxPlanningReport {
   complianceChecklist: ComplianceItem[]
   nextReviewDate: Date
 }
-
 export interface RiskAssessment {
   overallRiskLevel: 'low' | 'medium' | 'high'
   auditRiskFactors: string[]
@@ -123,7 +113,6 @@ export interface RiskAssessment {
   penaltyRisks: string[]
   recommendations: string[]
 }
-
 export interface ComplianceItem {
   requirement: string
   status: 'compliant' | 'at_risk' | 'non_compliant'
@@ -131,16 +120,13 @@ export interface ComplianceItem {
   description: string
   actionRequired: string
 }
-
 export class TaxPlanningEngine {
   private taxBrackets2024: { [key: string]: { min: number; max: number; rate: number }[] }
   private standardDeductions2024: { [key: string]: number }
-
   constructor() {
     this.taxBrackets2024 = this.initializeTaxBrackets()
     this.standardDeductions2024 = this.initializeStandardDeductions()
   }
-
   /**
    * Generate comprehensive tax planning report
    */
@@ -151,7 +137,6 @@ export class TaxPlanningEngine {
     const optimizedProjection = this.calculateTaxProjection(optimizedProfile)
     const riskAssessment = this.assessRisks(profile)
     const complianceChecklist = this.generateComplianceChecklist(profile)
-
     return {
       clientId: profile.clientId,
       generatedAt: new Date(),
@@ -164,7 +149,6 @@ export class TaxPlanningEngine {
       nextReviewDate: this.calculateNextReviewDate(profile)
     }
   }
-
   /**
    * Calculate tax projection based on current profile
    */
@@ -174,14 +158,11 @@ export class TaxPlanningEngine {
     const federalTax = this.calculateFederalTax(taxableIncome, profile.filingStatus)
     const selfEmploymentTax = this.calculateSelfEmploymentTax(profile)
     const stateTax = this.estimateStateTax(taxableIncome, profile.filingStatus)
-    
     const totalTax = federalTax + selfEmploymentTax + stateTax
     const credits = this.calculateTotalCredits(profile)
     const finalTaxLiability = Math.max(0, totalTax - credits)
-    
     const withholdings = this.estimateWithholdings(profile)
     const estimatedRefund = Math.max(0, withholdings - finalTaxLiability)
-    
     return {
       taxYear: profile.taxYear,
       estimatedTaxLiability: finalTaxLiability,
@@ -199,13 +180,11 @@ export class TaxPlanningEngine {
       }
     }
   }
-
   /**
    * Generate optimization recommendations
    */
   private generateOptimizationRecommendations(profile: TaxPlanningProfile): TaxOptimizationRecommendation[] {
     const recommendations: TaxOptimizationRecommendation[] = []
-
     // Retirement contribution recommendations
     if (profile.income.wages > 0 && profile.deductions.retirementContributions < 23000) {
       recommendations.push({
@@ -228,7 +207,6 @@ export class TaxPlanningEngine {
         relatedForms: ['Form W-2']
       })
     }
-
     // Charitable contribution recommendations
     if (profile.deductions.itemizedDeductions.charitableContributions > 0) {
       recommendations.push({
@@ -250,7 +228,6 @@ export class TaxPlanningEngine {
         relatedForms: ['Schedule A']
       })
     }
-
     // Business expense recommendations
     if (profile.business.businessType !== 'none') {
       recommendations.push({
@@ -273,7 +250,6 @@ export class TaxPlanningEngine {
         relatedForms: ['Schedule C', 'Form 4562']
       })
     }
-
     // Investment timing recommendations
     if (profile.investments.capitalGains > 0 || profile.investments.capitalLosses > 0) {
       recommendations.push({
@@ -297,7 +273,6 @@ export class TaxPlanningEngine {
         relatedForms: ['Schedule D', 'Form 8949']
       })
     }
-
     // HSA recommendations
     if (profile.demographics.healthSavingsAccount && profile.demographics.age < 65) {
       recommendations.push({
@@ -320,10 +295,8 @@ export class TaxPlanningEngine {
         relatedForms: ['Form 8889']
       })
     }
-
     return recommendations.sort((a, b) => b.potentialSavings - a.potentialSavings)
   }
-
   /**
    * Calculate various tax components
    */
@@ -337,45 +310,35 @@ export class TaxPlanningEngine {
            profile.income.socialSecurityIncome +
            profile.income.otherIncome
   }
-
   private calculateTaxableIncome(profile: TaxPlanningProfile, agi: number): number {
     const standardDeduction = this.standardDeductions2024[profile.filingStatus] || 0
     const itemizedDeductions = Object.values(profile.deductions.itemizedDeductions).reduce((sum, val) => sum + val, 0)
     const deduction = Math.max(standardDeduction, itemizedDeductions)
-    
     return Math.max(0, agi - deduction)
   }
-
   private calculateFederalTax(taxableIncome: number, filingStatus: string): number {
     const brackets = this.taxBrackets2024[filingStatus] || []
     let tax = 0
     let remainingIncome = taxableIncome
-
     for (const bracket of brackets) {
       if (remainingIncome <= 0) break
-      
       const taxableAtThisBracket = Math.min(remainingIncome, bracket.max - bracket.min)
       tax += taxableAtThisBracket * bracket.rate
       remainingIncome -= taxableAtThisBracket
     }
-
     return tax
   }
-
   private calculateSelfEmploymentTax(profile: TaxPlanningProfile): number {
     const seIncome = profile.income.selfEmploymentIncome + profile.income.businessIncome
     if (seIncome < 400) return 0
-    
     const seRate = 0.1413 // 14.13% for 2024
     return seIncome * seRate
   }
-
   private estimateStateTax(taxableIncome: number, filingStatus: string): number {
     // Simplified state tax calculation (would need state-specific logic)
     const averageStateRate = 0.05 // 5% average
     return taxableIncome * averageStateRate
   }
-
   private calculateTotalCredits(profile: TaxPlanningProfile): number {
     return profile.credits.childTaxCredit +
            profile.credits.earnedIncomeCredit +
@@ -384,42 +347,33 @@ export class TaxPlanningEngine {
            profile.credits.foreignTaxCredit +
            profile.credits.otherCredits
   }
-
   private getMarginalTaxRate(taxableIncome: number, filingStatus: string): number {
     const brackets = this.taxBrackets2024[filingStatus] || []
-    
     for (const bracket of brackets) {
       if (taxableIncome >= bracket.min && taxableIncome <= bracket.max) {
         return bracket.rate * 100
       }
     }
-    
     return 0
   }
-
   private calculateQuarterlyPayments(taxLiability: number, withholdings: number): number[] {
     const remainingTax = Math.max(0, taxLiability - withholdings)
     const quarterlyAmount = remainingTax / 4
     return [quarterlyAmount, quarterlyAmount, quarterlyAmount, quarterlyAmount]
   }
-
   private calculatePenalties(profile: TaxPlanningProfile, taxLiability: number, withholdings: number): number {
     // Simplified penalty calculation
     const underpayment = Math.max(0, taxLiability - withholdings)
     const penaltyThreshold = 1000
-    
     if (underpayment > penaltyThreshold) {
       return underpayment * 0.05 // 5% penalty rate
     }
-    
     return 0
   }
-
   private estimateWithholdings(profile: TaxPlanningProfile): number {
     // Estimate based on wages (simplified)
     return profile.income.wages * 0.20 // Assume 20% withholding rate
   }
-
   /**
    * Calculate potential savings for various strategies
    */
@@ -430,73 +384,57 @@ export class TaxPlanningEngine {
       maxContribution - currentContributions,
       profile.income.wages * 0.1 // Assume max 10% of wages
     )
-    
     const marginalRate = this.getMarginalTaxRate(
       this.calculateTaxableIncome(profile, this.calculateAGI(profile)),
       profile.filingStatus
     ) / 100
-    
     return additionalContribution * marginalRate
   }
-
   private calculateCharitableBunchingSavings(profile: TaxPlanningProfile): number {
     const currentCharitable = profile.deductions.itemizedDeductions.charitableContributions
     const standardDeduction = this.standardDeductions2024[profile.filingStatus] || 0
     const currentItemized = Object.values(profile.deductions.itemizedDeductions).reduce((sum, val) => sum + val, 0)
-    
     // Assume bunching 2 years of charitable contributions
     const bunchedCharitable = currentCharitable * 2
     const bunchedItemized = currentItemized + currentCharitable
-    
     if (bunchedItemized > standardDeduction) {
       const marginalRate = this.getMarginalTaxRate(
         this.calculateTaxableIncome(profile, this.calculateAGI(profile)),
         profile.filingStatus
       ) / 100
-      
       return currentCharitable * marginalRate
     }
-    
     return 0
   }
-
   private calculateEquipmentSavings(profile: TaxPlanningProfile): number {
     const equipmentPurchase = 25000 // Assume $25k equipment purchase
     const marginalRate = this.getMarginalTaxRate(
       this.calculateTaxableIncome(profile, this.calculateAGI(profile)),
       profile.filingStatus
     ) / 100
-    
     return equipmentPurchase * marginalRate
   }
-
   private calculateTaxLossHarvestingSavings(profile: TaxPlanningProfile): number {
     const capitalGains = profile.investments.capitalGains
     const availableLosses = Math.min(capitalGains, 10000) // Assume $10k available losses
-    
     const capitalGainsRate = capitalGains > 0 ? 0.15 : 0 // Assume 15% capital gains rate
     return availableLosses * capitalGainsRate
   }
-
   private calculateHSASavings(profile: TaxPlanningProfile): number {
     const hsaLimit = profile.filingStatus === 'married_joint' ? 8550 : 4300 // 2024 limits
     const catchUpContribution = profile.demographics.age >= 55 ? 1000 : 0
     const maxContribution = hsaLimit + catchUpContribution
-    
     const marginalRate = this.getMarginalTaxRate(
       this.calculateTaxableIncome(profile, this.calculateAGI(profile)),
       profile.filingStatus
     ) / 100
-    
     return maxContribution * marginalRate
   }
-
   /**
    * Apply optimizations to create optimized profile
    */
   private applyOptimizations(profile: TaxPlanningProfile, recommendations: TaxOptimizationRecommendation[]): TaxPlanningProfile {
     const optimizedProfile = { ...profile }
-    
     // Apply top recommendations (simplified)
     for (const rec of recommendations.slice(0, 3)) {
       if (rec.category === 'retirement') {
@@ -505,10 +443,8 @@ export class TaxPlanningEngine {
         optimizedProfile.deductions.businessDeductions += 2000
       }
     }
-    
     return optimizedProfile
   }
-
   /**
    * Assess various risk factors
    */
@@ -516,37 +452,30 @@ export class TaxPlanningEngine {
     const auditRiskFactors: string[] = []
     const complianceRisks: string[] = []
     const penaltyRisks: string[] = []
-    
     // High income audit risk
     if (this.calculateAGI(profile) > 200000) {
       auditRiskFactors.push('High income increases audit probability')
     }
-    
     // Business income audit risk
     if (profile.income.businessIncome > 100000) {
       auditRiskFactors.push('Significant business income')
     }
-    
     // Cash business risk
     if (profile.business.businessType === 'sole_prop' && profile.income.businessIncome > 50000) {
       auditRiskFactors.push('Cash-intensive business type')
     }
-    
     // Compliance risks
     if (profile.income.selfEmploymentIncome > 0 && profile.deductions.retirementContributions === 0) {
       complianceRisks.push('Missing retirement plan setup for self-employed')
     }
-    
     // Penalty risks
     const estimatedTax = this.calculateTaxProjection(profile).estimatedTaxLiability
     const withholdings = this.estimateWithholdings(profile)
     if (estimatedTax - withholdings > 1000) {
       penaltyRisks.push('Potential underpayment penalty')
     }
-    
-    const overallRiskLevel = auditRiskFactors.length > 2 ? 'high' : 
+    const overallRiskLevel = auditRiskFactors.length > 2 ? 'high' :
                             auditRiskFactors.length > 0 ? 'medium' : 'low'
-    
     return {
       overallRiskLevel,
       auditRiskFactors,
@@ -559,13 +488,11 @@ export class TaxPlanningEngine {
       ]
     }
   }
-
   /**
    * Generate compliance checklist
    */
   private generateComplianceChecklist(profile: TaxPlanningProfile): ComplianceItem[] {
     const items: ComplianceItem[] = []
-    
     items.push({
       requirement: 'File tax return by deadline',
       status: 'compliant',
@@ -573,7 +500,6 @@ export class TaxPlanningEngine {
       description: 'Individual tax return must be filed by April 15',
       actionRequired: 'Prepare and file return'
     })
-    
     if (profile.income.selfEmploymentIncome > 400) {
       items.push({
         requirement: 'Pay self-employment tax',
@@ -583,7 +509,6 @@ export class TaxPlanningEngine {
         actionRequired: 'File Schedule SE'
       })
     }
-    
     if (profile.business.hasEmployees) {
       items.push({
         requirement: 'File quarterly payroll returns',
@@ -593,10 +518,8 @@ export class TaxPlanningEngine {
         actionRequired: 'File Form 941 and make deposits'
       })
     }
-    
     return items
   }
-
   /**
    * Calculate next review date
    */
@@ -606,7 +529,6 @@ export class TaxPlanningEngine {
     nextQuarter.setMonth(nextQuarter.getMonth() + 3)
     return nextQuarter
   }
-
   /**
    * Initialize tax brackets for 2024
    */
@@ -650,7 +572,6 @@ export class TaxPlanningEngine {
       ]
     }
   }
-
   /**
    * Initialize standard deductions for 2024
    */

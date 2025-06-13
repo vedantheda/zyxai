@@ -4,7 +4,6 @@ import { Database } from '@/lib/supabase'
 import { apiRateLimit, authRateLimit, createRateLimitHeaders } from '@/lib/rateLimit'
 import { validateCSRFRequest } from '@/lib/security/csrfProtection'
 import { logAuditEvent, extractAuditContext, AUDIT_ACTIONS, RESOURCE_TYPES } from '@/lib/security/auditLogger'
-
 // Create Supabase client for server-side operations
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,7 +15,6 @@ const supabase = createClient<Database>(
     }
   }
 )
-
 export interface SecurityConfig {
   requireAuth?: boolean
   allowedMethods?: string[]
@@ -25,7 +23,6 @@ export interface SecurityConfig {
   corsOrigin?: string
   requireCSRF?: boolean
 }
-
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
     id: string
@@ -33,7 +30,6 @@ export interface AuthenticatedRequest extends NextRequest {
     created_at: string
   }
 }
-
 export class ApiSecurityError extends Error {
   constructor(
     message: string,
@@ -44,7 +40,6 @@ export class ApiSecurityError extends Error {
     this.name = 'ApiSecurityError'
   }
 }
-
 export async function withApiSecurity(
   request: NextRequest,
   config: SecurityConfig = {}
@@ -58,7 +53,6 @@ export async function withApiSecurity(
       : 'http://localhost:3000',
     requireCSRF = true
   } = config
-
   // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': corsOrigin,
@@ -66,7 +60,6 @@ export async function withApiSecurity(
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   }
-
   // Method validation
   if (!allowedMethods.includes(request.method)) {
     throw new ApiSecurityError(
@@ -75,7 +68,6 @@ export async function withApiSecurity(
       { ...corsHeaders, 'Allow': allowedMethods.join(', ') }
     )
   }
-
   // CSRF Protection
   if (requireCSRF) {
     const csrfValidation = validateCSRFRequest(request)
@@ -89,7 +81,6 @@ export async function withApiSecurity(
         { violation_type: 'csrf_validation_failed', error: csrfValidation.error },
         { severity: 'high', status: 'failure' }
       )
-
       throw new ApiSecurityError(
         csrfValidation.error || 'CSRF validation failed',
         403,
@@ -97,14 +88,12 @@ export async function withApiSecurity(
       )
     }
   }
-
   // Rate limiting
   let rateLimitHeaders = {}
   if (rateLimit !== 'none') {
     const limiter = rateLimit === 'auth' ? authRateLimit : apiRateLimit
     const rateLimitResult = await limiter.check(request)
     rateLimitHeaders = createRateLimitHeaders(rateLimitResult)
-
     if (!rateLimitResult.success) {
       // Log rate limit violation
       const auditContext = extractAuditContext(request)
@@ -119,7 +108,6 @@ export async function withApiSecurity(
         },
         { severity: 'medium', status: 'warning' }
       )
-
       throw new ApiSecurityError(
         'Too many requests. Please try again later.',
         429,
@@ -131,14 +119,11 @@ export async function withApiSecurity(
       )
     }
   }
-
   const headers = { ...corsHeaders, ...rateLimitHeaders }
   const authenticatedRequest = request as AuthenticatedRequest
-
   // Authentication check
   if (requireAuth) {
     const authHeader = request.headers.get('authorization')
-
     if (!authHeader?.startsWith('Bearer ')) {
       throw new ApiSecurityError(
         'Authorization header required',
@@ -146,12 +131,9 @@ export async function withApiSecurity(
         headers
       )
     }
-
     const token = authHeader.substring(7)
-
     try {
       const { data: { user }, error } = await supabase.auth.getUser(token)
-
       if (error || !user) {
         throw new ApiSecurityError(
           'Invalid or expired token',
@@ -159,7 +141,6 @@ export async function withApiSecurity(
           headers
         )
       }
-
       // Add user to request
       authenticatedRequest.user = {
         id: user.id,
@@ -177,14 +158,10 @@ export async function withApiSecurity(
       )
     }
   }
-
   return { request: authenticatedRequest, headers }
 }
-
 // Helper function to handle API security errors
 export function handleApiError(error: unknown, fallbackHeaders: Record<string, string> = {}) {
-  console.error('API Error:', error)
-
   if (error instanceof ApiSecurityError) {
     return NextResponse.json(
       {
@@ -197,7 +174,6 @@ export function handleApiError(error: unknown, fallbackHeaders: Record<string, s
       }
     )
   }
-
   return NextResponse.json(
     {
       success: false,
@@ -209,17 +185,14 @@ export function handleApiError(error: unknown, fallbackHeaders: Record<string, s
     }
   )
 }
-
 // Input validation helpers
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
-
 export function sanitizeString(input: string, maxLength: number = 255): string {
   return input.trim().slice(0, maxLength)
 }
-
 export function validateRequired(data: Record<string, any>, requiredFields: string[]): void {
   const missing = requiredFields.filter(field => !data[field])
   if (missing.length > 0) {
@@ -229,7 +202,6 @@ export function validateRequired(data: Record<string, any>, requiredFields: stri
     )
   }
 }
-
 // CSRF protection helper
 export function validateCSRF(request: NextRequest): boolean {
   const origin = request.headers.get('origin')
@@ -239,7 +211,6 @@ export function validateCSRF(request: NextRequest): boolean {
     'http://localhost:3000',
     'https://localhost:3000'
   ].filter(Boolean)
-
   return allowedOrigins.some(allowed =>
     origin === allowed || referer?.startsWith(allowed + '/')
   )

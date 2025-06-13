@@ -9,7 +9,6 @@ export {
   getServiceManager,
   initializeServices
 } from './ServiceManager';
-
 // Type exports
 export type {
   ProcessingResult,
@@ -29,17 +28,14 @@ export type {
   INotificationService,
   ISigningService
 } from './types';
-
 // Import ProcessingResult for use in ServiceUtils
 import type { ProcessingResult } from './types';
-
 // Error exports
 export {
   ServiceError,
   ValidationError,
   ProcessingError
 } from './types';
-
 // Utility functions for common operations
 export const ServiceUtils = {
   /**
@@ -51,7 +47,6 @@ export const ServiceUtils = {
     metadata,
     processingTime: 0
   }),
-
   /**
    * Create a standardized error result
    */
@@ -61,14 +56,12 @@ export const ServiceUtils = {
     metadata,
     processingTime: 0
   }),
-
   /**
    * Validate that a result is successful and has data
    */
   isSuccessWithData: <T>(result: ProcessingResult<T>): result is ProcessingResult<T> & { data: T } => {
     return result.success && result.data !== undefined;
   },
-
   /**
    * Extract data from a result or throw an error
    */
@@ -81,13 +74,11 @@ export const ServiceUtils = {
     }
     return result.data;
   },
-
   /**
    * Combine multiple processing results
    */
   combineResults: <T>(results: ProcessingResult<T>[]): ProcessingResult<T[]> => {
     const errors = results.filter(r => !r.success).map(r => r.error).filter(Boolean);
-
     if (errors.length > 0) {
       return {
         success: false,
@@ -95,7 +86,6 @@ export const ServiceUtils = {
         processingTime: results.reduce((sum, r) => sum + (r.processingTime || 0), 0)
       };
     }
-
     return {
       success: true,
       data: results.map(r => r.data!),
@@ -106,7 +96,6 @@ export const ServiceUtils = {
       }
     };
   },
-
   /**
    * Retry a function with exponential backoff
    */
@@ -116,25 +105,20 @@ export const ServiceUtils = {
     baseDelay: number = 1000
   ): Promise<T> => {
     let lastError: Error;
-
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         return await fn();
       } catch (error) {
         lastError = error as Error;
-
         if (attempt === maxAttempts) {
           throw lastError;
         }
-
         const delay = baseDelay * Math.pow(2, attempt - 1);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-
     throw lastError!;
   },
-
   /**
    * Create a timeout promise
    */
@@ -142,10 +126,8 @@ export const ServiceUtils = {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
     });
-
     return Promise.race([promise, timeoutPromise]);
   },
-
   /**
    * Sanitize sensitive data for logging
    */
@@ -153,16 +135,13 @@ export const ServiceUtils = {
     if (typeof data !== 'object' || data === null) {
       return data;
     }
-
     if (Array.isArray(data)) {
       return data.map(item => ServiceUtils.sanitizeForLogging(item));
     }
-
     const sensitiveFields = [
       'ssn', 'social_security_number', 'password', 'api_key', 'secret',
       'token', 'credit_card', 'bank_account', 'routing_number'
     ];
-
     const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
       if (sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
@@ -174,7 +153,6 @@ export const ServiceUtils = {
     return sanitized;
   }
 };
-
 // Service status constants
 export const ServiceStatus = {
   HEALTHY: 'healthy',
@@ -182,7 +160,6 @@ export const ServiceStatus = {
   INITIALIZING: 'initializing',
   ERROR: 'error'
 } as const;
-
 // Workflow status constants
 export const WorkflowStatusTypes = {
   PENDING: 'pending',
@@ -190,7 +167,6 @@ export const WorkflowStatusTypes = {
   COMPLETED: 'completed',
   FAILED: 'failed'
 } as const;
-
 // Step status constants
 export const StepStatusTypes = {
   PENDING: 'pending',
@@ -199,7 +175,6 @@ export const StepStatusTypes = {
   FAILED: 'failed',
   SKIPPED: 'skipped'
 } as const;
-
 // Document types constants
 export const DocumentTypes = {
   W2: 'W-2',
@@ -213,7 +188,6 @@ export const DocumentTypes = {
   MORTGAGE_STATEMENT: 'Mortgage Statement',
   UNKNOWN: 'Unknown'
 } as const;
-
 // Tax form types constants
 export const TaxFormTypes = {
   FORM_1040: '1040',
@@ -225,7 +199,6 @@ export const TaxFormTypes = {
   SCHEDULE_E: 'ScheduleE',
   FORM_8949: '8949'
 } as const;
-
 // Workflow types constants
 export const WorkflowTypes = {
   TAX_PREPARATION: 'tax_preparation',

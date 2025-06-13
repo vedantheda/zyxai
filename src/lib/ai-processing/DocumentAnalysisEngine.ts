@@ -1,6 +1,5 @@
 import { OCRResult } from './OCRService'
 import { supabase } from '@/lib/supabase'
-
 export interface DocumentAnalysisResult {
   documentType: TaxDocumentType
   confidence: number
@@ -10,7 +9,6 @@ export interface DocumentAnalysisResult {
   recommendations: string[]
   processingTime: number
 }
-
 export interface ExtractedTaxData {
   // Personal Information
   taxpayerName?: string
@@ -18,40 +16,33 @@ export interface ExtractedTaxData {
   spouseName?: string
   spouseSSN?: string
   address?: Address
-
   // Income Information
   wages?: number
   tips?: number
   federalTaxWithheld?: number
   socialSecurityWages?: number
   medicareWages?: number
-
   // 1099 Information
   nonEmployeeCompensation?: number
   otherIncome?: number
   federalIncomeTaxWithheld?: number
-
   // Business Information
   businessName?: string
   businessEIN?: string
   businessAddress?: Address
-
   // Deductions and Credits
   standardDeduction?: number
   itemizedDeductions?: Record<string, number>
   taxCredits?: Record<string, number>
-
   // Raw field mappings
   formFields: Record<string, any>
 }
-
 export interface Address {
   street: string
   city: string
   state: string
   zipCode: string
 }
-
 export interface ValidationResult {
   field: string
   isValid: boolean
@@ -59,7 +50,6 @@ export interface ValidationResult {
   suggestedValue?: string
   confidence: number
 }
-
 export interface DocumentInsight {
   type: 'tax_optimization' | 'compliance_issue' | 'data_quality' | 'missing_information'
   title: string
@@ -67,7 +57,6 @@ export interface DocumentInsight {
   impact: 'low' | 'medium' | 'high' | 'critical'
   actionRequired: boolean
 }
-
 export type TaxDocumentType =
   | 'W-2'
   | '1099-MISC'
@@ -81,43 +70,32 @@ export type TaxDocumentType =
   | 'Invoice'
   | 'Bank-Statement'
   | 'Unknown'
-
 export class DocumentAnalysisEngine {
   private openRouterApiKey: string = process.env.OPENROUTER_API_KEY || ''
   private baseUrl: string = 'https://openrouter.ai/api/v1'
-
   constructor() {
     if (!this.openRouterApiKey) {
-      console.warn('OpenRouter API key not found. Document analysis features will be limited.')
-    }
+      }
   }
-
   /**
    * Analyze document using AI after OCR processing
    */
   async analyzeDocument(documentId: string, ocrResult: OCRResult): Promise<DocumentAnalysisResult> {
     const startTime = Date.now()
-
     try {
       // Update document status
       await this.updateDocumentStatus(documentId, 'analyzing', 'Starting AI document analysis...')
-
       // Step 1: Identify document type
       const documentType = await this.identifyDocumentType(ocrResult.text)
-
       // Step 2: Extract structured data based on document type
       const extractedData = await this.extractStructuredData(documentType, ocrResult)
-
       // Step 3: Validate extracted data
       const validationResults = await this.validateExtractedData(documentType, extractedData)
-
       // Step 4: Generate insights and recommendations
       const insights = await this.generateInsights(documentType, extractedData, validationResults)
       const recommendations = await this.generateRecommendations(documentType, extractedData, insights)
-
       // Step 5: Calculate confidence score
       const confidence = this.calculateOverallConfidence(ocrResult.confidence, validationResults)
-
       const result: DocumentAnalysisResult = {
         documentType,
         confidence,
@@ -127,31 +105,23 @@ export class DocumentAnalysisEngine {
         recommendations,
         processingTime: Date.now() - startTime
       }
-
       // Save analysis results
       await this.saveAnalysisResults(documentId, result)
-
       // Update document status
       await this.updateDocumentStatus(documentId, 'completed', 'Document analysis completed successfully')
-
       return result
-
     } catch (error) {
-      console.error('Document analysis error:', error)
       await this.updateDocumentStatus(documentId, 'failed', `Analysis failed: ${error}`)
       throw new Error(`Document analysis failed: ${error}`)
     }
   }
-
   /**
    * Identify document type using AI
    */
   private async identifyDocumentType(text: string): Promise<TaxDocumentType> {
     const prompt = `Analyze this document text and identify the tax document type.
-
 Document text:
 ${text.substring(0, 2000)}
-
 Possible document types:
 - W-2 (Wage and Tax Statement)
 - 1099-MISC (Miscellaneous Income)
@@ -165,58 +135,44 @@ Possible document types:
 - Invoice (Business invoice)
 - Bank-Statement (Bank account statement)
 - Unknown (if none of the above)
-
 Respond with ONLY the document type from the list above.`
-
     try {
       const response = await this.callOpenRouter(prompt, 0.1, 50)
       const documentType = response.trim() as TaxDocumentType
-
       // Validate response
       const validTypes: TaxDocumentType[] = [
         'W-2', '1099-MISC', '1099-NEC', '1099-INT', '1099-DIV',
         '1040', 'Schedule-C', 'Schedule-D', 'Receipt', 'Invoice',
         'Bank-Statement', 'Unknown'
       ]
-
       return validTypes.includes(documentType) ? documentType : 'Unknown'
     } catch (error) {
-      console.error('Document type identification error:', error)
       return 'Unknown'
     }
   }
-
   /**
    * Extract structured data based on document type
    */
   private async extractStructuredData(documentType: TaxDocumentType, ocrResult: OCRResult): Promise<ExtractedTaxData> {
     const extractionPrompt = this.buildExtractionPrompt(documentType, ocrResult.text)
-
     try {
       const response = await this.callOpenRouter(extractionPrompt, 0.1, 1000)
       const extractedData = JSON.parse(response)
-
       // Add form fields from OCR
       extractedData.formFields = this.mapFormFields(ocrResult.formFields)
-
       return extractedData
     } catch (error) {
-      console.error('Data extraction error:', error)
       return { formFields: this.mapFormFields(ocrResult.formFields) }
     }
   }
-
   /**
    * Build extraction prompt based on document type
    */
   private buildExtractionPrompt(documentType: TaxDocumentType, text: string): string {
     const basePrompt = `Extract structured data from this ${documentType} document. Return ONLY valid JSON.
-
 Document text:
 ${text.substring(0, 3000)}
-
 Extract the following information as JSON:`
-
     switch (documentType) {
       case 'W-2':
         return `${basePrompt}
@@ -236,7 +192,6 @@ Extract the following information as JSON:`
     "zipCode": "employee address zip"
   }
 }`
-
       case '1099-NEC':
         return `${basePrompt}
 {
@@ -247,7 +202,6 @@ Extract the following information as JSON:`
   "nonEmployeeCompensation": "box 1 nonemployee compensation as number",
   "federalIncomeTaxWithheld": "box 4 federal income tax withheld as number"
 }`
-
       case 'Receipt':
         return `${basePrompt}
 {
@@ -257,7 +211,6 @@ Extract the following information as JSON:`
   "category": "expense category (meals, office supplies, travel, etc.)",
   "description": "description of purchase"
 }`
-
       default:
         return `${basePrompt}
 {
@@ -265,13 +218,11 @@ Extract the following information as JSON:`
 }`
     }
   }
-
   /**
    * Validate extracted data
    */
   private async validateExtractedData(documentType: TaxDocumentType, data: ExtractedTaxData): Promise<ValidationResult[]> {
     const validationResults: ValidationResult[] = []
-
     // SSN validation
     if (data.taxpayerSSN) {
       const ssnValid = /^\d{3}-\d{2}-\d{4}$/.test(data.taxpayerSSN)
@@ -282,7 +233,6 @@ Extract the following information as JSON:`
         confidence: 0.95
       })
     }
-
     // EIN validation
     if (data.businessEIN) {
       const einValid = /^\d{2}-\d{7}$/.test(data.businessEIN)
@@ -293,7 +243,6 @@ Extract the following information as JSON:`
         confidence: 0.95
       })
     }
-
     // Amount validation
     const amountFields = ['wages', 'federalTaxWithheld', 'nonEmployeeCompensation']
     amountFields.forEach(field => {
@@ -308,10 +257,8 @@ Extract the following information as JSON:`
         })
       }
     })
-
     return validationResults
   }
-
   /**
    * Generate insights from extracted data
    */
@@ -321,7 +268,6 @@ Extract the following information as JSON:`
     validationResults: ValidationResult[]
   ): Promise<DocumentInsight[]> {
     const insights: DocumentInsight[] = []
-
     // Data quality insights
     const invalidFields = validationResults.filter(r => !r.isValid)
     if (invalidFields.length > 0) {
@@ -333,7 +279,6 @@ Extract the following information as JSON:`
         actionRequired: true
       })
     }
-
     // Tax optimization insights
     if (documentType === 'W-2' && data.wages && data.wages > 50000) {
       insights.push({
@@ -344,7 +289,6 @@ Extract the following information as JSON:`
         actionRequired: false
       })
     }
-
     // Missing information insights
     if (documentType === 'W-2' && !data.socialSecurityWages) {
       insights.push({
@@ -355,10 +299,8 @@ Extract the following information as JSON:`
         actionRequired: true
       })
     }
-
     return insights
   }
-
   /**
    * Generate recommendations
    */
@@ -368,7 +310,6 @@ Extract the following information as JSON:`
     insights: DocumentInsight[]
   ): Promise<string[]> {
     const recommendations: string[] = []
-
     // Add recommendations based on insights
     insights.forEach(insight => {
       if (insight.actionRequired) {
@@ -385,40 +326,32 @@ Extract the following information as JSON:`
         }
       }
     })
-
     // Document-specific recommendations
     if (documentType === 'W-2') {
       recommendations.push('Verify all amounts match the original W-2 form')
       recommendations.push('Ensure this W-2 is included in tax return filing')
     }
-
     if (documentType === 'Receipt') {
       recommendations.push('Categorize this expense for proper deduction tracking')
       recommendations.push('Ensure receipt is for legitimate business expense')
     }
-
     return recommendations
   }
-
   /**
    * Calculate overall confidence score
    */
   private calculateOverallConfidence(ocrConfidence: number, validationResults: ValidationResult[]): number {
     if (validationResults.length === 0) return ocrConfidence
-
     const validationConfidence = validationResults.reduce((sum, result) => {
       return sum + (result.isValid ? result.confidence : result.confidence * 0.5)
     }, 0) / validationResults.length
-
     return (ocrConfidence + validationConfidence) / 2
   }
-
   /**
    * Map OCR form fields to structured format
    */
   private mapFormFields(formFields: any[]): Record<string, any> {
     const mapped: Record<string, any> = {}
-
     formFields.forEach(field => {
       mapped[field.name] = {
         value: field.value,
@@ -426,10 +359,8 @@ Extract the following information as JSON:`
         type: field.type
       }
     })
-
     return mapped
   }
-
   /**
    * Call OpenRouter API
    */
@@ -437,7 +368,6 @@ Extract the following information as JSON:`
     if (!this.openRouterApiKey) {
       throw new Error('OpenRouter API key not configured')
     }
-
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -451,15 +381,12 @@ Extract the following information as JSON:`
         max_tokens: maxTokens
       })
     })
-
     if (!response.ok) {
       throw new Error(`OpenRouter API error: ${response.statusText}`)
     }
-
     const data = await response.json()
     return data.choices[0]?.message?.content || ''
   }
-
   /**
    * Update document processing status
    */
@@ -473,7 +400,6 @@ Extract the following information as JSON:`
       })
       .eq('id', documentId)
   }
-
   /**
    * Save analysis results to database
    */

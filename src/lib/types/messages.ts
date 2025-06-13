@@ -1,5 +1,4 @@
 // Message System Types and Interfaces
-
 export interface MessageAttachment {
   id: string
   filename: string
@@ -13,14 +12,13 @@ export interface MessageAttachment {
   uploadedBy: string
   createdAt: Date
 }
-
 export interface Message {
   id: string
   conversationId: string
   senderId: string
   senderType: 'client' | 'admin'
   content: string
-  messageType: 'text' | 'file' | 'system'
+  messageType: 'text' | 'file' | 'system' | 'mixed'
   attachments: MessageAttachment[]
   isRead: boolean
   readAt?: Date
@@ -29,7 +27,6 @@ export interface Message {
   metadata: Record<string, any>
   createdAt: Date
   updatedAt: Date
-  
   // Populated fields
   sender?: {
     id: string
@@ -39,7 +36,6 @@ export interface Message {
     role: string
   }
 }
-
 export interface Conversation {
   id: string
   clientId: string
@@ -50,7 +46,6 @@ export interface Conversation {
   lastMessageAt: Date
   createdAt: Date
   updatedAt: Date
-  
   // Populated fields
   client?: {
     id: string
@@ -64,11 +59,10 @@ export interface Conversation {
     email: string
     avatarUrl?: string
   }
-  lastMessage?: Message
+  lastMessage?: Message | string
   unreadCount?: number
   participants?: MessageParticipant[]
 }
-
 export interface MessageParticipant {
   id: string
   conversationId: string
@@ -80,7 +74,6 @@ export interface MessageParticipant {
   notificationsEnabled: boolean
   createdAt: Date
   updatedAt: Date
-  
   // Populated fields
   user?: {
     id: string
@@ -90,28 +83,24 @@ export interface MessageParticipant {
     role: string
   }
 }
-
 export interface CreateConversationRequest {
   clientId: string
   subject: string
   priority?: 'low' | 'normal' | 'high' | 'urgent'
   initialMessage?: string
 }
-
 export interface SendMessageRequest {
   conversationId: string
   content: string
-  messageType?: 'text' | 'file' | 'system'
-  attachments?: File[]
+  messageType?: 'text' | 'file' | 'system' | 'mixed'
+  attachments?: any[]
   metadata?: Record<string, any>
 }
-
 export interface UpdateConversationRequest {
   subject?: string
   status?: 'active' | 'closed' | 'archived'
   priority?: 'low' | 'normal' | 'high' | 'urgent'
 }
-
 export interface MessageFilters {
   status?: 'active' | 'closed' | 'archived'
   priority?: 'low' | 'normal' | 'high' | 'urgent'
@@ -122,7 +111,6 @@ export interface MessageFilters {
   limit?: number
   offset?: number
 }
-
 export interface MessageNotification {
   id: string
   userId: string
@@ -133,12 +121,10 @@ export interface MessageNotification {
   content: string
   isRead: boolean
   createdAt: Date
-  
   // Populated fields
   conversation?: Conversation
   message?: Message
 }
-
 export interface MessageStats {
   totalConversations: number
   activeConversations: number
@@ -147,7 +133,6 @@ export interface MessageStats {
   messagesThisWeek: number
   conversationsThisWeek: number
 }
-
 // Real-time event types
 export interface MessageEvent {
   type: 'message_sent' | 'message_read' | 'conversation_updated' | 'typing_start' | 'typing_stop'
@@ -156,7 +141,6 @@ export interface MessageEvent {
   data: any
   timestamp: Date
 }
-
 export interface TypingIndicator {
   conversationId: string
   userId: string
@@ -164,7 +148,6 @@ export interface TypingIndicator {
   isTyping: boolean
   timestamp: Date
 }
-
 // Message search and pagination
 export interface MessageSearchResult {
   messages: Message[]
@@ -172,28 +155,24 @@ export interface MessageSearchResult {
   totalCount: number
   hasMore: boolean
 }
-
 export interface PaginatedMessages {
   messages: Message[]
   totalCount: number
   hasMore: boolean
   nextCursor?: string
 }
-
 export interface PaginatedConversations {
   conversations: Conversation[]
   totalCount: number
   hasMore: boolean
   nextCursor?: string
 }
-
 // Message validation
 export interface MessageValidation {
   isValid: boolean
   errors: string[]
   warnings: string[]
 }
-
 // File upload types
 export interface FileUploadProgress {
   fileId: string
@@ -202,14 +181,12 @@ export interface FileUploadProgress {
   status: 'uploading' | 'completed' | 'error'
   error?: string
 }
-
 export interface MessageDraft {
   conversationId: string
   content: string
   attachments: File[]
   lastSaved: Date
 }
-
 // Message formatting and display
 export interface MessageDisplayOptions {
   showTimestamps: boolean
@@ -218,7 +195,6 @@ export interface MessageDisplayOptions {
   showAvatars: boolean
   compactMode: boolean
 }
-
 // Conversation settings
 export interface ConversationSettings {
   conversationId: string
@@ -227,7 +203,6 @@ export interface ConversationSettings {
   soundEnabled: boolean
   priority: 'low' | 'normal' | 'high' | 'urgent'
 }
-
 // Message templates for common responses
 export interface MessageTemplate {
   id: string
@@ -240,13 +215,11 @@ export interface MessageTemplate {
   createdAt: Date
   updatedAt: Date
 }
-
 // Bulk operations
 export interface BulkMessageOperation {
   messageIds: string[]
   operation: 'mark_read' | 'mark_unread' | 'delete' | 'archive'
 }
-
 export interface BulkConversationOperation {
   conversationIds: string[]
   operation: 'close' | 'archive' | 'delete' | 'change_priority'

@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-
 export interface EmailMessage {
   id: string
   messageId: string
@@ -25,7 +24,6 @@ export interface EmailMessage {
   routedAt?: Date
   processedAt?: Date
 }
-
 export interface EmailAttachment {
   id: string
   filename: string
@@ -33,7 +31,6 @@ export interface EmailAttachment {
   size: number
   downloadUrl?: string
 }
-
 export interface EmailSummary {
   summary: string
   keyPoints: string[]
@@ -45,7 +42,6 @@ export interface EmailSummary {
   deadlineMentioned?: Date
   amountMentioned?: number
 }
-
 export interface EmailRoutingRule {
   id: string
   name: string
@@ -54,18 +50,15 @@ export interface EmailRoutingRule {
   isActive: boolean
   priority: number
 }
-
 export interface EmailCondition {
   field: 'from' | 'subject' | 'body' | 'attachment' | 'ai_category' | 'ai_priority'
   operator: 'contains' | 'equals' | 'starts_with' | 'ends_with' | 'regex'
   value: string
 }
-
 export interface EmailAction {
   type: 'route_to_team' | 'assign_to_user' | 'add_label' | 'set_priority' | 'create_task' | 'notify'
   value: string
 }
-
 export interface TeamMember {
   id: string
   name: string
@@ -75,14 +68,11 @@ export interface TeamMember {
   workload: number
   isAvailable: boolean
 }
-
 export class EmailManagementService {
   private apiKey: string
-
   constructor(private userId: string) {
     this.apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || ''
   }
-
   /**
    * Process incoming email with AI analysis
    */
@@ -90,10 +80,8 @@ export class EmailManagementService {
     try {
       // Generate AI summary and analysis
       const aiAnalysis = await this.analyzeEmailWithAI(emailData.body || '', emailData.subject || '')
-      
       // Detect client from email content
       const clientId = await this.detectClientFromEmail(emailData)
-      
       // Create email record
       const email: EmailMessage = {
         id: this.generateId(),
@@ -118,25 +106,19 @@ export class EmailManagementService {
         aiActionItems: aiAnalysis.actionItems,
         processedAt: new Date()
       }
-
       // Save to database
       await this.saveEmail(email)
-
       // Apply routing rules
       await this.applyRoutingRules(email)
-
       // Create tasks if needed
       if (aiAnalysis.actionItems.length > 0) {
         await this.createTasksFromActionItems(email, aiAnalysis.actionItems)
       }
-
       return email
     } catch (error) {
-      console.error('Error processing email:', error)
       throw new Error('Failed to process email')
     }
   }
-
   /**
    * Analyze email content with AI
    */
@@ -145,12 +127,9 @@ export class EmailManagementService {
       if (!this.apiKey) {
         return this.generateMockAnalysis(body, subject)
       }
-
       const prompt = `Analyze this email and provide a structured response:
-
 Subject: ${subject}
 Body: ${body}
-
 Please provide:
 1. A concise summary (2-3 sentences)
 2. Key points (bullet list)
@@ -161,9 +140,7 @@ Please provide:
 7. Any client names mentioned
 8. Any deadlines mentioned
 9. Any dollar amounts mentioned
-
 Format as JSON.`
-
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -177,14 +154,11 @@ Format as JSON.`
           max_tokens: 1000
         })
       })
-
       if (!response.ok) {
         throw new Error('AI analysis failed')
       }
-
       const data = await response.json()
       const analysis = JSON.parse(data.choices[0]?.message?.content || '{}')
-
       return {
         summary: analysis.summary || 'Email received',
         keyPoints: analysis.keyPoints || [],
@@ -197,11 +171,9 @@ Format as JSON.`
         amountMentioned: analysis.amountMentioned
       }
     } catch (error) {
-      console.error('AI analysis error:', error)
       return this.generateMockAnalysis(body, subject)
     }
   }
-
   /**
    * Route email to appropriate team member
    */
@@ -209,14 +181,11 @@ Format as JSON.`
     try {
       const email = await this.getEmail(emailId)
       if (!email) throw new Error('Email not found')
-
       let assignedTo = teamMemberId
-
       if (!assignedTo) {
         // Auto-assign based on AI analysis and team availability
         assignedTo = await this.findBestTeamMember(email)
       }
-
       if (assignedTo) {
         await supabase
           .from('emails')
@@ -225,16 +194,13 @@ Format as JSON.`
             routed_at: new Date().toISOString()
           })
           .eq('id', emailId)
-
         // Notify team member
         await this.notifyTeamMember(assignedTo, email)
       }
     } catch (error) {
-      console.error('Error routing email:', error)
       throw new Error('Failed to route email')
     }
   }
-
   /**
    * Get email summary for dashboard
    */
@@ -247,32 +213,26 @@ Format as JSON.`
   }> {
     try {
       const startDate = this.getStartDate(timeframe)
-      
       const { data: emails, error } = await supabase
         .from('emails')
         .select('*')
         .eq('user_id', this.userId)
         .gte('received_at', startDate.toISOString())
-
       if (error) throw error
-
       const totalEmails = emails?.length || 0
       const unreadEmails = emails?.filter(e => !e.is_read).length || 0
       const urgentEmails = emails?.filter(e => e.ai_priority === 'urgent').length || 0
-
       const categoryBreakdown = emails?.reduce((acc, email) => {
         const category = email.ai_category || 'general'
         acc[category] = (acc[category] || 0) + 1
         return acc
       }, {} as Record<string, number>) || {}
-
       const teamWorkload = emails?.reduce((acc, email) => {
         if (email.routed_to) {
           acc[email.routed_to] = (acc[email.routed_to] || 0) + 1
         }
         return acc
       }, {} as Record<string, number>) || {}
-
       return {
         totalEmails,
         unreadEmails,
@@ -281,11 +241,9 @@ Format as JSON.`
         teamWorkload
       }
     } catch (error) {
-      console.error('Error getting email summary:', error)
       throw new Error('Failed to get email summary')
     }
   }
-
   /**
    * Create routing rule
    */
@@ -299,16 +257,12 @@ Format as JSON.`
         })
         .select()
         .single()
-
       if (error) throw error
-
       return this.transformRoutingRule(data)
     } catch (error) {
-      console.error('Error creating routing rule:', error)
       throw new Error('Failed to create routing rule')
     }
   }
-
   /**
    * Get team performance metrics
    */
@@ -343,11 +297,9 @@ Format as JSON.`
         }
       }
     } catch (error) {
-      console.error('Error getting team performance:', error)
       throw new Error('Failed to get team performance')
     }
   }
-
   // Private helper methods
   private async saveEmail(email: EmailMessage): Promise<void> {
     await supabase
@@ -377,41 +329,32 @@ Format as JSON.`
         processed_at: email.processedAt?.toISOString()
       })
   }
-
   private async getEmail(emailId: string): Promise<EmailMessage | null> {
     const { data, error } = await supabase
       .from('emails')
       .select('*')
       .eq('id', emailId)
       .single()
-
     if (error || !data) return null
-
     return this.transformEmailData(data)
   }
-
   private async detectClientFromEmail(emailData: Partial<EmailMessage>): Promise<string | undefined> {
     // Implementation would use AI to detect client from email content
     return undefined
   }
-
   private async applyRoutingRules(email: EmailMessage): Promise<void> {
     // Implementation would apply routing rules based on email content
   }
-
   private async createTasksFromActionItems(email: EmailMessage, actionItems: string[]): Promise<void> {
     // Implementation would create tasks from action items
   }
-
   private async findBestTeamMember(email: EmailMessage): Promise<string | undefined> {
     // Implementation would find best team member based on workload and expertise
     return undefined
   }
-
   private async notifyTeamMember(teamMemberId: string, email: EmailMessage): Promise<void> {
     // Implementation would notify team member of new assignment
   }
-
   private generateMockAnalysis(body: string, subject: string): EmailSummary {
     return {
       summary: `Email regarding ${subject.toLowerCase()}`,
@@ -421,7 +364,6 @@ Format as JSON.`
       priority: 'medium'
     }
   }
-
   private getStartDate(timeframe: string): Date {
     const now = new Date()
     switch (timeframe) {
@@ -437,7 +379,6 @@ Format as JSON.`
         return new Date(now.getFullYear(), now.getMonth(), now.getDate())
     }
   }
-
   private transformEmailData(data: any): EmailMessage {
     return {
       id: data.id,
@@ -465,7 +406,6 @@ Format as JSON.`
       processedAt: data.processed_at ? new Date(data.processed_at) : undefined
     }
   }
-
   private transformRoutingRule(data: any): EmailRoutingRule {
     return {
       id: data.id,
@@ -476,7 +416,6 @@ Format as JSON.`
       priority: data.priority
     }
   }
-
   private generateId(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36)
   }

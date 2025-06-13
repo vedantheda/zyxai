@@ -11,7 +11,6 @@ import {
   BankAccount,
   ChartOfAccount
 } from '@/types/bookkeeping'
-
 // Mock data generators
 const generateMockTransactions = (count: number = 50): Transaction[] => {
   const payees = [
@@ -21,29 +20,23 @@ const generateMockTransactions = (count: number = 50): Transaction[] => {
     'Software Subscription', 'Internet Bill', 'Phone Bill', 'Electric Company',
     'Bank Fee', 'ATM Withdrawal', 'Transfer to Savings'
   ]
-
   const descriptions = [
     'Office supplies purchase', 'Client lunch meeting', 'Gas for business travel',
     'Software license renewal', 'Equipment purchase', 'Marketing materials',
     'Professional development', 'Utility payment', 'Bank service charge',
     'Client project payment', 'Consulting services', 'Business insurance'
   ]
-
   const transactions: Transaction[] = []
-
   for (let i = 0; i < count; i++) {
     const isIncome = Math.random() > 0.7 // 30% chance of income
     const amount = isIncome
       ? Math.floor(Math.random() * 5000) + 500 // Income: $500-$5500
       : -(Math.floor(Math.random() * 500) + 10) // Expense: -$10 to -$510
-
     const payee = payees[Math.floor(Math.random() * payees.length)]
     const description = descriptions[Math.floor(Math.random() * descriptions.length)]
-
     // Generate date within last 90 days
     const date = new Date()
     date.setDate(date.getDate() - Math.floor(Math.random() * 90))
-
     transactions.push({
       id: `mock-txn-${i + 1}`,
       userId: 'current-user',
@@ -62,10 +55,8 @@ const generateMockTransactions = (count: number = 50): Transaction[] => {
       updatedAt: date
     })
   }
-
   return transactions.sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime())
 }
-
 const generateMockBankAccounts = (): BankAccount[] => [
   {
     id: 'mock-bank-1',
@@ -98,7 +89,6 @@ const generateMockBankAccounts = (): BankAccount[] => [
     updatedAt: new Date()
   }
 ]
-
 const generateMockChartOfAccounts = (): ChartOfAccount[] => [
   {
     id: 'acc-income-1',
@@ -185,16 +175,13 @@ const generateMockChartOfAccounts = (): ChartOfAccount[] => [
     updatedAt: new Date()
   }
 ]
-
 export class MockBookkeepingService implements BookkeepingService {
   private transactions: Transaction[] = generateMockTransactions(100)
   private bankAccounts: BankAccount[] = generateMockBankAccounts()
   private chartOfAccounts: ChartOfAccount[] = generateMockChartOfAccounts()
   private categorizationRules: CategorizationRule[] = []
-
   async getTransactions(filters?: TransactionFilters): Promise<TransactionListResponse> {
     let filteredTransactions = [...this.transactions]
-
     if (filters) {
       if (filters.bankAccountId) {
         filteredTransactions = filteredTransactions.filter(t => t.bankAccountId === filters.bankAccountId)
@@ -219,13 +206,11 @@ export class MockBookkeepingService implements BookkeepingService {
         filteredTransactions = filteredTransactions.filter(t => Math.abs(t.amount) <= filters.maxAmount!)
       }
     }
-
     // Simulate pagination
     const page = 1
     const pageSize = 50
     const start = (page - 1) * pageSize
     const paginatedTransactions = filteredTransactions.slice(start, start + pageSize)
-
     return {
       transactions: paginatedTransactions,
       total: filteredTransactions.length,
@@ -234,7 +219,6 @@ export class MockBookkeepingService implements BookkeepingService {
       filters: filters || {}
     }
   }
-
   async getTransaction(id: string): Promise<Transaction> {
     const transaction = this.transactions.find(t => t.id === id)
     if (!transaction) {
@@ -242,18 +226,14 @@ export class MockBookkeepingService implements BookkeepingService {
     }
     return transaction
   }
-
   async categorizeTransaction(transactionId: string, category: string, accountId?: string): Promise<void> {
     // In a real implementation, this would update the database
     console.log(`Categorizing transaction ${transactionId} as ${category}`)
-
     // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 500))
   }
-
   async bulkCategorizeTransactions(updates: Array<{id: string, category: string, accountId?: string}>): Promise<void> {
     console.log(`Bulk categorizing ${updates.length} transactions`)
-
     // Update transactions with categories
     for (const update of updates) {
       const transaction = this.transactions.find(t => t.id === update.id)
@@ -276,11 +256,9 @@ export class MockBookkeepingService implements BookkeepingService {
         }]
       }
     }
-
     // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
-
   async createTransaction(transaction: Omit<Transaction, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Transaction> {
     const newTransaction: Transaction = {
       ...transaction,
@@ -289,39 +267,32 @@ export class MockBookkeepingService implements BookkeepingService {
       createdAt: new Date(),
       updatedAt: new Date()
     }
-
     this.transactions.unshift(newTransaction) // Add to beginning for recent display
     return newTransaction
   }
-
   async updateTransaction(id: string, updates: Partial<Transaction>): Promise<void> {
     const index = this.transactions.findIndex(t => t.id === id)
     if (index === -1) {
       throw new Error(`Transaction ${id} not found`)
     }
-
     this.transactions[index] = {
       ...this.transactions[index],
       ...updates,
       updatedAt: new Date()
     }
   }
-
   async deleteTransaction(id: string): Promise<void> {
     const index = this.transactions.findIndex(t => t.id === id)
     if (index === -1) {
       throw new Error(`Transaction ${id} not found`)
     }
-
     this.transactions.splice(index, 1)
   }
-
   async splitTransaction(id: string, splits: Array<{category: string, accountId?: string, amount: number}>): Promise<void> {
     const transaction = this.transactions.find(t => t.id === id)
     if (!transaction) {
       throw new Error(`Transaction ${id} not found`)
     }
-
     // Create split categories
     transaction.categories = splits.map((split, index) => ({
       id: `cat-${Date.now()}-${index}`,
@@ -337,13 +308,11 @@ export class MockBookkeepingService implements BookkeepingService {
       updatedAt: new Date()
     }))
   }
-
   async suggestCategories(transaction: Transaction): Promise<CategorizationSuggestion[]> {
     const suggestions: CategorizationSuggestion[] = []
     const description = transaction.description.toLowerCase()
     const payee = transaction.payeeName?.toLowerCase() || ''
     const amount = Math.abs(transaction.amount)
-
     // Enhanced pattern matching with scoring
     const patterns = [
       // Office & Supplies
@@ -390,15 +359,12 @@ export class MockBookkeepingService implements BookkeepingService {
         incomeOnly: true
       }
     ]
-
     // Check each pattern
     for (const pattern of patterns) {
       if (pattern.incomeOnly && transaction.amount <= 0) continue
       if (!pattern.incomeOnly && transaction.amount > 0) continue
-
       let matchScore = 0
       let matchedKeywords: string[] = []
-
       // Check description and payee for keywords
       for (const keyword of pattern.keywords) {
         if (description.includes(keyword) || payee.includes(keyword)) {
@@ -406,12 +372,10 @@ export class MockBookkeepingService implements BookkeepingService {
           matchedKeywords.push(keyword)
         }
       }
-
       if (matchScore > 0) {
         // Calculate confidence based on match strength
         const keywordRatio = matchScore / pattern.keywords.length
         const confidence = Math.min(pattern.baseConfidence + (keywordRatio * 0.1), 0.98)
-
         suggestions.push({
           category: pattern.category,
           accountId: pattern.accountId,
@@ -420,7 +384,6 @@ export class MockBookkeepingService implements BookkeepingService {
         })
       }
     }
-
     // Amount-based patterns
     if (transaction.amount > 0) {
       // Large income amounts are likely consulting fees
@@ -450,7 +413,6 @@ export class MockBookkeepingService implements BookkeepingService {
         })
       }
     }
-
     // Payee-specific rules
     const payeeRules = [
       { payees: ['amazon', 'amzn'], category: 'Office Supplies', confidence: 0.75 },
@@ -459,7 +421,6 @@ export class MockBookkeepingService implements BookkeepingService {
       { payees: ['microsoft', 'adobe', 'google'], category: 'Software & Subscriptions', confidence: 0.95 },
       { payees: ['verizon', 'att', 'comcast'], category: 'Utilities', confidence: 0.95 }
     ]
-
     for (const rule of payeeRules) {
       if (rule.payees.some(p => payee.includes(p))) {
         suggestions.push({
@@ -470,7 +431,6 @@ export class MockBookkeepingService implements BookkeepingService {
         })
       }
     }
-
     // Remove duplicates and sort by confidence
     const uniqueSuggestions = suggestions.reduce((acc, current) => {
       const existing = acc.find(s => s.category === current.category)
@@ -479,10 +439,8 @@ export class MockBookkeepingService implements BookkeepingService {
       }
       return acc
     }, [] as CategorizationSuggestion[])
-
     // Sort by confidence descending
     uniqueSuggestions.sort((a, b) => b.confidence - a.confidence)
-
     // Default suggestion if no matches
     if (uniqueSuggestions.length === 0) {
       uniqueSuggestions.push({
@@ -491,10 +449,8 @@ export class MockBookkeepingService implements BookkeepingService {
         reason: 'No specific patterns matched - default categorization'
       })
     }
-
     return uniqueSuggestions.slice(0, 3) // Return top 3 suggestions
   }
-
   private getCategoryAccountId(category: string): string {
     const mapping: Record<string, string> = {
       'Office Supplies': 'acc-expense-1',
@@ -507,13 +463,10 @@ export class MockBookkeepingService implements BookkeepingService {
     }
     return mapping[category] || 'acc-expense-1'
   }
-
   async detectAnomalies(transactions: Transaction[]): Promise<AnomalyDetectionResult[]> {
     const results: AnomalyDetectionResult[] = []
-
     for (const transaction of transactions) {
       const anomalies: AnomalyDetectionResult['anomalies'] = []
-
       // Check for unusual amounts
       if (Math.abs(transaction.amount) > 2000) {
         anomalies.push({
@@ -523,7 +476,6 @@ export class MockBookkeepingService implements BookkeepingService {
           confidence: 0.75
         })
       }
-
       // Check for potential duplicates (same amount and payee within 24 hours)
       const similarTransactions = transactions.filter(t =>
         t.id !== transaction.id &&
@@ -531,7 +483,6 @@ export class MockBookkeepingService implements BookkeepingService {
         Math.abs(t.amount - transaction.amount) < 0.01 &&
         Math.abs(t.transactionDate.getTime() - transaction.transactionDate.getTime()) < 24 * 60 * 60 * 1000
       )
-
       if (similarTransactions.length > 0) {
         anomalies.push({
           type: 'duplicate',
@@ -540,32 +491,25 @@ export class MockBookkeepingService implements BookkeepingService {
           confidence: 0.80
         })
       }
-
       results.push({
         isAnomaly: anomalies.length > 0,
         anomalies
       })
     }
-
     return results
   }
-
   async generateMonthlySummary(month: Date): Promise<MonthlySummary> {
     const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1)
     const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0)
-
     const monthTransactions = this.transactions.filter(t =>
       t.transactionDate >= startOfMonth && t.transactionDate <= endOfMonth
     )
-
     const totalIncome = monthTransactions
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0)
-
     const totalExpenses = Math.abs(monthTransactions
       .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + t.amount, 0))
-
     return {
       id: `summary-${month.getFullYear()}-${month.getMonth() + 1}`,
       userId: 'current-user',
@@ -599,7 +543,6 @@ export class MockBookkeepingService implements BookkeepingService {
       updatedAt: new Date()
     }
   }
-
   async createCategorizationRule(rule: Omit<CategorizationRule, 'id' | 'createdAt' | 'updatedAt'>): Promise<CategorizationRule> {
     const newRule: CategorizationRule = {
       ...rule,
@@ -607,41 +550,33 @@ export class MockBookkeepingService implements BookkeepingService {
       createdAt: new Date(),
       updatedAt: new Date()
     }
-
     this.categorizationRules.push(newRule)
     return newRule
   }
-
   async getCategorizationRules(): Promise<CategorizationRule[]> {
     return [...this.categorizationRules]
   }
-
   async updateCategorizationRule(id: string, updates: Partial<CategorizationRule>): Promise<void> {
     const index = this.categorizationRules.findIndex(r => r.id === id)
     if (index === -1) {
       throw new Error(`Rule ${id} not found`)
     }
-
     this.categorizationRules[index] = {
       ...this.categorizationRules[index],
       ...updates,
       updatedAt: new Date()
     }
   }
-
   async deleteCategorizationRule(id: string): Promise<void> {
     const index = this.categorizationRules.findIndex(r => r.id === id)
     if (index === -1) {
       throw new Error(`Rule ${id} not found`)
     }
-
     this.categorizationRules.splice(index, 1)
   }
-
   async syncWithQuickBooks(): Promise<QuickBooksSyncLog> {
     // Simulate sync process
     await new Promise(resolve => setTimeout(resolve, 2000))
-
     return {
       id: `sync-${Date.now()}`,
       userId: 'current-user',
@@ -661,19 +596,16 @@ export class MockBookkeepingService implements BookkeepingService {
       createdAt: new Date()
     }
   }
-
   async getQuickBooksStatus(): Promise<{connected: boolean, lastSync?: Date}> {
     return {
       connected: false, // Mock shows disconnected state
       lastSync: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last sync 24 hours ago
     }
   }
-
   // Additional helper methods for mock data
   getBankAccounts(): BankAccount[] {
     return [...this.bankAccounts]
   }
-
   getChartOfAccounts(): ChartOfAccount[] {
     return [...this.chartOfAccounts]
   }

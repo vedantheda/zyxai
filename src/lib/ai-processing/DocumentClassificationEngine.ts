@@ -1,5 +1,4 @@
 import { DocumentAnalysisEngine } from './DocumentAnalysisEngine'
-
 export interface DocumentClassification {
   documentType: string
   subType?: string
@@ -12,12 +11,10 @@ export interface DocumentClassification {
   extractableFields: string[]
   riskFactors: string[]
 }
-
 export interface DocumentTaxonomy {
   category: string
   types: DocumentTypeDefinition[]
 }
-
 export interface DocumentTypeDefinition {
   type: string
   patterns: string[]
@@ -28,16 +25,13 @@ export interface DocumentTypeDefinition {
   relatedForms: string[]
   processingComplexity: 'simple' | 'moderate' | 'complex'
 }
-
 export class DocumentClassificationEngine {
   private analysisEngine: DocumentAnalysisEngine
   private documentTaxonomy: DocumentTaxonomy[]
-
   constructor() {
     this.analysisEngine = new DocumentAnalysisEngine()
     this.documentTaxonomy = this.initializeDocumentTaxonomy()
   }
-
   /**
    * Initialize comprehensive document taxonomy
    */
@@ -220,7 +214,6 @@ export class DocumentClassificationEngine {
       }
     ]
   }
-
   /**
    * Classify document using AI analysis and pattern matching
    */
@@ -230,14 +223,11 @@ export class DocumentClassificationEngine {
   ): Promise<DocumentClassification> {
     // First, try pattern-based classification
     const patternMatch = this.classifyByPatterns(ocrText)
-    
     // Then enhance with AI analysis
     const aiClassification = await this.enhanceWithAI(ocrText, patternMatch)
-    
     // Calculate final confidence and capabilities
     return this.finalizeClassification(patternMatch, aiClassification)
   }
-
   /**
    * Pattern-based classification
    */
@@ -245,36 +235,30 @@ export class DocumentClassificationEngine {
     const normalizedText = text.toLowerCase()
     let bestMatch: DocumentTypeDefinition | null = null
     let bestScore = 0
-
     for (const category of this.documentTaxonomy) {
       for (const docType of category.types) {
         let score = 0
-        
         // Check patterns
         for (const pattern of docType.patterns) {
           if (normalizedText.includes(pattern.toLowerCase())) {
             score += 3
           }
         }
-        
         // Check keywords
         for (const keyword of docType.keywords) {
           if (normalizedText.includes(keyword.toLowerCase())) {
             score += 1
           }
         }
-        
         // Normalize score by total possible points
         const maxScore = (docType.patterns.length * 3) + docType.keywords.length
         const normalizedScore = score / maxScore
-        
         if (normalizedScore > bestScore && normalizedScore > 0.3) {
           bestScore = normalizedScore
           bestMatch = docType
         }
       }
     }
-
     if (bestMatch) {
       return {
         documentType: bestMatch.type,
@@ -284,7 +268,6 @@ export class DocumentClassificationEngine {
         requiredReview: bestMatch.processingComplexity === 'complex'
       }
     }
-
     return {
       documentType: 'Unknown',
       confidence: 0,
@@ -293,7 +276,6 @@ export class DocumentClassificationEngine {
       requiredReview: true
     }
   }
-
   /**
    * Enhance classification with AI analysis
    */
@@ -304,29 +286,22 @@ export class DocumentClassificationEngine {
     try {
       const prompt = `
         Analyze this tax document and provide classification details:
-        
         Document Text: ${text.substring(0, 2000)}
-        
         Pattern Match Result: ${JSON.stringify(patternMatch)}
-        
         Please provide:
         1. Document type verification
         2. Tax importance level (critical/high/medium/low)
         3. Risk factors for processing
         4. Estimated processing time in minutes
         5. Any special considerations
-        
         Respond in JSON format.
       `
-
       const aiResponse = await this.analysisEngine.callOpenRouter(prompt, 0.1, 500)
       return JSON.parse(aiResponse)
     } catch (error) {
-      console.error('AI classification enhancement failed:', error)
       return {}
     }
   }
-
   /**
    * Finalize classification with combined results
    */
@@ -346,7 +321,6 @@ export class DocumentClassificationEngine {
       riskFactors: aiEnhancement.riskFactors || []
     }
   }
-
   /**
    * Get extractable fields for document type
    */
@@ -359,7 +333,6 @@ export class DocumentClassificationEngine {
     }
     return []
   }
-
   /**
    * Get processing recommendations
    */
@@ -371,7 +344,6 @@ export class DocumentClassificationEngine {
     nextSteps: string[]
   } {
     const priority = this.calculatePriority(classification)
-    
     return {
       priority,
       automationLevel: classification.autoFillCapability,
@@ -380,24 +352,18 @@ export class DocumentClassificationEngine {
       nextSteps: this.generateNextSteps(classification)
     }
   }
-
   private calculatePriority(classification: DocumentClassification): number {
     let priority = 5 // base priority
-    
     if (classification.taxImportance === 'critical') priority += 4
     else if (classification.taxImportance === 'high') priority += 3
     else if (classification.taxImportance === 'medium') priority += 2
     else priority += 1
-    
     if (classification.autoFillCapability === 'full') priority += 2
     else if (classification.autoFillCapability === 'partial') priority += 1
-    
     return Math.min(priority, 10)
   }
-
   private generateNextSteps(classification: DocumentClassification): string[] {
     const steps: string[] = []
-    
     if (classification.autoFillCapability === 'full') {
       steps.push('Proceed with automatic form population')
       steps.push('Schedule quality review within 24 hours')
@@ -410,15 +376,12 @@ export class DocumentClassificationEngine {
       steps.push('Assign to experienced preparer')
       steps.push('Schedule comprehensive review')
     }
-    
     if (classification.confidence < 0.8) {
       steps.push('Verify document classification before processing')
     }
-    
     if (classification.riskFactors.length > 0) {
       steps.push('Review identified risk factors before proceeding')
     }
-    
     return steps
   }
 }

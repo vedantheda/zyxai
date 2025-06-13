@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-
 export interface W9Status {
   id: string
   vendorId: string
@@ -13,7 +12,6 @@ export interface W9Status {
   lastReminderDate?: Date
   notes?: string
 }
-
 export interface VendorInfo {
   id: string
   clientId: string
@@ -29,7 +27,6 @@ export interface VendorInfo {
   createdAt: Date
   updatedAt: Date
 }
-
 export interface ComplianceAlert {
   id: string
   type: 'w9_missing' | 'w9_expired' | '1099_deadline' | 'threshold_exceeded' | 'backup_withholding'
@@ -44,7 +41,6 @@ export interface ComplianceAlert {
   resolvedBy?: string
   createdAt: Date
 }
-
 export interface ComplianceReport {
   totalVendors: number
   requires1099Count: number
@@ -53,10 +49,8 @@ export interface ComplianceReport {
   criticalIssues: ComplianceAlert[]
   complianceScore: number
 }
-
 export class ComplianceTrackingService {
   constructor(private userId: string) {}
-
   /**
    * Add or update vendor information
    */
@@ -69,7 +63,6 @@ export class ComplianceTrackingService {
         .eq('client_id', vendorData.clientId)
         .eq('name', vendorData.name)
         .single()
-
       if (existingVendor) {
         // Update existing vendor
         const { data: updatedVendor, error } = await supabase
@@ -81,11 +74,9 @@ export class ComplianceTrackingService {
           .eq('id', existingVendor.id)
           .select()
           .single()
-
         if (error) throw error
         return this.transformVendorData(updatedVendor)
       }
-
       // Create new vendor
       const { data: newVendor, error } = await supabase
         .from('vendors')
@@ -97,19 +88,14 @@ export class ComplianceTrackingService {
         })
         .select()
         .single()
-
       if (error) throw error
-
       // Create initial W-9 status
       await this.createW9Status(newVendor.id, vendorData.clientId)
-
       return this.transformVendorData(newVendor)
     } catch (error) {
-      console.error('Error adding vendor:', error)
       throw new Error('Failed to add vendor')
     }
   }
-
   /**
    * Update vendor payment total and check 1099 requirements
    */
@@ -120,12 +106,9 @@ export class ComplianceTrackingService {
         .select('*')
         .eq('id', vendorId)
         .single()
-
       if (vendorError || !vendor) throw new Error('Vendor not found')
-
       const newTotal = vendor.total_payments + paymentAmount
       const requires1099 = newTotal >= 600 // IRS threshold
-
       // Update vendor
       await supabase
         .from('vendors')
@@ -135,12 +118,10 @@ export class ComplianceTrackingService {
           updated_at: new Date().toISOString()
         })
         .eq('id', vendorId)
-
       // Check if W-9 is needed and create alerts
       if (requires1099) {
         await this.checkW9Requirements(vendorId)
       }
-
       // Create compliance alert if threshold exceeded
       if (vendor.total_payments < 600 && newTotal >= 600) {
         await this.createComplianceAlert({
@@ -154,11 +135,9 @@ export class ComplianceTrackingService {
         })
       }
     } catch (error) {
-      console.error('Error updating vendor payments:', error)
       throw new Error('Failed to update vendor payments')
     }
   }
-
   /**
    * Request W-9 from vendor
    */
@@ -172,9 +151,7 @@ export class ComplianceTrackingService {
         `)
         .eq('id', vendorId)
         .single()
-
       if (error || !vendor) throw new Error('Vendor not found')
-
       // Update W-9 status
       await supabase
         .from('w9_status')
@@ -185,19 +162,15 @@ export class ComplianceTrackingService {
           last_reminder_date: new Date().toISOString()
         })
         .eq('vendor_id', vendorId)
-
       if (sendEmail && vendor.email) {
         await this.sendW9RequestEmail(vendor)
       }
-
       // Create follow-up reminder
       await this.scheduleW9Reminder(vendorId, 7) // Remind in 7 days
     } catch (error) {
-      console.error('Error requesting W-9:', error)
       throw new Error('Failed to request W-9')
     }
   }
-
   /**
    * Mark W-9 as received
    */
@@ -205,7 +178,6 @@ export class ComplianceTrackingService {
     try {
       const expirationDate = new Date()
       expirationDate.setFullYear(expirationDate.getFullYear() + 3) // W-9s expire after 3 years
-
       await supabase
         .from('w9_status')
         .update({
@@ -215,15 +187,12 @@ export class ComplianceTrackingService {
           document_id: documentId
         })
         .eq('vendor_id', vendorId)
-
       // Resolve any related compliance alerts
       await this.resolveComplianceAlerts(vendorId, 'w9_missing')
     } catch (error) {
-      console.error('Error marking W-9 received:', error)
       throw new Error('Failed to mark W-9 as received')
     }
   }
-
   /**
    * Get compliance dashboard data
    */
@@ -236,44 +205,33 @@ export class ComplianceTrackingService {
           w9_status (*)
         `)
         .eq('user_id', this.userId)
-
       if (clientId) {
         vendorsQuery = vendorsQuery.eq('client_id', clientId)
       }
-
       const { data: vendors, error: vendorsError } = await vendorsQuery
-
       if (vendorsError) throw vendorsError
-
       const { data: alerts, error: alertsError } = await supabase
         .from('compliance_alerts')
         .select('*')
         .eq('user_id', this.userId)
         .eq('is_resolved', false)
         .order('created_at', { ascending: false })
-
       if (alertsError) throw alertsError
-
       // Calculate metrics
       const totalVendors = vendors?.length || 0
       const requires1099Count = vendors?.filter(v => v.requires_1099).length || 0
-
       const w9StatusBreakdown = vendors?.reduce((acc, vendor) => {
         const status = vendor.w9_status?.status || 'not_requested'
         acc[status] = (acc[status] || 0) + 1
         return acc
       }, {} as Record<string, number>) || {}
-
       const upcomingDeadlines = alerts?.filter(alert =>
         alert.due_date && new Date(alert.due_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       ) || []
-
       const criticalIssues = alerts?.filter(alert => alert.priority === 'critical') || []
-
       // Calculate compliance score (0-100)
       const w9Received = vendors?.filter(v => v.w9_status?.status === 'received').length || 0
       const complianceScore = requires1099Count > 0 ? Math.round((w9Received / requires1099Count) * 100) : 100
-
       return {
         totalVendors,
         requires1099Count,
@@ -283,11 +241,9 @@ export class ComplianceTrackingService {
         complianceScore
       }
     } catch (error) {
-      console.error('Error getting compliance report:', error)
       throw new Error('Failed to get compliance report')
     }
   }
-
   /**
    * Get vendors requiring attention
    */
@@ -302,16 +258,12 @@ export class ComplianceTrackingService {
         .eq('user_id', this.userId)
         .eq('requires_1099', true)
         .or('w9_status.status.eq.not_requested,w9_status.status.eq.expired,w9_status.status.eq.invalid')
-
       if (error) throw error
-
       return vendors?.map(this.transformVendorData) || []
     } catch (error) {
-      console.error('Error getting vendors requiring attention:', error)
       throw new Error('Failed to get vendors requiring attention')
     }
   }
-
   /**
    * Automated compliance check (run daily)
    */
@@ -319,22 +271,16 @@ export class ComplianceTrackingService {
     try {
       // Check for expired W-9s
       await this.checkExpiredW9s()
-
       // Check for missing W-9s
       await this.checkMissingW9s()
-
       // Check for upcoming deadlines
       await this.checkUpcomingDeadlines()
-
       // Send reminder emails
       await this.sendScheduledReminders()
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error running compliance check:', error)
-      }
+      
     }
   }
-
   // Private helper methods
   private async createW9Status(vendorId: string, clientId: string): Promise<void> {
     await supabase
@@ -346,21 +292,18 @@ export class ComplianceTrackingService {
         reminder_count: 0
       })
   }
-
   private async checkW9Requirements(vendorId: string): Promise<void> {
     const { data: w9Status } = await supabase
       .from('w9_status')
       .select('*')
       .eq('vendor_id', vendorId)
       .single()
-
     if (!w9Status || w9Status.status === 'not_requested') {
       const { data: vendor } = await supabase
         .from('vendors')
         .select('*')
         .eq('id', vendorId)
         .single()
-
       if (vendor) {
         await this.createComplianceAlert({
           type: 'w9_missing',
@@ -373,7 +316,6 @@ export class ComplianceTrackingService {
       }
     }
   }
-
   private async createComplianceAlert(alertData: Omit<ComplianceAlert, 'id' | 'isResolved' | 'createdAt'>): Promise<void> {
     await supabase
       .from('compliance_alerts')
@@ -384,7 +326,6 @@ export class ComplianceTrackingService {
         created_at: new Date().toISOString()
       })
   }
-
   private async resolveComplianceAlerts(vendorId: string, type: string): Promise<void> {
     await supabase
       .from('compliance_alerts')
@@ -397,17 +338,14 @@ export class ComplianceTrackingService {
       .eq('type', type)
       .eq('is_resolved', false)
   }
-
   private async sendW9RequestEmail(vendor: any): Promise<void> {
     // Implementation would integrate with email service
     console.log(`Sending W-9 request email to ${vendor.email}`)
   }
-
   private async scheduleW9Reminder(vendorId: string, daysFromNow: number): Promise<void> {
     // Implementation would integrate with scheduling service
     console.log(`Scheduling W-9 reminder for vendor ${vendorId} in ${daysFromNow} days`)
   }
-
   private async checkExpiredW9s(): Promise<void> {
     const { data: expiredW9s } = await supabase
       .from('w9_status')
@@ -417,13 +355,11 @@ export class ComplianceTrackingService {
       `)
       .eq('status', 'received')
       .lt('expiration_date', new Date().toISOString())
-
     for (const w9 of expiredW9s || []) {
       await supabase
         .from('w9_status')
         .update({ status: 'expired' })
         .eq('id', w9.id)
-
       await this.createComplianceAlert({
         type: 'w9_expired',
         priority: 'high',
@@ -434,7 +370,6 @@ export class ComplianceTrackingService {
       })
     }
   }
-
   private async checkMissingW9s(): Promise<void> {
     const { data: vendorsWithoutW9 } = await supabase
       .from('vendors')
@@ -445,7 +380,6 @@ export class ComplianceTrackingService {
       .eq('user_id', this.userId)
       .eq('requires_1099', true)
       .is('w9_status.id', null)
-
     for (const vendor of vendorsWithoutW9 || []) {
       await this.createComplianceAlert({
         type: 'w9_missing',
@@ -457,11 +391,9 @@ export class ComplianceTrackingService {
       })
     }
   }
-
   private async checkUpcomingDeadlines(): Promise<void> {
     const thirtyDaysFromNow = new Date()
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-
     const { data: upcomingDeadlines } = await supabase
       .from('w9_status')
       .select(`
@@ -471,7 +403,6 @@ export class ComplianceTrackingService {
       .eq('status', 'received')
       .lte('expiration_date', thirtyDaysFromNow.toISOString())
       .gt('expiration_date', new Date().toISOString())
-
     for (const w9 of upcomingDeadlines || []) {
       await this.createComplianceAlert({
         type: 'w9_expiring',
@@ -484,7 +415,6 @@ export class ComplianceTrackingService {
       })
     }
   }
-
   private async sendScheduledReminders(): Promise<void> {
     const { data: pendingReminders } = await supabase
       .from('w9_status')
@@ -494,14 +424,12 @@ export class ComplianceTrackingService {
       `)
       .eq('status', 'not_requested')
       .lt('reminder_count', 3) // Max 3 reminders
-
     for (const w9 of pendingReminders || []) {
       // Check if enough time has passed since last reminder (7 days)
       const lastReminder = w9.last_reminder_date ? new Date(w9.last_reminder_date) : null
       const daysSinceLastReminder = lastReminder
         ? Math.floor((new Date().getTime() - lastReminder.getTime()) / (1000 * 60 * 60 * 24))
         : 999
-
       if (daysSinceLastReminder >= 7) {
         // Update reminder count and date
         await supabase
@@ -511,7 +439,6 @@ export class ComplianceTrackingService {
             last_reminder_date: new Date().toISOString()
           })
           .eq('id', w9.id)
-
         // Create alert for manual follow-up
         await this.createComplianceAlert({
           type: 'w9_reminder',
@@ -524,7 +451,6 @@ export class ComplianceTrackingService {
       }
     }
   }
-
   private transformVendorData(vendor: any): VendorInfo {
     return {
       id: vendor.id,
@@ -554,7 +480,6 @@ export class ComplianceTrackingService {
       updatedAt: new Date(vendor.updated_at)
     }
   }
-
   private transformAlertData(alert: any): ComplianceAlert {
     return {
       id: alert.id,

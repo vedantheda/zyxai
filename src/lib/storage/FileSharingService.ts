@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
-
 export interface ShareLink {
   id: string
   documentId: string
@@ -14,12 +13,10 @@ export interface ShareLink {
   createdBy: string
   createdAt: Date
 }
-
 export interface SharePermission {
   action: 'view' | 'download' | 'comment'
   granted: boolean
 }
-
 export interface ShareOptions {
   expiresIn?: number // hours
   maxDownloads?: number
@@ -28,7 +25,6 @@ export interface ShareOptions {
   permissions?: SharePermission[]
   requireAuth?: boolean
 }
-
 export interface ClientPortalAccess {
   clientId: string
   accessToken: string
@@ -36,12 +32,9 @@ export interface ClientPortalAccess {
   allowedDocuments: string[]
   permissions: string[]
 }
-
 export class FileSharingService {
   private supabaseClient = supabase
-
   constructor(private userId: string) {}
-
   /**
    * Create a secure share link for a document
    */
@@ -57,19 +50,15 @@ export class FileSharingService {
         .eq('id', documentId)
         .eq('user_id', this.userId)
         .single()
-
       if (docError || !document) {
         throw new Error('Document not found or access denied')
       }
-
       // Generate secure token
       const token = this.generateSecureToken()
-
       // Calculate expiration
       const expiresAt = options.expiresIn
         ? new Date(Date.now() + options.expiresIn * 60 * 60 * 1000)
         : null
-
       // Create share record
       const shareData = {
         document_id: documentId,
@@ -87,21 +76,17 @@ export class FileSharingService {
         require_auth: options.requireAuth || false,
         created_by: this.userId
       }
-
       const { data: shareRecord, error: shareError } = await this.supabaseClient
         .from('document_shares')
         .insert(shareData)
         .select()
         .single()
-
       if (shareError) {
         throw new Error(`Failed to create share link: ${shareError.message}`)
       }
-
       // Generate public share URL
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const shareLink = `${baseUrl}/share/${token}`
-
       return {
         success: true,
         shareLink
@@ -113,7 +98,6 @@ export class FileSharingService {
       }
     }
   }
-
   /**
    * Create client portal access for secure document sharing
    */
@@ -130,15 +114,12 @@ export class FileSharingService {
         .eq('user_id', this.userId)
         .eq('client_id', clientId)
         .in('id', documentIds)
-
       if (docsError || !documents || documents.length !== documentIds.length) {
         throw new Error('Some documents not found or access denied')
       }
-
       // Generate access token
       const accessToken = this.generateSecureToken()
       const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
-
       // Create portal access record
       const portalData = {
         client_id: clientId,
@@ -148,19 +129,15 @@ export class FileSharingService {
         permissions: ['view', 'download', 'upload'],
         created_by: this.userId
       }
-
       const { error: portalError } = await this.supabaseClient
         .from('client_portal_access')
         .insert(portalData)
-
       if (portalError) {
         throw new Error(`Failed to create portal access: ${portalError.message}`)
       }
-
       // Generate portal URL
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const portalUrl = `${baseUrl}/client-portal/${accessToken}`
-
       return {
         success: true,
         portalUrl
@@ -172,7 +149,6 @@ export class FileSharingService {
       }
     }
   }
-
   /**
    * Validate and get share link details
    */
@@ -196,33 +172,27 @@ export class FileSharingService {
         `)
         .eq('token', token)
         .single()
-
       if (shareError || !share) {
         return { valid: false, error: 'Share link not found' }
       }
-
       // Check expiration
       if (share.expires_at && new Date(share.expires_at) < new Date()) {
         return { valid: false, error: 'Share link has expired' }
       }
-
       // Check download limit
       if (share.max_downloads && share.download_count >= share.max_downloads) {
         return { valid: false, error: 'Download limit exceeded' }
       }
-
       // Check password if required
       if (share.is_password_protected) {
         if (!password) {
           return { valid: false, error: 'Password required' }
         }
-
         const isValidPassword = await this.verifyPassword(password, share.password_hash)
         if (!isValidPassword) {
           return { valid: false, error: 'Invalid password' }
         }
       }
-
       return {
         valid: true,
         document: share.documents
@@ -234,7 +204,6 @@ export class FileSharingService {
       }
     }
   }
-
   /**
    * Track download and update counters
    */
@@ -245,7 +214,6 @@ export class FileSharingService {
       .select('download_count')
       .eq('token', token)
       .single()
-
     // Update download count and last accessed time
     await this.supabaseClient
       .from('document_shares')
@@ -255,7 +223,6 @@ export class FileSharingService {
       })
       .eq('token', token)
   }
-
   /**
    * Get all active share links for user's documents
    */
@@ -271,15 +238,11 @@ export class FileSharingService {
       `)
       .eq('created_by', this.userId)
       .order('created_at', { ascending: false })
-
     if (error) {
-      console.error('Error fetching share links:', error)
       return []
     }
-
     return data || []
   }
-
   /**
    * Revoke a share link
    */
@@ -290,11 +253,9 @@ export class FileSharingService {
         .delete()
         .eq('id', shareId)
         .eq('created_by', this.userId)
-
       if (error) {
         throw new Error(`Failed to revoke share link: ${error.message}`)
       }
-
       return { success: true }
     } catch (error) {
       return {
@@ -303,7 +264,6 @@ export class FileSharingService {
       }
     }
   }
-
   /**
    * Generate secure random token
    */
@@ -312,7 +272,6 @@ export class FileSharingService {
     crypto.getRandomValues(array)
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
   }
-
   /**
    * Hash password for secure storage
    */
@@ -322,7 +281,6 @@ export class FileSharingService {
     const hash = await crypto.subtle.digest('SHA-256', data)
     return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('')
   }
-
   /**
    * Verify password against hash
    */
@@ -331,7 +289,6 @@ export class FileSharingService {
     return passwordHash === hash
   }
 }
-
 // Create database tables for sharing functionality
 export const createSharingTables = async () => {
   const queries = [
@@ -379,17 +336,14 @@ export const createSharingTables = async () => {
     `
     CREATE POLICY "Users can manage their document shares" ON public.document_shares
       FOR ALL USING (created_by = auth.uid());
-
     CREATE POLICY "Users can manage their client portal access" ON public.client_portal_access
       FOR ALL USING (created_by = auth.uid());
     `
   ]
-
   for (const query of queries) {
     try {
       await supabase.rpc('exec_sql', { sql: query })
     } catch (error) {
-      console.error('Error creating sharing tables:', error)
-    }
+      }
   }
 }

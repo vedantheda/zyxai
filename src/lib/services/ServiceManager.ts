@@ -1,22 +1,20 @@
 import { DocumentProcessingService } from './DocumentProcessingService';
 import { FormGenerationService } from './FormGenerationService';
 import { WorkflowOrchestrationService } from './WorkflowOrchestrationService';
-import { 
-  ProcessingResult, 
-  ServiceConfig, 
-  OCRConfig, 
+import {
+  ProcessingResult,
+  ServiceConfig,
+  OCRConfig,
   AIConfig,
   DocumentData,
   TaxFormData,
   ClientData
 } from './types';
-
 export class ServiceManager {
   private documentProcessor: DocumentProcessingService;
   private formGenerator: FormGenerationService;
   private workflowOrchestrator: WorkflowOrchestrationService;
   private initialized: boolean = false;
-
   constructor(
     private config: {
       ocr: OCRConfig;
@@ -28,7 +26,6 @@ export class ServiceManager {
     this.formGenerator = new FormGenerationService(config.general);
     this.workflowOrchestrator = new WorkflowOrchestrationService(config.general);
   }
-
   async initialize(): Promise<ProcessingResult<void>> {
     try {
       // Perform health checks on all services
@@ -37,7 +34,6 @@ export class ServiceManager {
         this.formGenerator.healthCheck(),
         this.workflowOrchestrator.healthCheck()
       ]);
-
       const failedServices = healthChecks.filter(check => !check.success);
       if (failedServices.length > 0) {
         return {
@@ -45,7 +41,6 @@ export class ServiceManager {
           error: `Service initialization failed: ${failedServices.map(f => f.error).join(', ')}`
         };
       }
-
       this.initialized = true;
       return {
         success: true,
@@ -62,22 +57,18 @@ export class ServiceManager {
       };
     }
   }
-
   // High-level workflow methods
   async processClientIntake(clientData: ClientData): Promise<ProcessingResult<string>> {
     this.ensureInitialized();
-    
     try {
       // Start the client onboarding workflow
       const workflowResult = await this.workflowOrchestrator.startWorkflow(
-        clientData.id, 
+        clientData.id,
         'client_onboarding'
       );
-
       if (!workflowResult.success) {
         return workflowResult;
       }
-
       return {
         success: true,
         data: workflowResult.data!,
@@ -93,17 +84,14 @@ export class ServiceManager {
       };
     }
   }
-
   async processDocuments(clientId: string, documents: DocumentData[]): Promise<ProcessingResult<DocumentData[]>> {
     this.ensureInitialized();
-    
     try {
       // Start document processing workflow
       const workflowResult = await this.workflowOrchestrator.startWorkflow(
         clientId,
         'document_processing'
       );
-
       // Process each document
       const processedDocuments: DocumentData[] = [];
       for (const document of documents) {
@@ -112,7 +100,6 @@ export class ServiceManager {
           processedDocuments.push(result.data);
         }
       }
-
       return {
         success: true,
         data: processedDocuments,
@@ -129,20 +116,16 @@ export class ServiceManager {
       };
     }
   }
-
   async generateTaxForms(clientData: ClientData): Promise<ProcessingResult<TaxFormData[]>> {
     this.ensureInitialized();
-    
     try {
       // Start tax preparation workflow
       const workflowResult = await this.workflowOrchestrator.startWorkflow(
         clientData.id,
         'tax_preparation'
       );
-
       // Determine which forms to generate based on client data
       const requiredForms = this.determineRequiredForms(clientData);
-      
       // Generate each required form
       const generatedForms: TaxFormData[] = [];
       for (const formType of requiredForms) {
@@ -151,7 +134,6 @@ export class ServiceManager {
           generatedForms.push(result.data);
         }
       }
-
       return {
         success: true,
         data: generatedForms,
@@ -168,18 +150,14 @@ export class ServiceManager {
       };
     }
   }
-
   async getClientProgress(clientId: string): Promise<ProcessingResult<any>> {
     this.ensureInitialized();
-    
     try {
       // Get all workflows for this client
       const activeWorkflows = this.workflowOrchestrator.getActiveWorkflows()
         .filter(w => w.id.includes(clientId));
-      
       const completedWorkflows = this.workflowOrchestrator.getCompletedWorkflows()
         .filter(w => w.id.includes(clientId));
-
       return {
         success: true,
         data: {
@@ -196,23 +174,19 @@ export class ServiceManager {
       };
     }
   }
-
   // Service access methods
   getDocumentProcessor(): DocumentProcessingService {
     this.ensureInitialized();
     return this.documentProcessor;
   }
-
   getFormGenerator(): FormGenerationService {
     this.ensureInitialized();
     return this.formGenerator;
   }
-
   getWorkflowOrchestrator(): WorkflowOrchestrationService {
     this.ensureInitialized();
     return this.workflowOrchestrator;
   }
-
   // Utility methods
   async getSystemStatus(): Promise<ProcessingResult<any>> {
     try {
@@ -221,7 +195,6 @@ export class ServiceManager {
         this.formGenerator.healthCheck(),
         this.workflowOrchestrator.healthCheck()
       ]);
-
       return {
         success: true,
         data: {
@@ -241,60 +214,51 @@ export class ServiceManager {
       };
     }
   }
-
   private determineRequiredForms(clientData: ClientData): string[] {
     const forms: string[] = ['1040']; // Everyone needs 1040
-    
     // Check for Schedule A (itemized deductions)
-    const hasItemizedDeductions = clientData.documents.some(doc => 
+    const hasItemizedDeductions = clientData.documents.some(doc =>
       doc.extractedData?.category === 'deduction'
     );
     if (hasItemizedDeductions) {
       forms.push('ScheduleA');
     }
-
     // Check for Schedule C (business income)
-    const hasBusinessIncome = clientData.documents.some(doc => 
+    const hasBusinessIncome = clientData.documents.some(doc =>
       doc.type === '1099-NEC' || doc.extractedData?.category === 'business'
     );
     if (hasBusinessIncome) {
       forms.push('ScheduleC');
     }
-
     // Check for Schedule D (capital gains)
-    const hasCapitalGains = clientData.documents.some(doc => 
+    const hasCapitalGains = clientData.documents.some(doc =>
       doc.type === '1099-B' || doc.extractedData?.category === 'investment'
     );
     if (hasCapitalGains) {
       forms.push('ScheduleD', '8949');
     }
-
     // Check for Schedule E (rental income)
-    const hasRentalIncome = clientData.documents.some(doc => 
+    const hasRentalIncome = clientData.documents.some(doc =>
       doc.extractedData?.category === 'rental'
     );
     if (hasRentalIncome) {
       forms.push('ScheduleE');
     }
-
     // Check for Schedule B (interest and dividends)
-    const hasInterestDividends = clientData.documents.some(doc => 
+    const hasInterestDividends = clientData.documents.some(doc =>
       doc.type === '1099-INT' || doc.type === '1099-DIV'
     );
     if (hasInterestDividends) {
       forms.push('ScheduleB');
     }
-
     return forms;
   }
-
   private ensureInitialized(): void {
     if (!this.initialized) {
       throw new Error('ServiceManager not initialized. Call initialize() first.');
     }
   }
 }
-
 // Factory function for creating ServiceManager with default configuration
 export function createServiceManager(overrides: Partial<{
   ocr: Partial<OCRConfig>;
@@ -327,20 +291,16 @@ export function createServiceManager(overrides: Partial<{
       ...overrides.general
     }
   };
-
   return new ServiceManager(defaultConfig);
 }
-
 // Singleton instance for global use
 let globalServiceManager: ServiceManager | null = null;
-
 export function getServiceManager(): ServiceManager {
   if (!globalServiceManager) {
     globalServiceManager = createServiceManager();
   }
   return globalServiceManager;
 }
-
 export function initializeServices(config?: Parameters<typeof createServiceManager>[0]): Promise<ProcessingResult<void>> {
   globalServiceManager = createServiceManager(config);
   return globalServiceManager.initialize();

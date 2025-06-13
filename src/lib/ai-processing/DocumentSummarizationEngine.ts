@@ -1,5 +1,4 @@
 import { DocumentAnalysisEngine } from './DocumentAnalysisEngine'
-
 export interface DocumentSummary {
   documentId: string
   documentType: string
@@ -13,7 +12,6 @@ export interface DocumentSummary {
   estimatedTaxImpact: number
   processingRecommendations: string[]
 }
-
 export interface KeyFinding {
   category: string
   description: string
@@ -21,7 +19,6 @@ export interface KeyFinding {
   importance: 'critical' | 'high' | 'medium' | 'low'
   confidence: number
 }
-
 export interface TaxImplication {
   formAffected: string
   lineItem: string
@@ -29,7 +26,6 @@ export interface TaxImplication {
   estimatedAmount: number
   explanation: string
 }
-
 export interface ActionItem {
   task: string
   priority: 'urgent' | 'high' | 'medium' | 'low'
@@ -37,7 +33,6 @@ export interface ActionItem {
   assignedTo?: string
   dependencies: string[]
 }
-
 export interface RiskAlert {
   type: 'compliance' | 'accuracy' | 'completeness' | 'timing'
   severity: 'critical' | 'high' | 'medium' | 'low'
@@ -45,11 +40,9 @@ export interface RiskAlert {
   recommendation: string
   deadline?: Date
 }
-
 export interface ExtractedData {
   [key: string]: any
 }
-
 // Specialized summaries for complex documents
 export interface K1Summary extends DocumentSummary {
   entityInfo: {
@@ -81,20 +74,17 @@ export interface K1Summary extends DocumentSummary {
   passiveActivityLimitations: number
   basisAdjustments: BasisAdjustment[]
 }
-
 export interface SpecialAllocation {
   item: string
   amount: number
   explanation: string
   taxTreatment: string
 }
-
 export interface BasisAdjustment {
   type: 'increase' | 'decrease'
   amount: number
   reason: string
 }
-
 export interface BrokerageSummary extends DocumentSummary {
   accountInfo: {
     brokerageName: string
@@ -119,7 +109,6 @@ export interface BrokerageSummary extends DocumentSummary {
   }
   taxOptimizationOpportunities: TaxOptimization[]
 }
-
 export interface WashSale {
   security: string
   saleDate: Date
@@ -127,21 +116,17 @@ export interface WashSale {
   disallowedLoss: number
   basisAdjustment: number
 }
-
 export interface TaxOptimization {
   strategy: string
   potentialSavings: number
   implementation: string
   deadline?: Date
 }
-
 export class DocumentSummarizationEngine {
   private analysisEngine: DocumentAnalysisEngine
-
   constructor() {
     this.analysisEngine = new DocumentAnalysisEngine()
   }
-
   /**
    * Generate comprehensive document summary
    */
@@ -155,19 +140,15 @@ export class DocumentSummarizationEngine {
       case 'K-1 Partnership':
       case 'K-1 S-Corporation':
         return this.summarizeK1(extractedData, ocrText, clientContext)
-
       case 'Brokerage Statement':
       case '1099-B':
         return this.summarizeBrokerageStatement(extractedData, ocrText, clientContext)
-
       case 'Business Receipt':
         return this.summarizeBusinessReceipt(extractedData, ocrText, clientContext)
-
       default:
         return this.generateGenericSummary(documentType, extractedData, ocrText, clientContext)
     }
   }
-
   /**
    * Summarize K-1 documents with specialized analysis
    */
@@ -178,13 +159,9 @@ export class DocumentSummarizationEngine {
   ): Promise<K1Summary> {
     const prompt = `
       Analyze this K-1 tax document and provide a comprehensive summary:
-
       Extracted Data: ${JSON.stringify(extractedData, null, 2)}
-
       Full Text: ${ocrText.substring(0, 3000)}
-
       Client Context: ${JSON.stringify(clientContext, null, 2)}
-
       Please provide:
       1. Entity information (name, EIN, type, business activity)
       2. All income items with amounts
@@ -195,32 +172,25 @@ export class DocumentSummarizationEngine {
       7. Action items for the tax preparer
       8. Risk alerts and compliance considerations
       9. Estimated tax impact on client's return
-
       Focus on:
       - Accuracy of amounts and classifications
       - Special allocations that need attention
       - Potential audit risks
       - Planning opportunities
       - Required supporting documentation
-
       Respond in JSON format matching the K1Summary interface.
     `
-
     try {
       const aiResponse = await this.analysisEngine.callOpenRouter(prompt, 0.1, 1500)
       const summary = JSON.parse(aiResponse) as K1Summary
-
       // Enhance with additional analysis
       summary.processingRecommendations = this.generateK1Recommendations(summary)
       summary.confidence = this.calculateSummaryConfidence(summary, extractedData)
-
       return summary
     } catch (error) {
-      console.error('K-1 summarization failed:', error)
       return this.createFallbackK1Summary(extractedData)
     }
   }
-
   /**
    * Summarize brokerage statements with investment analysis
    */
@@ -231,13 +201,9 @@ export class DocumentSummarizationEngine {
   ): Promise<BrokerageSummary> {
     const prompt = `
       Analyze this brokerage statement and provide detailed tax analysis:
-
       Extracted Data: ${JSON.stringify(extractedData, null, 2)}
-
       Statement Text: ${ocrText.substring(0, 3000)}
-
       Client Context: ${JSON.stringify(clientContext, null, 2)}
-
       Please analyze:
       1. All securities transactions (sales, purchases, dividends, interest)
       2. Capital gains/losses classification (short-term vs long-term)
@@ -247,31 +213,24 @@ export class DocumentSummarizationEngine {
       6. Required forms and schedules
       7. Potential audit risks
       8. Missing information that needs follow-up
-
       Calculate:
       - Net capital gains/losses
       - Tax liability estimates
       - Potential tax savings strategies
       - Carryover amounts
-
       Respond in JSON format matching the BrokerageSummary interface.
     `
-
     try {
       const aiResponse = await this.analysisEngine.callOpenRouter(prompt, 0.1, 1500)
       const summary = JSON.parse(aiResponse) as BrokerageSummary
-
       // Add investment-specific recommendations
       summary.processingRecommendations = this.generateInvestmentRecommendations(summary)
       summary.confidence = this.calculateSummaryConfidence(summary, extractedData)
-
       return summary
     } catch (error) {
-      console.error('Brokerage summarization failed:', error)
       return this.createFallbackBrokerageSummary(extractedData)
     }
   }
-
   /**
    * Summarize business receipts with expense categorization
    */
@@ -282,13 +241,9 @@ export class DocumentSummarizationEngine {
   ): Promise<DocumentSummary> {
     const prompt = `
       Analyze this business receipt for tax deduction purposes:
-
       Receipt Data: ${JSON.stringify(extractedData, null, 2)}
-
       Receipt Text: ${ocrText}
-
       Client Business: ${JSON.stringify(clientContext?.businessInfo, null, 2)}
-
       Please determine:
       1. Expense category (meals, travel, supplies, etc.)
       2. Business purpose and deductibility
@@ -296,24 +251,18 @@ export class DocumentSummarizationEngine {
       4. Potential limitations (50% meals rule, etc.)
       5. Supporting information needed
       6. Compliance requirements
-
       Respond in JSON format with detailed analysis.
     `
-
     try {
       const aiResponse = await this.analysisEngine.callOpenRouter(prompt, 0.1, 800)
       const summary = JSON.parse(aiResponse) as DocumentSummary
-
       summary.processingRecommendations = this.generateReceiptRecommendations(summary)
       summary.confidence = this.calculateSummaryConfidence(summary, extractedData)
-
       return summary
     } catch (error) {
-      console.error('Receipt summarization failed:', error)
       return this.createFallbackSummary('Receipt', extractedData)
     }
   }
-
   /**
    * Generate generic summary for other document types
    */
@@ -325,106 +274,82 @@ export class DocumentSummarizationEngine {
   ): Promise<DocumentSummary> {
     const prompt = `
       Analyze this ${documentType} document for tax preparation:
-
       Data: ${JSON.stringify(extractedData, null, 2)}
       Text: ${ocrText.substring(0, 2000)}
-
       Provide:
       1. Key tax-relevant information
       2. Required forms and schedules
       3. Potential issues or risks
       4. Action items for processing
       5. Estimated tax impact
-
       Respond in JSON format.
     `
-
     try {
       const aiResponse = await this.analysisEngine.callOpenRouter(prompt, 0.1, 1000)
       return JSON.parse(aiResponse) as DocumentSummary
     } catch (error) {
-      console.error('Generic summarization failed:', error)
       return this.createFallbackSummary(documentType, extractedData)
     }
   }
-
   /**
    * Generate K-1 specific recommendations
    */
   private generateK1Recommendations(summary: K1Summary): string[] {
     const recommendations: string[] = []
-
     if (summary.incomeItems.ordinaryIncome > 100000) {
       recommendations.push('High ordinary income - verify SE tax implications')
     }
-
     if (summary.specialAllocations.length > 0) {
       recommendations.push('Special allocations present - review partnership agreement')
     }
-
     if (summary.atRiskLimitations > 0) {
       recommendations.push('At-risk limitations apply - complete Form 6198')
     }
-
     if (summary.passiveActivityLimitations > 0) {
       recommendations.push('Passive activity limitations - complete Form 8582')
     }
-
     return recommendations
   }
-
   /**
    * Generate investment-specific recommendations
    */
   private generateInvestmentRecommendations(summary: BrokerageSummary): string[] {
     const recommendations: string[] = []
-
     if (summary.capitalGainsAnalysis.washSales.length > 0) {
       recommendations.push('Wash sales identified - adjust cost basis accordingly')
     }
-
     if (summary.transactions.foreignTaxesPaid > 0) {
       recommendations.push('Foreign taxes paid - consider Form 1116 for tax credit')
     }
-
     if (summary.capitalGainsAnalysis.carryoverLosses > 0) {
       recommendations.push('Capital loss carryovers available - optimize current year usage')
     }
-
     return recommendations
   }
-
   /**
    * Generate receipt-specific recommendations
    */
   private generateReceiptRecommendations(summary: DocumentSummary): string[] {
     const recommendations: string[] = []
-
     recommendations.push('Verify business purpose documentation')
     recommendations.push('Confirm expense category classification')
     recommendations.push('Check for required supporting documentation')
-
     return recommendations
   }
-
   /**
    * Calculate summary confidence based on data completeness
    */
   private calculateSummaryConfidence(summary: any, extractedData: any): number {
     let confidence = 0.5 // base confidence
-
     // Increase confidence based on data completeness
     const dataFields = Object.keys(extractedData).length
     confidence += Math.min(dataFields * 0.05, 0.3)
-
     // Increase confidence based on summary completeness
     if (summary.keyFindings?.length > 0) confidence += 0.1
     if (summary.taxImplications?.length > 0) confidence += 0.1
     if (summary.actionItems?.length > 0) confidence += 0.1
-
     return Math.min(confidence, 1.0)
   }
-
   /**
    * Create fallback summaries when AI analysis fails
    */
@@ -480,7 +405,6 @@ export class DocumentSummarizationEngine {
       processingRecommendations: ['Complete manual analysis', 'Verify all amounts']
     }
   }
-
   private createFallbackBrokerageSummary(extractedData: any): BrokerageSummary {
     return {
       documentId: extractedData.documentId || '',
@@ -527,7 +451,6 @@ export class DocumentSummarizationEngine {
       processingRecommendations: ['Complete manual analysis', 'Verify all transactions']
     }
   }
-
   private createFallbackSummary(documentType: string, extractedData: any): DocumentSummary {
     return {
       documentId: extractedData.documentId || '',

@@ -6,7 +6,6 @@ export type {
   ComplianceAlert,
   ComplianceReport
 } from '@/lib/compliance/ComplianceTrackingService'
-
 // AI-Powered Email Management
 export { EmailManagementService } from '@/lib/email/EmailManagementService'
 export type {
@@ -15,7 +14,6 @@ export type {
   EmailRoutingRule,
   TeamMember
 } from '@/lib/email/EmailManagementService'
-
 // Partner KPI Dashboards
 export { KPIDashboardService } from '@/lib/analytics/KPIDashboardService'
 export type {
@@ -28,7 +26,6 @@ export type {
   KPIDashboard as KPIDashboardType,
   KPIAlert
 } from '@/lib/analytics/KPIDashboardService'
-
 // Compliance & Deadline Alerts
 export { DeadlineAlertService } from '@/lib/alerts/DeadlineAlertService'
 export type {
@@ -39,25 +36,21 @@ export type {
   ComplianceAlert as DeadlineComplianceAlert,
   AlertDashboard
 } from '@/lib/alerts/DeadlineAlertService'
-
 // Components
 export { default as ComplianceDashboard } from '@/components/compliance/ComplianceDashboard'
 export { default as KPIDashboard } from '@/components/analytics/KPIDashboard'
 export { default as EmailManagementDashboard } from '@/components/email/EmailManagementDashboard'
 export { default as DeadlineAlertsDashboard } from '@/components/alerts/DeadlineAlertsDashboard'
-
 // Hooks
 export { useCompliance } from '@/hooks/useCompliance'
 export { useKPIDashboard } from '@/hooks/useKPIDashboard'
 export { useEmailManagement } from '@/hooks/useEmailManagement'
 export { useDeadlineAlerts } from '@/hooks/useDeadlineAlerts'
-
 // Types
 export type { UseComplianceOptions } from '@/hooks/useCompliance'
 export type { UseKPIDashboardOptions } from '@/hooks/useKPIDashboard'
 export type { UseEmailManagementOptions } from '@/hooks/useEmailManagement'
 export type { UseDeadlineAlertsOptions } from '@/hooks/useDeadlineAlerts'
-
 // Enhancement utilities
 export const EnhancementUtils = {
   /**
@@ -90,7 +83,6 @@ export const EnhancementUtils = {
       }
     }
   },
-
   /**
    * Calculate revenue growth rate
    */
@@ -98,7 +90,6 @@ export const EnhancementUtils = {
     if (previous === 0) return current > 0 ? 100 : 0
     return ((current - previous) / previous) * 100
   },
-
   /**
    * Format currency with appropriate precision
    */
@@ -110,14 +101,12 @@ export const EnhancementUtils = {
       maximumFractionDigits: precision
     }).format(amount)
   },
-
   /**
    * Format percentage with appropriate precision
    */
   formatPercentage: (value: number, precision: number = 1): string => {
     return `${value.toFixed(precision)}%`
   },
-
   /**
    * Calculate days between dates
    */
@@ -125,7 +114,6 @@ export const EnhancementUtils = {
     const diffTime = Math.abs(date2.getTime() - date1.getTime())
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   },
-
   /**
    * Get priority color for UI elements
    */
@@ -138,7 +126,6 @@ export const EnhancementUtils = {
       default: return 'text-gray-600'
     }
   },
-
   /**
    * Get status color for UI elements
    */
@@ -157,7 +144,6 @@ export const EnhancementUtils = {
       default: return 'text-gray-600'
     }
   },
-
   /**
    * Generate alert severity badge variant
    */
@@ -170,7 +156,6 @@ export const EnhancementUtils = {
       default: return 'outline'
     }
   },
-
   /**
    * Calculate utilization rate
    */
@@ -178,7 +163,6 @@ export const EnhancementUtils = {
     if (totalHours === 0) return 0
     return (billableHours / totalHours) * 100
   },
-
   /**
    * Calculate client lifetime value
    */
@@ -189,36 +173,29 @@ export const EnhancementUtils = {
   ): number => {
     return averageMonthlyRevenue * averageClientLifespanMonths * (profitMargin / 100)
   },
-
   /**
    * Generate compliance recommendations
    */
   generateComplianceRecommendations: (score: number, issues: string[]): string[] => {
     const recommendations: string[] = []
-
     if (score < 70) {
       recommendations.push('Immediate review of all compliance processes required')
       recommendations.push('Consider hiring compliance specialist')
     }
-
     if (score < 85) {
       recommendations.push('Implement automated compliance monitoring')
       recommendations.push('Schedule quarterly compliance reviews')
     }
-
     if (issues.includes('w9_missing')) {
       recommendations.push('Automate W-9 collection process')
       recommendations.push('Set up vendor onboarding workflow')
     }
-
     if (issues.includes('deadline_overdue')) {
       recommendations.push('Implement deadline tracking system')
       recommendations.push('Set up automated reminders')
     }
-
     return recommendations
   },
-
   /**
    * Calculate email processing efficiency
    */
@@ -229,10 +206,8 @@ export const EnhancementUtils = {
   ): { efficiency: number; throughput: number } => {
     const efficiency = totalEmails > 0 ? (processedEmails / totalEmails) * 100 : 0
     const throughput = averageProcessingTime > 0 ? 60 / averageProcessingTime : 0 // emails per hour
-
     return { efficiency, throughput }
   },
-
   /**
    * Generate workload distribution recommendations
    */
@@ -242,26 +217,21 @@ export const EnhancementUtils = {
     teamSize: number
   ): string[] => {
     const recommendations: string[] = []
-
     if (utilizationRate > 90) {
       recommendations.push('Consider hiring additional team members')
       recommendations.push('Review and optimize current processes')
     }
-
     if (utilizationRate < 60) {
       recommendations.push('Increase client acquisition efforts')
       recommendations.push('Cross-train team members for flexibility')
     }
-
     if (overtimeHours > teamSize * 10) {
       recommendations.push('Redistribute workload more evenly')
       recommendations.push('Consider temporary staffing solutions')
     }
-
     return recommendations
   }
 }
-
 // Enhancement constants
 export const ENHANCEMENT_CONSTANTS = {
   // Compliance thresholds
@@ -271,14 +241,12 @@ export const ENHANCEMENT_CONSTANTS = {
     FAIR: 70,
     POOR: 0
   },
-
   // 1099 reporting thresholds
   TAX_THRESHOLDS: {
     FORM_1099_MISC: 600,
     FORM_1099_NEC: 600,
     BACKUP_WITHHOLDING: 3000
   },
-
   // KPI benchmarks
   KPI_BENCHMARKS: {
     PROFIT_MARGIN: {
@@ -300,7 +268,6 @@ export const ENHANCEMENT_CONSTANTS = {
       POOR: 3.0
     }
   },
-
   // Alert priorities
   ALERT_PRIORITIES: {
     CRITICAL: 'critical',
@@ -308,7 +275,6 @@ export const ENHANCEMENT_CONSTANTS = {
     MEDIUM: 'medium',
     LOW: 'low'
   },
-
   // Email categories
   EMAIL_CATEGORIES: {
     TAX_QUESTION: 'tax_question',
@@ -318,7 +284,6 @@ export const ENHANCEMENT_CONSTANTS = {
     COMPLIANCE: 'compliance',
     GENERAL: 'general'
   },
-
   // Deadline types
   DEADLINE_TYPES: {
     INDIVIDUAL: 'individual',
@@ -328,7 +293,6 @@ export const ENHANCEMENT_CONSTANTS = {
     EXTENSION: 'extension',
     AMENDMENT: 'amendment'
   },
-
   // Refresh intervals (in milliseconds)
   REFRESH_INTERVALS: {
     REAL_TIME: 30000,      // 30 seconds
@@ -337,7 +301,6 @@ export const ENHANCEMENT_CONSTANTS = {
     SLOW: 3600000          // 1 hour
   }
 }
-
 // Error types for enhancements
 export class EnhancementError extends Error {
   constructor(
@@ -350,28 +313,24 @@ export class EnhancementError extends Error {
     this.name = 'EnhancementError'
   }
 }
-
 export class ComplianceError extends EnhancementError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, 'COMPLIANCE_ERROR', 'compliance', details)
     this.name = 'ComplianceError'
   }
 }
-
 export class EmailProcessingError extends EnhancementError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, 'EMAIL_PROCESSING_ERROR', 'email', details)
     this.name = 'EmailProcessingError'
   }
 }
-
 export class KPICalculationError extends EnhancementError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, 'KPI_CALCULATION_ERROR', 'analytics', details)
     this.name = 'KPICalculationError'
   }
 }
-
 export class AlertProcessingError extends EnhancementError {
   constructor(message: string, details?: Record<string, any>) {
     super(message, 'ALERT_PROCESSING_ERROR', 'alerts', details)

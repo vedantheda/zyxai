@@ -18,6 +18,8 @@ import { Brain, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { adminNavigation, clientNavigation, adminNavigationDividers, type NavigationItem } from '@/config/navigation'
 import { useMemo, useCallback } from 'react'
+import { useUnreadMessages } from '@/hooks/features/useUnreadMessages'
+import { Badge } from '@/components/ui/badge'
 
 interface GlobalSidebarProps {
   className?: string
@@ -31,6 +33,7 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
   const { user } = useAuth()
   const { navigate, prefetchOnHover } = useFastNavigation()
   const { signOut } = useSignOut()
+  const { unreadCount } = useUnreadMessages()
 
   // Memoize user data calculations to prevent unnecessary re-renders
   const userInitials = useMemo(() => {
@@ -125,10 +128,18 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
                   isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
                 }`} />
                 <div className="flex-1 min-w-0">
-                  <div className={`font-medium truncate ${
+                  <div className={`font-medium truncate flex items-center justify-between ${
                     isActive ? 'text-primary-foreground' : 'text-foreground'
                   }`}>
-                    {item.name}
+                    <span>{item.name}</span>
+                    {item.href === '/messages' && unreadCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="text-xs px-1.5 py-0.5 ml-2 min-w-[20px] h-5 flex items-center justify-center"
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </Badge>
+                    )}
                   </div>
                   <div className={`text-xs mt-0.5 truncate ${
                     isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { supabase } from '@/lib/supabase'
-// Removed complex real-time - using simple patterns
+import { toast } from 'sonner'
 import {
   Conversation,
   Message,
@@ -12,7 +12,8 @@ import {
   MessageFilters,
   MessageStats,
   PaginatedConversations,
-  PaginatedMessages
+  PaginatedMessages,
+  TypingIndicator
 } from '@/lib/types/messages'
 interface UseMessagesOptions {
   autoRefresh?: boolean
@@ -29,7 +30,10 @@ export function useMessages(options: UseMessagesOptions = {}) {
   const [hasMoreConversations, setHasMoreConversations] = useState(false)
   const [hasMoreMessages, setHasMoreMessages] = useState(false)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
+  const [typingTimeouts, setTypingTimeouts] = useState<Map<string, NodeJS.Timeout>>(new Map())
   const refreshIntervalRef = useRef<NodeJS.Timeout>()
+  const realtimeChannelRef = useRef<any>(null)
+
   // Real-time message handlers
   const handleNewMessage = useCallback((message: Message) => {
     setMessages(prev => {
@@ -37,6 +41,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
       if (prev.find(m => m.id === message.id)) return prev
       return [...prev, message]
     })
+
     // Update conversation's last message
     setConversations(prev => prev.map(conv =>
       conv.id === message.conversationId
@@ -44,15 +49,33 @@ export function useMessages(options: UseMessagesOptions = {}) {
             ...conv,
             lastMessage: message.content,
             lastMessageAt: message.createdAt,
-            unreadCount: conv.unreadCount + (message.senderId !== session?.user?.id ? 1 : 0)
+            unreadCount: (conv.unreadCount || 0) + (message.senderId !== session?.user?.id ? 1 : 0)
           }
         : conv
     ))
+
     // Update stats
     if (message.senderId !== session?.user?.id) {
       setStats(prev => prev ? { ...prev, unreadMessages: prev.unreadMessages + 1 } : null)
+
+      // Show toast notification for new messages from others
+      toast.success(`New message from ${message.sender?.name || 'Unknown'}`, {
+        description: message.content.length > 50 ? message.content.substring(0, 50) + '...' : message.content,
+        action: {
+          label: 'View',
+          onClick: () => {
+            // Focus the conversation if it's not already focused
+            if (currentConversation?.id !== message.conversationId) {
+              const conversation = conversations.find(c => c.id === message.conversationId)
+              if (conversation) {
+                setCurrentConversation(conversation)
+              }
+            }
+          }
+        }
+      })
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, currentConversation?.id, conversations])
   const handleMessageUpdate = useCallback((message: Message) => {
     setMessages(prev => prev.map(m => m.id === message.id ? message : m))
   }, [])
@@ -62,22 +85,80 @@ export function useMessages(options: UseMessagesOptions = {}) {
       setCurrentConversation(conversation)
     }
   }, [currentConversation?.id])
-  const handleTypingUpdate = useCallback((userId: string, isTyping: boolean) => {
+  const handleTypingUpdate = useCallback((userId: string, isTyping: boolean, userName?: string) => {
     setTypingUsers(prev => {
       const newSet = new Set(prev)
       if (isTyping) {
         newSet.add(userId)
+
+        // Auto-clear typing indicator after 3 seconds
+        setTypingTimeouts(timeouts => {
+          const newTimeouts = new Map(timeouts)
+
+          // Clear existing timeout for this user
+          const existingTimeout = newTimeouts.get(userId)
+          if (existingTimeout) {
+            clearTimeout(existingTimeout)
+          }
+
+          // Set new timeout
+          const timeout = setTimeout(() => {
+            setTypingUsers(users => {
+              const updatedUsers = new Set(users)
+              updatedUsers.delete(userId)
+              return updatedUsers
+            })
+            setTypingTimeouts(timeouts => {
+              const updatedTimeouts = new Map(timeouts)
+              updatedTimeouts.delete(userId)
+              return updatedTimeouts
+            })
+          }, 3000)
+
+          newTimeouts.set(userId, timeout)
+          return newTimeouts
+        })
       } else {
         newSet.delete(userId)
+
+        // Clear timeout for this user
+        setTypingTimeouts(timeouts => {
+          const newTimeouts = new Map(timeouts)
+          const timeout = newTimeouts.get(userId)
+          if (timeout) {
+            clearTimeout(timeout)
+            newTimeouts.delete(userId)
+          }
+          return newTimeouts
+        })
       }
       return newSet
     })
   }, [])
-  // Simplified - removed complex real-time subscriptions
-  const sendTypingIndicator = useCallback(() => {
-    // Simple typing indicator - could be implemented later if needed
-    console.log('Typing indicator (simplified)')
-  }, [])
+
+  // Send typing indicator
+  const sendTypingIndicator = useCallback(async (conversationId: string, isTyping: boolean) => {
+    if (!session?.user?.id || !currentConversation) return
+
+    try {
+      // Send typing indicator through real-time channel
+      if (realtimeChannelRef.current) {
+        realtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: {
+            conversationId,
+            userId: session.user.id,
+            userName: session.user.user_metadata?.full_name || session.user.email,
+            isTyping,
+            timestamp: new Date().toISOString()
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Failed to send typing indicator:', error)
+    }
+  }, [session?.user?.id, session?.user?.user_metadata?.full_name, session?.user?.email, currentConversation])
   // API call helper
   const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     if (!session?.access_token) {
@@ -225,29 +306,74 @@ export function useMessages(options: UseMessagesOptions = {}) {
   const sendMessage = useCallback(async (request: SendMessageRequest) => {
     try {
       setError(null)
-      const message: Message = await apiCall(
-        `/conversations/${request.conversationId}/messages`,
-        {
+
+      // For file attachments, we need to handle them differently
+      // since we can't send File objects in JSON
+      if (request.attachments && request.attachments.length > 0) {
+        // Create FormData for file upload
+        const formData = new FormData()
+        formData.append('content', request.content)
+        formData.append('messageType', request.messageType || 'text')
+        formData.append('metadata', JSON.stringify(request.metadata || {}))
+
+        // Add files to FormData
+        request.attachments.forEach((file, index) => {
+          formData.append(`attachment_${index}`, file)
+        })
+
+        // Send with FormData
+        const response = await fetch(`/api/messages/conversations/${request.conversationId}/messages`, {
           method: 'POST',
-          body: JSON.stringify(request),
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: formData
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `HTTP ${response.status}`)
         }
-      )
-      // Add message to current messages
-      setMessages(prev => [...prev, message])
-      // Update conversation's last message
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === request.conversationId
-            ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
-            : c
+
+        const message: Message = await response.json()
+
+        // Add message to current messages
+        setMessages(prev => [...prev, message])
+        // Update conversation's last message
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === request.conversationId
+              ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
+              : c
+          )
         )
-      )
-      return message
+        return message
+      } else {
+        // Regular text message
+        const message: Message = await apiCall(
+          `/conversations/${request.conversationId}/messages`,
+          {
+            method: 'POST',
+            body: JSON.stringify(request),
+          }
+        )
+        // Add message to current messages
+        setMessages(prev => [...prev, message])
+        // Update conversation's last message
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === request.conversationId
+              ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
+              : c
+          )
+        )
+        return message
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message')
       throw err
     }
-  }, [apiCall])
+  }, [apiCall, session?.access_token])
   // Update conversation
   const updateConversation = useCallback(async (
     conversationId: string,
@@ -305,6 +431,116 @@ export function useMessages(options: UseMessagesOptions = {}) {
     } catch (err) {
       }
   }, [apiCall])
+  // Real-time subscriptions setup
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    // Create real-time channel for messages
+    const channel = supabase.channel('messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          const newMessage = payload.new as any
+          // Only handle messages for conversations we're interested in
+          if (conversations.some(c => c.id === newMessage.conversation_id)) {
+            handleNewMessage({
+              id: newMessage.id,
+              conversationId: newMessage.conversation_id,
+              senderId: newMessage.sender_id,
+              senderType: newMessage.sender_type,
+              content: newMessage.content,
+              messageType: newMessage.message_type,
+              attachments: newMessage.attachments || [],
+              isRead: newMessage.is_read,
+              readAt: newMessage.read_at ? new Date(newMessage.read_at) : undefined,
+              isEdited: newMessage.is_edited,
+              editedAt: newMessage.edited_at ? new Date(newMessage.edited_at) : undefined,
+              metadata: newMessage.metadata || {},
+              createdAt: new Date(newMessage.created_at),
+              updatedAt: new Date(newMessage.updated_at),
+              sender: {
+                id: newMessage.sender_id,
+                name: newMessage.sender_name || 'Unknown',
+                email: newMessage.sender_email || '',
+                role: newMessage.sender_type
+              }
+            })
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          const updatedMessage = payload.new as any
+          handleMessageUpdate({
+            id: updatedMessage.id,
+            conversationId: updatedMessage.conversation_id,
+            senderId: updatedMessage.sender_id,
+            senderType: updatedMessage.sender_type,
+            content: updatedMessage.content,
+            messageType: updatedMessage.message_type,
+            attachments: updatedMessage.attachments || [],
+            isRead: updatedMessage.is_read,
+            readAt: updatedMessage.read_at ? new Date(updatedMessage.read_at) : undefined,
+            isEdited: updatedMessage.is_edited,
+            editedAt: updatedMessage.edited_at ? new Date(updatedMessage.edited_at) : undefined,
+            metadata: updatedMessage.metadata || {},
+            createdAt: new Date(updatedMessage.created_at),
+            updatedAt: new Date(updatedMessage.updated_at)
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations'
+        },
+        (payload) => {
+          const updatedConversation = payload.new as any
+          handleConversationUpdate({
+            id: updatedConversation.id,
+            clientId: updatedConversation.client_id,
+            adminId: updatedConversation.admin_id,
+            subject: updatedConversation.subject,
+            status: updatedConversation.status,
+            priority: updatedConversation.priority,
+            lastMessageAt: new Date(updatedConversation.last_message_at),
+            createdAt: new Date(updatedConversation.created_at),
+            updatedAt: new Date(updatedConversation.updated_at)
+          })
+        }
+      )
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        const { conversationId, userId, userName, isTyping } = payload.payload
+        // Only handle typing indicators for current conversation and other users
+        if (conversationId === currentConversation?.id && userId !== session.user.id) {
+          handleTypingUpdate(userId, isTyping, userName)
+        }
+      })
+      .subscribe()
+
+    realtimeChannelRef.current = channel
+
+    return () => {
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current)
+        realtimeChannelRef.current = null
+      }
+    }
+  }, [session?.user?.id, conversations, currentConversation?.id, handleNewMessage, handleMessageUpdate, handleConversationUpdate, handleTypingUpdate])
+
   // Auto-refresh functionality
   useEffect(() => {
     if (options.autoRefresh && session?.access_token) {
@@ -320,7 +556,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
       }
     }
   }, [options.autoRefresh, options.refreshInterval, session?.access_token, loadConversations, loadStats])
-  // Simplified - removed complex real-time subscriptions
+
   // Initial load
   useEffect(() => {
     if (session?.access_token) {
@@ -328,14 +564,22 @@ export function useMessages(options: UseMessagesOptions = {}) {
       loadStats()
     }
   }, [session?.access_token, loadConversations, loadStats])
+
   // Cleanup
   useEffect(() => {
     return () => {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current)
       }
+
+      // Clear all typing timeouts
+      typingTimeouts.forEach(timeout => clearTimeout(timeout))
+
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current)
+      }
     }
-  }, [])
+  }, [typingTimeouts])
   return {
     // State
     conversations,

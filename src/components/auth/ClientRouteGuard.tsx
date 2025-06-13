@@ -1,75 +1,59 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSessionSync } from '@/hooks/useSessionSync'
-import { LoadingScreen } from '@/components/ui/loading-spinner'
+import { useAuth } from '@/contexts/AuthProvider'
+import { SimpleLoading } from '@/components/ui/simple-loading'
 
 interface ClientRouteGuardProps {
   children: React.ReactNode
-  fallbackRoute?: string
+  fallbackPath?: string
+  allowedRoles?: ('client' | 'admin' | 'tax_professional')[]
 }
 
-/**
- * ClientRouteGuard - Protects routes that should only be accessible to client users
- *
- * @param children - The content to render if user has client access
- * @param fallbackRoute - Where to redirect non-client users (default: /pipeline)
- */
 export function ClientRouteGuard({
   children,
-  fallbackRoute = '/pipeline'
+  fallbackPath = '/signin',
+  allowedRoles = ['client', 'admin', 'tax_professional']
 }: ClientRouteGuardProps) {
-  const { user, loading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading } = useAuth()
   const router = useRouter()
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (isSessionReady && user) {
-      const userRole = user.role || 'client'
+    if (loading) return
 
-      // Check if user is a client
-      if (userRole !== 'client') {
-        console.log(`🔒 ClientRouteGuard: Redirecting user with role "${userRole}" to ${fallbackRoute}`)
-        router.replace(fallbackRoute)
-        return
-      }
+    // If no user, redirect to signin
+    if (!user) {
+      console.log('🔐 ClientRouteGuard: No user, redirecting to signin')
+      router.replace('/signin')
+      setIsAuthorized(false)
+      return
     }
-  }, [user, isSessionReady, router, fallbackRoute])
 
-  // Show loading while checking authentication and session sync
-  if (loading || !isSessionReady) {
-    return <LoadingScreen text="Verifying client access..." />
+    const userRole = user.role || 'client'
+
+    // Check if user has required role
+    if (!allowedRoles.includes(userRole as any)) {
+      console.log(`🔐 ClientRouteGuard: User role ${userRole} not in allowed roles ${allowedRoles.join(', ')}, redirecting to ${fallbackPath}`)
+      router.replace(fallbackPath)
+      setIsAuthorized(false)
+      return
+    }
+
+    console.log(`🔐 ClientRouteGuard: User ${user.email} with role ${userRole} authorized`)
+    setIsAuthorized(true)
+  }, [user, loading, allowedRoles, fallbackPath, router])
+
+  // Show loading while checking auth
+  if (loading || isAuthorized === null) {
+    return <SimpleLoading text="Verifying access..." />
   }
 
-  // Don't render anything if user doesn't exist
-  if (!isAuthenticated || !user) {
-    return null
+  // Show loading while redirecting
+  if (!isAuthorized) {
+    return <SimpleLoading text="Redirecting..." />
   }
 
-  // Check role access
-  const userRole = user.role || 'client'
-
-  if (userRole !== 'client') {
-    return null // Will redirect in useEffect
-  }
-
-  // Render protected content
   return <>{children}</>
-}
-
-/**
- * Hook to check if current user has client access
- */
-export function useClientAccess() {
-  const { user, loading, isSessionReady, isAuthenticated } = useSessionSync()
-
-  const isClient = user && user.role === 'client'
-  const hasAccess = isSessionReady && isAuthenticated && isClient
-
-  return {
-    isClient,
-    hasAccess,
-    loading: loading || !isSessionReady,
-    userRole: user?.role || 'client'
-  }
 }

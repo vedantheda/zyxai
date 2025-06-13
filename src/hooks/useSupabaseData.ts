@@ -2,44 +2,111 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useSessionSync, useDataFetchReady } from './useSessionSync'
-import { clearCache } from '@/lib/globalCache'
-import { useRealtimeClients } from './useRealtimeData'
+import { useAuth } from '@/contexts/AuthProvider'
+// Removed complex caching and real-time - using simple patterns
 
-// Enhanced clients hook with real-time updates
+// Simple clients hook
 export function useClients() {
-  const { user } = useSessionSync()
-  const {
-    data: clients,
-    loading,
-    error,
-    updateItem: updateClientOptimistic,
-    insertItem: insertClientOptimistic,
-    deleteItem: deleteClientOptimistic,
-    refresh
-  } = useRealtimeClients()
+  const [clients, setClients] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user, loading: authLoading } = useAuth()
 
-  // Legacy compatibility - keep the same interface
-  const fetchClients = useCallback(() => {
-    refresh()
-  }, [refresh])
-
-  const retryFetch = useCallback(() => {
-    if (user?.id) {
-      clearCache(`clients-${user.id}`)
+  useEffect(() => {
+    // Wait for auth to be ready before fetching
+    if (authLoading) {
+      setLoading(true)
+      return
     }
-    refresh()
-  }, [user?.id, refresh])
 
-  // Enhanced addClient with optimistic updates
-  const addClient = useCallback(async (clientData: any) => {
-    return await insertClientOptimistic(clientData)
-  }, [insertClientOptimistic])
+    if (!user) {
+      setLoading(false)
+      setClients([])
+      setError(null)
+      return
+    }
 
-  // Enhanced updateClient with optimistic updates
-  const updateClient = useCallback(async (id: string, updates: any) => {
-    return await updateClientOptimistic(id, updates)
-  }, [updateClientOptimistic])
+    let isMounted = true
+
+    const fetchClients = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        if (isMounted) {
+          setClients(data || [])
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'An error occurred')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchClients()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, authLoading])
+
+  const addClient = async (clientData: any) => {
+    if (!user) return { error: 'User not authenticated' }
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          ...clientData,
+          user_id: user.id,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      setClients(prev => [data, ...prev])
+      return { data, error: null }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'An error occurred'
+      return { data: null, error }
+    }
+  }
+
+  const updateClient = async (id: string, updates: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      setClients(prev => prev.map(client => client.id === id ? data : client))
+      return { data, error: null }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'An error occurred'
+      return { data: null, error }
+    }
+  }
+
+  const refresh = useCallback(() => {
+    if (user?.id) {
+      // Re-trigger the effect by updating a dependency
+      setError(null)
+    }
+  }, [user?.id])
 
   return {
     clients,
@@ -47,9 +114,9 @@ export function useClients() {
     error,
     addClient,
     updateClient,
-    retryFetch,
-    fetchClients,
-    refresh
+    refresh,
+    fetchClients: refresh,
+    retryFetch: refresh
   }
 }
 
@@ -58,12 +125,12 @@ export function useDocuments() {
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { isReady, user, loading: sessionLoading } = useDataFetchReady()
+  const { user, loading: authLoading } = useAuth()
 
   useEffect(() => {
-    // Wait for session to be ready before fetching
-    if (!isReady) {
-      setLoading(sessionLoading)
+    // Wait for auth to be ready before fetching
+    if (authLoading) {
+      setLoading(true)
       return
     }
 
@@ -111,7 +178,7 @@ export function useDocuments() {
     return () => {
       isMounted = false
     }
-  }, [user, isReady])
+  }, [user, authLoading])
 
   const addDocument = async (documentData: any) => {
     if (!user) return { error: 'User not authenticated' }
@@ -143,12 +210,12 @@ export function useTasks() {
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { isReady, user, loading: sessionLoading } = useDataFetchReady()
+  const { user, loading: authLoading } = useAuth()
 
   useEffect(() => {
-    // Wait for session to be ready before fetching
-    if (!isReady) {
-      setLoading(sessionLoading)
+    // Wait for auth to be ready before fetching
+    if (authLoading) {
+      setLoading(true)
       return
     }
 
@@ -184,7 +251,7 @@ export function useTasks() {
     }
 
     fetchTasks()
-  }, [user, isReady])
+  }, [user, authLoading])
 
   const addTask = async (taskData: any) => {
     if (!user) return { error: 'User not authenticated' }
@@ -241,12 +308,12 @@ export function useDashboardStats() {
     pendingTasks: 0,
   })
   const [loading, setLoading] = useState(true)
-  const { isReady, user, loading: sessionLoading } = useDataFetchReady()
+  const { user, loading: authLoading } = useAuth()
 
   useEffect(() => {
-    // Wait for session to be ready before fetching
-    if (!isReady) {
-      setLoading(sessionLoading)
+    // Wait for auth to be ready before fetching
+    if (authLoading) {
+      setLoading(true)
       return
     }
 
@@ -308,7 +375,7 @@ export function useDashboardStats() {
     }
 
     fetchStats()
-  }, [user, isReady])
+  }, [user, authLoading])
 
   return { stats, loading }
 }

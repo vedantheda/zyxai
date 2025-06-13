@@ -1,9 +1,7 @@
 'use client'
-
 import React from 'react'
 import { useFastNavigation } from '@/hooks/useFastNavigation'
 import { cn } from '@/lib/utils'
-
 interface FastLinkProps {
   href: string
   children: React.ReactNode
@@ -14,7 +12,6 @@ interface FastLinkProps {
   instant?: boolean
   [key: string]: any
 }
-
 /**
  * Optimized Link component for fast navigation
  * Includes prefetching, loading states, and performance optimizations
@@ -30,20 +27,16 @@ export function FastLink({
   ...props
 }: FastLinkProps) {
   const { navigate, navigateInstantly, prefetchOnHover: prefetch } = useFastNavigation()
-
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
-
     // Always navigate instantly - no loading popup
     navigate(href)
   }
-
   const handleMouseEnter = () => {
     if (prefetchOnHover) {
       prefetch(href)
     }
   }
-
   return (
     <a
       href={href}
@@ -56,7 +49,6 @@ export function FastLink({
     </a>
   )
 }
-
 /**
  * Fast Link for buttons
  */
@@ -72,26 +64,21 @@ export function FastButton({
   ...props
 }: FastLinkProps & { onClick?: () => void }) {
   const { navigate, navigateInstantly, prefetchOnHover: prefetch } = useFastNavigation()
-
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
-
     if (onClick) {
       onClick()
     }
-
     if (href) {
       // Always navigate instantly - no loading popup
       navigate(href)
     }
   }
-
   const handleMouseEnter = () => {
     if (prefetchOnHover && href) {
       prefetch(href)
     }
   }
-
   return (
     <button
       onClick={handleClick}

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useMessages } from '@/hooks/useMessages'
 import { GlobalSidebar } from '@/components/layout/GlobalSidebar'
 import {
@@ -25,7 +25,7 @@ interface ClientLayoutContentProps {
 }
 
 export function ClientLayoutContent({ children, user }: ClientLayoutContentProps) {
-  const { signOut } = useAuth()
+  const { user: authUser } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
@@ -37,13 +37,13 @@ export function ClientLayoutContent({ children, user }: ClientLayoutContentProps
     console.log('🔐 Client: Starting sign out')
     setIsSigningOut(true)
     try {
-      const { error } = await signOut()
+      const { supabase } = await import('@/lib/supabase')
+      const { error } = await supabase.auth.signOut()
       if (error) {
         console.error('🔐 Client: Sign out error:', error)
-        // Could add toast notification here if needed
       } else {
         console.log('🔐 Client: Sign out successful')
-        // AuthContext will handle the redirect
+        window.location.href = '/signin'
       }
     } catch (error) {
       console.error('🔐 Client: Sign out exception:', error)

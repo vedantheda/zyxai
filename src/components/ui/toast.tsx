@@ -1,9 +1,7 @@
 'use client'
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
 interface Toast {
   id: string
   type: 'success' | 'error' | 'warning' | 'info'
@@ -11,34 +9,27 @@ interface Toast {
   description?: string
   duration?: number
 }
-
 interface ToastContextType {
   toasts: Toast[]
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
 }
-
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
-
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
-
   const addToast = (toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9)
     const newToast = { ...toast, id }
     setToasts(prev => [...prev, newToast])
-
     // Auto remove after duration
     const duration = toast.duration || 5000
     setTimeout(() => {
       removeToast(id)
     }, duration)
   }
-
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }
-
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
@@ -46,7 +37,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     </ToastContext.Provider>
   )
 }
-
 export function useToast() {
   const context = useContext(ToastContext)
   if (!context) {
@@ -54,10 +44,8 @@ export function useToast() {
   }
   return context
 }
-
 function ToastContainer() {
   const { toasts } = useToast()
-
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
       {toasts.map(toast => (
@@ -66,20 +54,16 @@ function ToastContainer() {
     </div>
   )
 }
-
 function ToastItem({ toast }: { toast: Toast }) {
   const { removeToast } = useToast()
   const [isVisible, setIsVisible] = useState(false)
-
   useEffect(() => {
     setIsVisible(true)
   }, [])
-
   const handleClose = () => {
     setIsVisible(false)
     setTimeout(() => removeToast(toast.id), 150)
   }
-
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
@@ -92,7 +76,6 @@ function ToastItem({ toast }: { toast: Toast }) {
         return <AlertCircle className="w-5 h-5 text-blue-500" />
     }
   }
-
   const getBorderColor = () => {
     switch (toast.type) {
       case 'success':
@@ -105,7 +88,6 @@ function ToastItem({ toast }: { toast: Toast }) {
         return 'border-blue-200'
     }
   }
-
   return (
     <div
       className={cn(
@@ -132,28 +114,19 @@ function ToastItem({ toast }: { toast: Toast }) {
     </div>
   )
 }
-
 // Helper functions for easy usage
 export const toast = {
   success: (title: string, description?: string) => {
     // This will be implemented when ToastProvider is available
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Success:', title, description)
-    }
+    
   },
   error: (title: string, description?: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Error:', title, description)
-    }
+    
   },
   warning: (title: string, description?: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Warning:', title, description)
-    }
+    
   },
   info: (title: string, description?: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Info:', title, description)
-    }
+    
   },
 }

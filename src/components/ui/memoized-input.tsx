@@ -1,10 +1,8 @@
 'use client'
-
 import { memo, forwardRef, useCallback } from 'react'
 import { Input } from './input'
 import { Textarea } from './textarea'
 import { cn } from '@/lib/utils'
-
 // Memoized Input component to prevent focus loss
 export const MemoizedInput = memo(forwardRef<
   HTMLInputElement,
@@ -18,9 +16,7 @@ export const MemoizedInput = memo(forwardRef<
     {...props}
   />
 )))
-
 MemoizedInput.displayName = 'MemoizedInput'
-
 // Memoized Textarea component to prevent focus loss
 export const MemoizedTextarea = memo(forwardRef<
   HTMLTextAreaElement,
@@ -34,9 +30,7 @@ export const MemoizedTextarea = memo(forwardRef<
     {...props}
   />
 )))
-
 MemoizedTextarea.displayName = 'MemoizedTextarea'
-
 // Memoized Search Input with icon
 export const MemoizedSearchInput = memo(forwardRef<
   HTMLInputElement,
@@ -58,36 +52,29 @@ export const MemoizedSearchInput = memo(forwardRef<
     />
   </div>
 )))
-
 MemoizedSearchInput.displayName = 'MemoizedSearchInput'
-
 // Hook for creating memoized change handlers
 export const useMemoizedHandlers = () => {
   const createInputHandler = useCallback((setter: (value: string) => void) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setter(e.target.value)
     }, [])
-
   const createTextareaHandler = useCallback((setter: (value: string) => void) =>
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setter(e.target.value)
     }, [])
-
   const createSelectHandler = useCallback((setter: (value: string) => void) =>
     (value: string) => {
       setter(value)
     }, [])
-
   const createCheckboxHandler = useCallback((setter: (value: boolean) => void) =>
     (checked: boolean) => {
       setter(checked)
     }, [])
-
   const createNumberHandler = useCallback((setter: (value: number) => void) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setter(parseFloat(e.target.value) || 0)
     }, [])
-
   return {
     createInputHandler,
     createTextareaHandler,

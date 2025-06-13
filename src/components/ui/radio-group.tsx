@@ -1,27 +1,22 @@
 "use client"
-
 import * as React from "react"
 import { cn } from "@/lib/utils"
-
 interface RadioGroupProps {
   value?: string
   onValueChange?: (value: string) => void
   className?: string
   children: React.ReactNode
 }
-
 interface RadioGroupItemProps {
   value: string
   id?: string
   className?: string
   disabled?: boolean
 }
-
 const RadioGroupContext = React.createContext<{
   value?: string
   onValueChange?: (value: string) => void
 }>({})
-
 const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
   ({ className, value, onValueChange, children, ...props }, ref) => {
     return (
@@ -39,12 +34,10 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
   }
 )
 RadioGroup.displayName = "RadioGroup"
-
 const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
   ({ className, value, id, disabled, ...props }, ref) => {
     const context = React.useContext(RadioGroupContext)
     const isChecked = context.value === value
-
     return (
       <input
         ref={ref}
@@ -64,5 +57,4 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
   }
 )
 RadioGroupItem.displayName = "RadioGroupItem"
-
 export { RadioGroup, RadioGroupItem }

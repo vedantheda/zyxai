@@ -1,20 +1,15 @@
 "use client"
-
 import * as React from "react"
 import { useEffect, useRef } from "react"
-
 import { cn } from "@/lib/utils"
-
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     const internalRef = useRef<HTMLInputElement>(null)
     const inputRef = ref || internalRef
-
     // Handle browser extension modifications after hydration
     useEffect(() => {
       if (typeof inputRef === 'object' && inputRef?.current) {
         const input = inputRef.current
-
         // Remove any attributes that browser extensions might add
         const extensionAttributes = [
           'data-temp-mail-org',
@@ -22,20 +17,17 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           'data-lpignore',
           'data-form-type'
         ]
-
         extensionAttributes.forEach(attr => {
           if (input.hasAttribute(attr)) {
             input.removeAttribute(attr)
           }
         })
-
         // Reset any inline styles that extensions might add
         if (input.style.backgroundImage && input.style.backgroundImage.includes('data:')) {
           input.style.backgroundImage = ''
         }
       }
     })
-
     return (
       <input
         type={type}
@@ -51,5 +43,4 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   }
 )
 Input.displayName = "Input"
-
 export { Input }

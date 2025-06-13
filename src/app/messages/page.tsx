@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
-import { useMessages } from '@/hooks/useSimpleData'
-import { ConversationList } from '@/components/messages/ConversationList'
-import { MessageChat } from '@/components/messages/MessageChat'
-import { CreateConversationDialog } from '@/components/messages/CreateConversationDialog'
+import { useMessages } from '@/hooks/features/useMessages'
+import { ConversationList } from '@/components/features/messages/ConversationList'
+import { MessageChat } from '@/components/features/messages/MessageChat'
+import { CreateConversationDialog } from '@/components/features/messages/CreateConversationDialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,49 +31,23 @@ export default function MessagesPage() {
 
 
 
-  // Simplified messages - using basic state
-  const [messages, setMessages] = useState([])
-  const [conversations, setConversations] = useState([])
-  const [currentConversation, setCurrentConversation] = useState(null)
-  const [typingUsers, setTypingUsers] = useState(new Set())
-  const [messagesLoading, setMessagesLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const refresh = () => {
-    // Simple refresh - could fetch from Supabase if needed
-    console.log('Refreshing messages...')
-  }
-
-  const loadConversation = async (id: string) => {
-    // Simple load - could implement later
-    console.log('Loading conversation:', id)
-  }
-
-  const loadMessages = async (conversationId: string) => {
-    // Simple load - could implement later
-    console.log('Loading messages for:', conversationId)
-  }
-
-  const createConversation = async (data: any) => {
-    // Simple create - could implement later
-    console.log('Creating conversation:', data)
-    return { id: 'new-conversation' }
-  }
-
-  const sendMessage = async (data: any) => {
-    // Simple send - could implement later
-    console.log('Sending message:', data)
-  }
-
-  const markAsRead = async (conversationId: string) => {
-    // Simple mark as read - could implement later
-    console.log('Marking as read:', conversationId)
-  }
-
-  const sendTypingIndicator = () => {
-    // Simple typing indicator
-    console.log('Typing indicator')
-  }
+  // Use the real messages hook
+  const {
+    conversations,
+    currentConversation,
+    messages,
+    loading: messagesLoading,
+    error,
+    typingUsers,
+    loadConversation,
+    loadMessages,
+    createConversation,
+    sendMessage,
+    markAsRead,
+    sendTypingIndicator,
+    setCurrentConversation,
+    refresh
+  } = useMessages({ autoRefresh: true, refreshInterval: 30000 })
 
   // Show error if any - MUST BE WITH OTHER HOOKS
   useEffect(() => {
@@ -153,8 +127,8 @@ export default function MessagesPage() {
     }
   }
 
-  // Handle sending message
-  const handleSendMessage = async (content: string) => {
+  // Handle sending message with file attachments
+  const handleSendMessage = async (content: string, attachments?: File[]) => {
     if (!currentConversation) return
 
     try {
@@ -162,14 +136,24 @@ export default function MessagesPage() {
       await sendMessage({
         conversationId: currentConversation.id,
         content,
-        messageType: 'text'
+        messageType: attachments && attachments.length > 0 ? 'mixed' : 'text',
+        attachments
       })
+
+      // Success toast for file attachments
+      if (attachments && attachments.length > 0) {
+        addToast({
+          type: 'success',
+          title: 'Message sent',
+          description: `Message with ${attachments.length} attachment(s) sent successfully`
+        })
+      }
     } catch (error) {
       console.error('Error sending message:', error)
       addToast({
         type: 'error',
-        title: 'Error',
-        description: 'Failed to send message'
+        title: 'Failed to send message',
+        description: error instanceof Error ? error.message : 'Failed to send message'
       })
     } finally {
       setSending(false)

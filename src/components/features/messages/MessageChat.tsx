@@ -15,7 +15,8 @@ import {
   Check,
   CheckCheck,
   User,
-  Settings
+  Settings,
+  X
 } from 'lucide-react'
 // import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -24,27 +25,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-// Temporarily disabled file attachment imports
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-// } from '@/components/ui/dialog'
-// import { FileAttachmentInput, AttachmentDisplay } from './FileAttachment'
-// import { fileUploadService } from '@/lib/services/fileUpload'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { FileAttachmentInput, AttachmentDisplay } from './FileAttachment'
+import { fileUploadService } from '@/lib/services/fileUpload'
 import { useToast } from '@/components/ui/toast'
 interface MessageChatProps {
   conversation: Conversation | null
   messages: Message[]
   currentUserId: string
-  onSendMessage: (content: string) => Promise<void>
+  onSendMessage: (content: string, attachments?: File[]) => Promise<void>
   onMarkAsRead?: () => void
   loading?: boolean
   sending?: boolean
   typingUsers?: Set<string>
-  onTypingIndicator?: (isTyping: boolean) => void
+  onTypingIndicator?: (conversationId: string, isTyping: boolean) => void
 }
 export function MessageChat({
   conversation,
@@ -58,10 +58,9 @@ export function MessageChat({
   onTypingIndicator
 }: MessageChatProps) {
   const [messageContent, setMessageContent] = useState('')
-  // Temporarily disable file attachments
-  // const [attachments, setAttachments] = useState<any[]>([])
-  // const [uploading, setUploading] = useState(false)
-  // const [showAttachmentDialog, setShowAttachmentDialog] = useState(false)
+  const [attachments, setAttachments] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [showAttachmentDialog, setShowAttachmentDialog] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -83,21 +82,25 @@ export function MessageChat({
     }
   }, [conversation?.id, onMarkAsRead])
   const handleSendMessage = async () => {
-    if (!messageContent.trim() || sending || !conversation) return
+    if ((!messageContent.trim() && attachments.length === 0) || sending || !conversation) return
     const content = messageContent.trim()
+    const filesToSend = [...attachments]
+
     // Clear immediately for better UX
     setMessageContent('')
+    setAttachments([])
     try {
       // Stop typing indicator
-      if (onTypingIndicator) {
-        onTypingIndicator(false)
+      if (onTypingIndicator && conversation) {
+        onTypingIndicator(conversation.id, false)
       }
-      // Send message
-      await onSendMessage(content)
+      // Send message with attachments
+      await onSendMessage(content, filesToSend)
       textareaRef.current?.focus()
     } catch (error) {
-      // Restore message on error
+      // Restore message and attachments on error
       setMessageContent(content)
+      setAttachments(filesToSend)
     }
   }
   // Handle typing indicator
@@ -105,29 +108,35 @@ export function MessageChat({
     const value = e.target.value
     setMessageContent(value)
     // Send typing indicator
-    if (onTypingIndicator && value.trim()) {
-      onTypingIndicator(true)
+    if (onTypingIndicator && conversation && value.trim()) {
+      onTypingIndicator(conversation.id, true)
       // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
       }
       // Stop typing after 3 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
-        onTypingIndicator(false)
+        if (onTypingIndicator && conversation) {
+          onTypingIndicator(conversation.id, false)
+        }
       }, 3000)
-    } else if (onTypingIndicator && !value.trim()) {
-      onTypingIndicator(false)
+    } else if (onTypingIndicator && conversation && !value.trim()) {
+      onTypingIndicator(conversation.id, false)
     }
   }
-  // Temporarily disabled file attachment functions
-  /*
+  // File attachment functions
   const handleFileSelect = async (files: File[]) => {
-    // File upload functionality temporarily disabled
+    setAttachments(prev => [...prev, ...files])
+    addToast({
+      type: 'success',
+      title: 'Files Added',
+      description: `${files.length} file(s) ready to send`
+    })
   }
-  const handleRemoveAttachment = (attachmentId: string) => {
-    // File removal functionality temporarily disabled
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index))
   }
-  */
   // Download attachment
   const handleDownloadAttachment = async (attachment: any) => {
     try {
@@ -358,6 +367,32 @@ export function MessageChat({
       </CardContent>
       {/* Message input */}
       <div className="p-6 border-t bg-background/50">
+        {/* File attachments preview */}
+        {attachments.length > 0 && (
+          <div className="mb-4">
+            <div className="space-y-2">
+              {attachments.map((file, index) => (
+                <div key={index} className="flex items-center justify-between bg-muted p-2 rounded">
+                  <div className="flex items-center space-x-2">
+                    <Paperclip className="w-4 h-4" />
+                    <span className="text-sm truncate">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveAttachment(index)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex items-end space-x-3">
           <div className="flex-1">
             <Textarea
@@ -372,16 +407,39 @@ export function MessageChat({
             />
           </div>
           <div className="flex flex-col space-y-2">
+            <Dialog open={showAttachmentDialog} onOpenChange={setShowAttachmentDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="h-[38px] px-4"
+                  disabled={sending}
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Attach Files</DialogTitle>
+                </DialogHeader>
+                <FileAttachmentInput
+                  onFileSelect={handleFileSelect}
+                  maxFiles={5}
+                  maxFileSize={10}
+                  disabled={sending}
+                />
+              </DialogContent>
+            </Dialog>
             <Button
               onClick={handleSendMessage}
-              disabled={!messageContent.trim() || sending}
+              disabled={(!messageContent.trim() && attachments.length === 0) || sending}
               size="default"
-              className="h-[80px] px-6"
+              className="h-[38px] px-6"
             >
               {sending ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
               ) : (
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4" />
               )}
             </Button>
           </div>

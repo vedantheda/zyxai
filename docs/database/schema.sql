@@ -862,6 +862,35 @@ CREATE TABLE IF NOT EXISTS public.transaction_anomalies (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Calendar events table for appointments, meetings, and deadlines
+CREATE TABLE IF NOT EXISTS public.calendar_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+  assignee_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  type TEXT CHECK (type IN ('appointment', 'task', 'deadline', 'meeting', 'reminder')) DEFAULT 'appointment',
+  status TEXT CHECK (status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'overdue')) DEFAULT 'scheduled',
+  priority TEXT CHECK (priority IN ('low', 'medium', 'high', 'urgent')) DEFAULT 'medium',
+  location TEXT,
+  is_recurring BOOLEAN DEFAULT false,
+  recurring_pattern TEXT, -- 'daily', 'weekly', 'monthly', 'yearly'
+  reminder_minutes INTEGER[] DEFAULT '{}', -- Array of minutes before event to send reminders
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for calendar events
+CREATE INDEX IF NOT EXISTS idx_calendar_events_user_id ON public.calendar_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_client_id ON public.calendar_events(client_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON public.calendar_events(start_time);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_type ON public.calendar_events(type);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_status ON public.calendar_events(status);
+
 -- Monthly summaries and reports
 CREATE TABLE IF NOT EXISTS public.monthly_summaries (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -924,6 +953,26 @@ ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS processing_status TEXT CHE
 ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS processing_started_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS processing_completed_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS processing_error TEXT;
+
+-- Enable RLS for calendar events
+ALTER TABLE public.calendar_events ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for calendar_events
+CREATE POLICY "Users can view own calendar events" ON public.calendar_events
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own calendar events" ON public.calendar_events
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own calendar events" ON public.calendar_events
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own calendar events" ON public.calendar_events
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Create trigger for updated_at on calendar events
+CREATE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON public.calendar_events
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Insert some sample data for demo purposes
 -- This will only work after you create your first user account

@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-
 export interface ClientMetrics {
   clientId: string
   clientName: string
@@ -16,7 +15,6 @@ export interface ClientMetrics {
   documentsProcessed: number
   complianceScore: number
 }
-
 export interface PartnerMetrics {
   partnerId: string
   partnerName: string
@@ -31,7 +29,6 @@ export interface PartnerMetrics {
   specializations: string[]
   performanceRank: number
 }
-
 export interface RevenueAnalytics {
   totalRevenue: number
   recurringRevenue: number
@@ -43,7 +40,6 @@ export interface RevenueAnalytics {
   forecastedRevenue: number
   churnRisk: number
 }
-
 export interface EngagementMetrics {
   totalEngagements: number
   averageEngagementDuration: number
@@ -54,7 +50,6 @@ export interface EngagementMetrics {
   escalationRate: number
   clientRetentionRate: number
 }
-
 export interface WorkloadMetrics {
   totalHours: number
   billableHours: number
@@ -65,7 +60,6 @@ export interface WorkloadMetrics {
   overtimeHours: number
   efficiencyScore: number
 }
-
 export interface ProfitabilityAnalysis {
   grossProfit: number
   netProfit: number
@@ -78,7 +72,6 @@ export interface ProfitabilityAnalysis {
   profitabilityByService: Record<string, number>
   profitabilityByClient: Record<string, number>
 }
-
 export interface KPIDashboard {
   overview: {
     totalRevenue: number
@@ -102,7 +95,6 @@ export interface KPIDashboard {
   }
   alerts: KPIAlert[]
 }
-
 export interface KPIAlert {
   id: string
   type: 'revenue_decline' | 'client_churn' | 'low_satisfaction' | 'capacity_overload' | 'profitability_drop'
@@ -115,10 +107,8 @@ export interface KPIAlert {
   actionRequired: boolean
   createdAt: Date
 }
-
 export class KPIDashboardService {
   constructor(private userId: string) {}
-
   /**
    * Get comprehensive KPI dashboard data
    */
@@ -139,7 +129,6 @@ export class KPIDashboardService {
         this.getWorkloadMetrics(timeframe),
         this.getProfitabilityAnalysis(timeframe)
       ])
-
       const overview = {
         totalRevenue: revenueAnalytics.totalRevenue,
         totalClients: clientMetrics.length,
@@ -148,10 +137,8 @@ export class KPIDashboardService {
         clientSatisfaction: this.calculateAverageSatisfaction(clientMetrics),
         utilizationRate: workloadMetrics.utilizationRate
       }
-
       const trends = await this.calculateTrends(timeframe)
       const alerts = await this.generateKPIAlerts(overview, trends)
-
       return {
         overview,
         revenueAnalytics,
@@ -164,18 +151,15 @@ export class KPIDashboardService {
         alerts
       }
     } catch (error) {
-      console.error('Error getting dashboard data:', error)
       throw new Error('Failed to get dashboard data')
     }
   }
-
   /**
    * Get revenue analytics
    */
   async getRevenueAnalytics(timeframe: string): Promise<RevenueAnalytics> {
     try {
       const startDate = this.getStartDate(timeframe)
-      
       // Get revenue data from invoices and payments
       const { data: invoices, error } = await supabase
         .from('invoices')
@@ -187,17 +171,13 @@ export class KPIDashboardService {
         .eq('user_id', this.userId)
         .gte('created_at', startDate.toISOString())
         .eq('status', 'paid')
-
       if (error) throw error
-
       const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.total || 0), 0) || 0
       const recurringRevenue = invoices?.filter(inv => inv.is_recurring).reduce((sum, inv) => sum + (inv.total || 0), 0) || 0
       const oneTimeRevenue = totalRevenue - recurringRevenue
-
       const revenueByService = this.calculateRevenueByService(invoices || [])
       const revenueByClient = this.calculateRevenueByClient(invoices || [])
       const monthlyTrend = await this.calculateMonthlyTrend(timeframe)
-      
       return {
         totalRevenue,
         recurringRevenue,
@@ -210,18 +190,15 @@ export class KPIDashboardService {
         churnRisk: await this.calculateChurnRisk()
       }
     } catch (error) {
-      console.error('Error getting revenue analytics:', error)
       throw new Error('Failed to get revenue analytics')
     }
   }
-
   /**
    * Get client metrics with profitability analysis
    */
   async getClientMetrics(timeframe: string): Promise<ClientMetrics[]> {
     try {
       const startDate = this.getStartDate(timeframe)
-      
       const { data: clients, error } = await supabase
         .from('clients')
         .select(`
@@ -247,16 +224,12 @@ export class KPIDashboardService {
         `)
         .eq('user_id', this.userId)
         .gte('invoices.created_at', startDate.toISOString())
-
       if (error) throw error
-
       return (clients || []).map(client => this.calculateClientMetrics(client))
     } catch (error) {
-      console.error('Error getting client metrics:', error)
       throw new Error('Failed to get client metrics')
     }
   }
-
   /**
    * Get partner performance metrics
    */
@@ -281,35 +254,28 @@ export class KPIDashboardService {
         }
       ]
     } catch (error) {
-      console.error('Error getting partner metrics:', error)
       throw new Error('Failed to get partner metrics')
     }
   }
-
   /**
    * Get engagement metrics
    */
   async getEngagementMetrics(timeframe: string): Promise<EngagementMetrics> {
     try {
       const startDate = this.getStartDate(timeframe)
-      
       // Get engagement data from various sources
       const { data: tasks, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', this.userId)
         .gte('created_at', startDate.toISOString())
-
       const { data: emails, error: emailsError } = await supabase
         .from('emails')
         .select('*')
         .eq('user_id', this.userId)
         .gte('received_at', startDate.toISOString())
-
       if (tasksError || emailsError) {
-        console.warn('Error fetching engagement data')
-      }
-
+        }
       return {
         totalEngagements: (tasks?.length || 0) + (emails?.length || 0),
         averageEngagementDuration: 2.5, // hours
@@ -326,29 +292,23 @@ export class KPIDashboardService {
         clientRetentionRate: 94.2 // percentage
       }
     } catch (error) {
-      console.error('Error getting engagement metrics:', error)
       throw new Error('Failed to get engagement metrics')
     }
   }
-
   /**
    * Get workload metrics
    */
   async getWorkloadMetrics(timeframe: string): Promise<WorkloadMetrics> {
     try {
       const startDate = this.getStartDate(timeframe)
-      
       const { data: timeEntries, error } = await supabase
         .from('time_entries')
         .select('*')
         .eq('user_id', this.userId)
         .gte('date', startDate.toISOString())
-
       if (error) throw error
-
       const totalHours = timeEntries?.reduce((sum, entry) => sum + (entry.hours || 0), 0) || 0
       const billableHours = timeEntries?.filter(entry => entry.billable).reduce((sum, entry) => sum + (entry.hours || 0), 0) || 0
-
       return {
         totalHours,
         billableHours,
@@ -360,11 +320,9 @@ export class KPIDashboardService {
         efficiencyScore: 88.7
       }
     } catch (error) {
-      console.error('Error getting workload metrics:', error)
       throw new Error('Failed to get workload metrics')
     }
   }
-
   /**
    * Get profitability analysis
    */
@@ -372,15 +330,12 @@ export class KPIDashboardService {
     try {
       const revenueAnalytics = await this.getRevenueAnalytics(timeframe)
       const workloadMetrics = await this.getWorkloadMetrics(timeframe)
-      
       // Calculate costs (simplified)
       const laborCost = workloadMetrics.totalHours * 50 // $50/hour average cost
       const overheadCost = revenueAnalytics.totalRevenue * 0.2 // 20% overhead
       const totalCosts = laborCost + overheadCost
-      
       const grossProfit = revenueAnalytics.totalRevenue - totalCosts
       const netProfit = grossProfit * 0.85 // After taxes and other expenses
-      
       return {
         grossProfit,
         netProfit,
@@ -394,17 +349,14 @@ export class KPIDashboardService {
         profitabilityByClient: revenueAnalytics.revenueByClient
       }
     } catch (error) {
-      console.error('Error getting profitability analysis:', error)
       throw new Error('Failed to get profitability analysis')
     }
   }
-
   // Private helper methods
   private calculateClientMetrics(client: any): ClientMetrics {
     const totalRevenue = client.invoices?.reduce((sum: number, inv: any) => sum + (inv.total || 0), 0) || 0
     const hoursSpent = client.time_entries?.reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0) || 0
     const documentsProcessed = client.documents?.length || 0
-    
     return {
       clientId: client.id,
       clientName: client.name,
@@ -422,17 +374,14 @@ export class KPIDashboardService {
       complianceScore: 92.3
     }
   }
-
   private calculateEngagementScore(client: any): number {
     // Calculate based on recent activity, response times, etc.
     return 85.5
   }
-
   private calculateAverageSatisfaction(clients: ClientMetrics[]): number {
     if (clients.length === 0) return 0
     return clients.reduce((sum, client) => sum + client.satisfactionScore, 0) / clients.length
   }
-
   private calculateRevenueByService(invoices: any[]): Record<string, number> {
     return invoices.reduce((acc, invoice) => {
       invoice.invoice_items?.forEach((item: any) => {
@@ -442,7 +391,6 @@ export class KPIDashboardService {
       return acc
     }, {})
   }
-
   private calculateRevenueByClient(invoices: any[]): Record<string, number> {
     return invoices.reduce((acc, invoice) => {
       const clientName = invoice.clients?.name || 'Unknown'
@@ -450,7 +398,6 @@ export class KPIDashboardService {
       return acc
     }, {})
   }
-
   private async calculateMonthlyTrend(timeframe: string): Promise<Array<{ month: string; revenue: number; growth: number }>> {
     // Implementation would calculate actual monthly trends
     return [
@@ -459,19 +406,16 @@ export class KPIDashboardService {
       { month: 'Mar', revenue: 52000, growth: 8.3 }
     ]
   }
-
   private forecastRevenue(monthlyTrend: Array<{ month: string; revenue: number; growth: number }>): number {
     if (monthlyTrend.length === 0) return 0
     const lastMonth = monthlyTrend[monthlyTrend.length - 1]
     const avgGrowth = monthlyTrend.reduce((sum, month) => sum + month.growth, 0) / monthlyTrend.length
     return lastMonth.revenue * (1 + avgGrowth / 100)
   }
-
   private async calculateChurnRisk(): Promise<number> {
     // Implementation would calculate actual churn risk
     return 8.5
   }
-
   private async calculateTrends(timeframe: string): Promise<any> {
     return {
       revenueGrowth: 12.5,
@@ -480,10 +424,8 @@ export class KPIDashboardService {
       satisfactionTrend: 2.1
     }
   }
-
   private async generateKPIAlerts(overview: any, trends: any): Promise<KPIAlert[]> {
     const alerts: KPIAlert[] = []
-
     if (trends.revenueGrowth < 5) {
       alerts.push({
         id: 'revenue_alert_1',
@@ -498,7 +440,6 @@ export class KPIDashboardService {
         createdAt: new Date()
       })
     }
-
     if (overview.utilizationRate < 75) {
       alerts.push({
         id: 'utilization_alert_1',
@@ -513,10 +454,8 @@ export class KPIDashboardService {
         createdAt: new Date()
       })
     }
-
     return alerts
   }
-
   private getStartDate(timeframe: string): Date {
     const now = new Date()
     switch (timeframe) {
@@ -531,7 +470,6 @@ export class KPIDashboardService {
         return new Date(now.getFullYear(), now.getMonth(), 1)
     }
   }
-
   private getWeeksInTimeframe(timeframe: string): number {
     switch (timeframe) {
       case 'month': return 4

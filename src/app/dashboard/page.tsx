@@ -18,7 +18,10 @@ import {
   Brain,
   Zap,
   Calendar,
-  DollarSign
+  DollarSign,
+  MessageSquare,
+  Target,
+  BarChart3
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { SimpleLoading } from '@/components/ui/simple-loading'
@@ -236,10 +239,8 @@ function DashboardPageContent({ user }: { user: any }) {
     )
   }
 
-  // Admin users should be redirected at the page level, not here
-
-  // Simple mock data instead of complex hooks
-  const dashboardData = {
+  // Dashboard data based on user role
+  const dashboardData = user?.role === 'client' ? {
     stats: {
       progressPercentage: 75,
       documentsUploaded: 3,
@@ -257,10 +258,29 @@ function DashboardPageContent({ user }: { user: any }) {
       { action: 'Profile created', time: '2 hours ago', status: 'completed', icon: 'user' },
       { action: 'Documents uploaded', time: '1 day ago', status: 'info', icon: 'file' }
     ]
+  } : {
+    // Admin dashboard data
+    stats: {
+      activeClients: 247,
+      documentsProcessed: 1429,
+      tasksCompleted: 89,
+      monthlyRevenue: '$47,250'
+    },
+    tasks: [
+      { id: '1', title: 'Review Johnson LLC K-1', status: 'pending', priority: 'high', type: 'review' },
+      { id: '2', title: 'Client meeting with Chen Corp', status: 'pending', priority: 'medium', type: 'meeting' },
+      { id: '3', title: 'File extension for Davis Trust', status: 'pending', priority: 'high', type: 'filing' },
+      { id: '4', title: 'Process W-2s for Wilson Inc', status: 'pending', priority: 'low', type: 'processing' }
+    ],
+    recentActivity: [
+      { action: 'New client Sarah Johnson added', time: '2 hours ago', status: 'completed', icon: 'user' },
+      { action: 'AI processed 47 documents', time: '4 hours ago', status: 'info', icon: 'file' },
+      { action: 'Monthly report generated', time: '1 day ago', status: 'completed', icon: 'check' }
+    ]
   }
 
-  // Simple stats for admin dashboard - no complex memoization
-  const adminStats = [
+  // Stats based on user role
+  const adminStats = user?.role === 'client' ? [
     {
       title: 'Tax Return Progress',
       value: `${dashboardData.stats.progressPercentage}%`,
@@ -285,8 +305,37 @@ function DashboardPageContent({ user }: { user: any }) {
     {
       title: 'Days to Deadline',
       value: dashboardData.stats.daysToDeadline.toString(),
-      description: 'April 15, 2024',
+      description: 'April 15, 2025',
       icon: Calendar,
+      color: 'text-orange-600'
+    },
+  ] : [
+    {
+      title: 'Active Clients',
+      value: dashboardData.stats.activeClients.toString(),
+      description: '+12% from last month',
+      icon: Users,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Documents Processed',
+      value: dashboardData.stats.documentsProcessed.toLocaleString(),
+      description: '+23% from last month',
+      icon: FileText,
+      color: 'text-green-600'
+    },
+    {
+      title: 'Tasks Completed',
+      value: dashboardData.stats.tasksCompleted.toString(),
+      description: '+8% from last month',
+      icon: CheckSquare,
+      color: 'text-emerald-600'
+    },
+    {
+      title: 'Monthly Revenue',
+      value: dashboardData.stats.monthlyRevenue,
+      description: '+15% from last month',
+      icon: DollarSign,
       color: 'text-orange-600'
     },
   ]
@@ -302,27 +351,43 @@ function DashboardPageContent({ user }: { user: any }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Tax Practice Dashboard
+            {user?.role === 'client' ? 'Your Tax Dashboard' : 'Tax Practice Dashboard'}
           </h1>
           <p className="text-muted-foreground">
-            Manage your clients, track progress, and streamline your tax practice operations.
+            {user?.role === 'client'
+              ? 'Track your tax return progress and manage your documents.'
+              : 'Manage your clients, track progress, and streamline your tax practice operations.'
+            }
           </p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Schedule Call
+          <Button variant="outline" asChild>
+            <Link href="/calendar">
+              <Calendar className="w-4 h-4 mr-2" />
+              {user?.role === 'client' ? 'View Calendar' : 'Schedule Call'}
+            </Link>
           </Button>
-          {dashboardData?.onboardingStatus.isCompleted ? (
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Upload Documents
-            </Button>
+          {user?.role === 'client' ? (
+            dashboardData?.onboardingStatus?.isCompleted ? (
+              <Button asChild>
+                <Link href="/documents">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Upload Documents
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/onboarding">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Complete Setup
+                </Link>
+              </Button>
+            )
           ) : (
             <Button asChild>
-              <Link href="/onboarding">
+              <Link href="/clients/new">
                 <Plus className="w-4 h-4 mr-2" />
-                Complete Setup
+                Add New Client
               </Link>
             </Button>
           )}
@@ -342,9 +407,14 @@ function DashboardPageContent({ user }: { user: any }) {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <CheckSquare className="w-5 h-5" />
-              <span>Your Tax Checklist</span>
+              <span>{user?.role === 'client' ? 'Your Tax Checklist' : 'Priority Tasks'}</span>
             </CardTitle>
-            <CardDescription>Complete these items to finish your tax return</CardDescription>
+            <CardDescription>
+              {user?.role === 'client'
+                ? 'Complete these items to finish your tax return'
+                : 'Important tasks requiring your attention'
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -393,7 +463,12 @@ function DashboardPageContent({ user }: { user: any }) {
               <Clock className="w-5 h-5" />
               <span>Recent Activity</span>
             </CardTitle>
-            <CardDescription>Latest updates on your tax return</CardDescription>
+            <CardDescription>
+              {user?.role === 'client'
+                ? 'Latest updates on your tax return'
+                : 'Recent activity in your practice'
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -430,56 +505,101 @@ function DashboardPageContent({ user }: { user: any }) {
         </Card>
       </div>
 
-      {/* Tax Insights */}
+      {/* Insights Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Brain className="w-5 h-5" />
-            <span>Your Tax Insights</span>
+            <span>{user?.role === 'client' ? 'Your Tax Insights' : 'Practice Insights'}</span>
           </CardTitle>
-          <CardDescription>Personalized insights about your 2024 tax situation</CardDescription>
+          <CardDescription>
+            {user?.role === 'client'
+              ? 'Personalized insights about your 2024 tax situation'
+              : 'AI-powered insights about your practice performance'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-start space-x-3 p-4 border rounded-lg">
-              <div className="p-2 rounded-lg bg-green-100">
-                <DollarSign className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium">Estimated Refund</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {dashboardData?.onboardingStatus.isCompleted
-                    ? `You're on track for a ${dashboardData.stats.estimatedRefund} refund based on your information`
-                    : 'Complete your setup to see your estimated refund'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-4 border rounded-lg">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <FileText className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium">Document Status</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {(dashboardData?.stats.documentsUploaded || 0) === 0
-                    ? 'Upload your tax documents to get started'
-                    : `${dashboardData?.stats.documentsUploaded || 0} documents uploaded. Upload more to maximize your refund.`}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-4 border rounded-lg">
-              <div className="p-2 rounded-lg bg-orange-100">
-                <Calendar className="w-5 h-5 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium">Timeline</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {(dashboardData?.stats.daysToDeadline || 45) > 30
-                    ? `${dashboardData?.stats.daysToDeadline || 45} days until deadline - you're on track!`
-                    : `Only ${dashboardData?.stats.daysToDeadline || 45} days left - time to finish up!`}
-                </p>
-              </div>
-            </div>
+            {user?.role === 'client' ? (
+              <>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <div className="p-2 rounded-lg bg-green-100">
+                    <DollarSign className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Estimated Refund</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {dashboardData?.onboardingStatus?.isCompleted
+                        ? `You're on track for a ${dashboardData.stats.estimatedRefund} refund based on your information`
+                        : 'Complete your setup to see your estimated refund'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <div className="p-2 rounded-lg bg-blue-100">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Document Status</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {(dashboardData?.stats.documentsUploaded || 0) === 0
+                        ? 'Upload your tax documents to get started'
+                        : `${dashboardData?.stats.documentsUploaded || 0} documents uploaded. Upload more to maximize your refund.`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <div className="p-2 rounded-lg bg-orange-100">
+                    <Calendar className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Timeline</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {(dashboardData?.stats.daysToDeadline || 45) > 30
+                        ? `${dashboardData?.stats.daysToDeadline || 45} days until deadline - you're on track!`
+                        : `Only ${dashboardData?.stats.daysToDeadline || 45} days left - time to finish up!`}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <div className="p-2 rounded-lg bg-blue-100">
+                    <Brain className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">AI Processing</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      AI processed 47 documents today with 98.5% accuracy, saving 12.5 hours this week.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <div className="p-2 rounded-lg bg-green-100">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Revenue Growth</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Monthly revenue up 15% with 12% increase in active clients this month.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <div className="p-2 rounded-lg bg-orange-100">
+                    <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Deadline Alerts</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      3 clients have upcoming deadlines this week. Review pipeline for priority tasks.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -488,28 +608,70 @@ function DashboardPageContent({ user }: { user: any }) {
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks to complete your tax return</CardDescription>
+          <CardDescription>
+            {user?.role === 'client'
+              ? 'Common tasks to complete your tax return'
+              : 'Frequently used actions for your practice'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
-              <Link href="/onboarding">
-                <FileText className="w-6 h-6" />
-                <span>Complete Setup</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Calendar className="w-6 h-6" />
-              <span>Schedule Call</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Brain className="w-6 h-6" />
-              <span>Ask Tax Question</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <TrendingUp className="w-6 h-6" />
-              <span>View Progress</span>
-            </Button>
+            {user?.role === 'client' ? (
+              <>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/documents">
+                    <FileText className="w-6 h-6" />
+                    <span>Upload Documents</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/calendar">
+                    <Calendar className="w-6 h-6" />
+                    <span>View Calendar</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/messages">
+                    <MessageSquare className="w-6 h-6" />
+                    <span>Message Professional</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/tasks">
+                    <CheckSquare className="w-6 h-6" />
+                    <span>View Tasks</span>
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/clients/new">
+                    <Users className="w-6 h-6" />
+                    <span>Add Client</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/pipeline">
+                    <Target className="w-6 h-6" />
+                    <span>View Pipeline</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/ai-assistant">
+                    <Brain className="w-6 h-6" />
+                    <span>AI Assistant</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                  <Link href="/reports">
+                    <BarChart3 className="w-6 h-6" />
+                    <span>View Reports</span>
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -526,20 +688,6 @@ export default function DashboardPage() {
 
   if (!user) {
     return <SimpleLoading text="Please log in to view dashboard" />
-  }
-
-  // Debug user role
-  console.log('🔐 Dashboard: User role check', {
-    user: user.email,
-    role: user.role,
-    userMetadata: user
-  })
-
-  // If user is admin or tax_professional, redirect to pipeline
-  if (user.role === 'admin' || user.role === 'tax_professional') {
-    console.log('🔐 Dashboard: Admin user detected, redirecting to pipeline')
-    window.location.href = '/pipeline'
-    return <SimpleLoading text="Redirecting to admin dashboard..." />
   }
 
   return <DashboardPageContent user={user} />

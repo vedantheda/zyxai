@@ -360,8 +360,7 @@ export const findNavigationItem = (href: string, role: 'admin' | 'client' = 'adm
 export const isActiveRoute = (currentPath: string, itemHref: string): boolean => {
   if (currentPath === itemHref) return true
 
-  // Special cases for dashboard/pipeline
-  if (itemHref === '/pipeline' && (currentPath === '/dashboard' || currentPath === '/')) return true
+  // Special case for dashboard as home page
   if (itemHref === '/dashboard' && currentPath === '/') return true
 
   // Check if current path starts with item href (for nested routes)

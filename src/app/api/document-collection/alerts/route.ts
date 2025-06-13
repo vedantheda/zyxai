@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/lib/supabase'
 import { withApiSecurity, handleApiError } from '@/lib/apiSecurity'
-
 // Create Supabase client for server-side operations
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +13,6 @@ const supabase = createClient<Database>(
     }
   }
 )
-
 // CORS headers - Restrict to specific origins in production
 const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production'
@@ -23,11 +21,9 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
-
 export async function OPTIONS() {
   return new Response(null, { status: 200, headers: corsHeaders })
 }
-
 // GET /api/document-collection/alerts - Get pending alerts
 export async function GET(request: NextRequest) {
   try {
@@ -37,11 +33,9 @@ export async function GET(request: NextRequest) {
       allowedMethods: ['GET'],
       rateLimit: 'api'
     })
-
     const { searchParams } = new URL(secureRequest.url)
     const clientId = searchParams.get('clientId')
     const status = searchParams.get('status') || 'pending'
-
     let query = supabase
       .from('document_alerts')
       .select(`
@@ -61,38 +55,30 @@ export async function GET(request: NextRequest) {
       .eq('user_id', secureRequest.user!.id)
       .eq('status', status)
       .order('scheduled_for', { ascending: true })
-
     if (clientId) {
       query = query.eq('client_id', clientId)
     }
-
     const { data: alerts, error: alertsError } = await query
-
     if (alertsError) {
       return NextResponse.json(
         { error: 'Failed to fetch alerts' },
         { status: 500, headers: corsHeaders }
       )
     }
-
     // Get summary statistics
-    const { data: alertStats, error: statsError } = await supabase
+    const { data: alertStats } = await supabase
       .from('document_alerts')
       .select('alert_type, status')
       .eq('user_id', secureRequest.user!.id)
-
     const stats = alertStats?.reduce((acc, alert) => {
       const type = alert.alert_type
       const status = alert.status
-
       if (!acc[type]) {
         acc[type] = { pending: 0, sent: 0, failed: 0, dismissed: 0 }
       }
       acc[type][status]++
-
       return acc
-    }, {} as Record<string, any>) || {}
-
+    }, {} as Record<string, Record<string, number>>) || {}
     return NextResponse.json({
       success: true,
       data: {
@@ -100,12 +86,10 @@ export async function GET(request: NextRequest) {
         stats
       }
     }, { headers })
-
   } catch (error) {
     return handleApiError(error)
   }
 }
-
 // POST /api/document-collection/alerts - Create or send alerts
 export async function POST(request: NextRequest) {
   try {
@@ -116,15 +100,12 @@ export async function POST(request: NextRequest) {
         { status: 401, headers: corsHeaders }
       )
     }
-
     let userId: string | undefined
-
     // Handle cron job authentication
     if (request.headers.get('x-cron-secret') === process.env.CRON_SECRET) {
       // This is a cron job - process all users
       const body = await request.json()
       const { action } = body
-
       if (action === 'generate_alerts') {
         return await generateAutomaticAlerts()
       } else if (action === 'send_pending_alerts') {
@@ -134,7 +115,6 @@ export async function POST(request: NextRequest) {
       // Regular user authentication
       const token = authHeader!.substring(7)
       const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
       if (authError || !user) {
         return NextResponse.json(
           { error: 'Unauthorized' },
@@ -143,17 +123,14 @@ export async function POST(request: NextRequest) {
       }
       userId = user.id
     }
-
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID not found' },
         { status: 400, headers: corsHeaders }
       )
     }
-
     const body = await request.json()
     const { action, clientId, alertData } = body
-
     switch (action) {
       case 'create_alert':
         return await createAlert(userId, clientId, alertData)
@@ -167,17 +144,14 @@ export async function POST(request: NextRequest) {
           { status: 400, headers: corsHeaders }
         )
     }
-
   } catch (error) {
-    console.error('Alerts POST error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: corsHeaders }
     )
   }
 }
-
-async function createAlert(userId: string, clientId: string, alertData: any) {
+async function createAlert(userId: string, clientId: string, alertData: { alert_type: string; message: string; delivery_method: string; [key: string]: unknown }) {
   const { error } = await supabase
     .from('document_alerts')
     .insert({
@@ -186,26 +160,22 @@ async function createAlert(userId: string, clientId: string, alertData: any) {
       ...alertData,
       created_at: new Date().toISOString()
     })
-
   if (error) {
     return NextResponse.json(
       { error: 'Failed to create alert' },
       { status: 500, headers: corsHeaders }
     )
   }
-
   return NextResponse.json({
     success: true,
     message: 'Alert created successfully'
   }, { headers: corsHeaders })
 }
-
 async function sendReminder(userId: string, clientId: string) {
   // Get overdue and upcoming deadline items
   const now = new Date()
   const nextWeek = new Date()
   nextWeek.setDate(nextWeek.getDate() + 7)
-
   const { data: overdueItems, error: overdueError } = await supabase
     .from('document_checklists')
     .select(`
@@ -220,14 +190,12 @@ async function sendReminder(userId: string, clientId: string) {
     .eq('user_id', userId)
     .eq('is_completed', false)
     .lt('due_date', now.toISOString())
-
   if (overdueError) {
     return NextResponse.json(
       { error: 'Failed to fetch overdue items' },
       { status: 500, headers: corsHeaders }
     )
   }
-
   // Create alerts for overdue items
   const alerts = []
   for (const item of overdueItems || []) {
@@ -246,12 +214,10 @@ async function sendReminder(userId: string, clientId: string) {
       }
     })
   }
-
   if (alerts.length > 0) {
     const { error: alertError } = await supabase
       .from('document_alerts')
       .insert(alerts)
-
     if (alertError) {
       return NextResponse.json(
         { error: 'Failed to create reminder alerts' },
@@ -259,14 +225,12 @@ async function sendReminder(userId: string, clientId: string) {
       )
     }
   }
-
   return NextResponse.json({
     success: true,
     message: `Created ${alerts.length} reminder alerts`,
     data: { alerts_created: alerts.length }
   }, { headers: corsHeaders })
 }
-
 async function dismissAlert(userId: string, alertId: string) {
   const { error } = await supabase
     .from('document_alerts')
@@ -276,20 +240,17 @@ async function dismissAlert(userId: string, alertId: string) {
     })
     .eq('id', alertId)
     .eq('user_id', userId)
-
   if (error) {
     return NextResponse.json(
       { error: 'Failed to dismiss alert' },
       { status: 500, headers: corsHeaders }
     )
   }
-
   return NextResponse.json({
     success: true,
     message: 'Alert dismissed successfully'
   }, { headers: corsHeaders })
 }
-
 async function generateAutomaticAlerts() {
   // This would be called by a cron job to generate alerts for all users
   // Implementation would scan all clients for overdue items and upcoming deadlines
@@ -298,7 +259,6 @@ async function generateAutomaticAlerts() {
     message: 'Automatic alert generation completed'
   }, { headers: corsHeaders })
 }
-
 async function sendPendingAlerts() {
   // This would be called by a cron job to send pending alerts
   // Implementation would process pending alerts and send emails/SMS

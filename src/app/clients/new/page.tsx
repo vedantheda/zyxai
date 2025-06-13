@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ArrowLeft, Save, UserPlus } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useClients } from '@/hooks/useSupabaseData'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -30,7 +30,7 @@ interface ClientFormData {
 }
 
 export default function NewClientPage() {
-  const { user, loading: authLoading } = useRequireAuth()
+  const { user, loading: authLoading } = useAuth()
   const { addClient } = useClients()
   const router = useRouter()
 

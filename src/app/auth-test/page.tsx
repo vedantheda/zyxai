@@ -1,226 +1,182 @@
 'use client'
 
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { SimpleLoading } from '@/components/ui/simple-loading'
+import { Badge } from '@/components/ui/badge'
+import { User, Mail, Shield, Clock } from 'lucide-react'
 
 export default function AuthTestPage() {
-  const { user, loading, signIn, signOut } = useAuth()
-  const [email, setEmail] = useState('vedant.heda04@gmail.com')
-  const [password, setPassword] = useState('')
-  const [testResult, setTestResult] = useState('')
+  const { user, session, loading, signOut } = useAuth()
 
-  const testSignIn = async () => {
-    console.log('🔐 Test: Starting sign in test')
-    setTestResult('Testing sign in...')
-
-    if (!email || !password) {
-      setTestResult('Please enter both email and password')
-      return
-    }
-
-    try {
-      const result = await signIn(email, password)
-      console.log('🔐 Test: Sign in result:', result)
-
-      if (result.error) {
-        setTestResult(`Error: ${result.error.message}`)
-      } else {
-        setTestResult('Sign in successful!')
-      }
-    } catch (error) {
-      console.error('🔐 Test: Sign in exception:', error)
-      setTestResult(`Exception: ${error}`)
-    }
+  if (loading) {
+    return <SimpleLoading text="Loading authentication test..." />
   }
 
-  const testSignOut = async () => {
-    console.log('🔐 Test: Starting sign out test')
-    setTestResult('Testing sign out...')
-
-    try {
-      await signOut()
-      setTestResult('Sign out successful!')
-    } catch (error) {
-      console.error('🔐 Test: Sign out exception:', error)
-      setTestResult(`Exception: ${error}`)
-    }
+  const handleSignOut = async () => {
+    await signOut()
   }
 
-  const testConnection = async () => {
-    console.log('🔐 Test: Button clicked - Testing Supabase connection')
-    setTestResult('Testing connection...')
 
-    try {
-      // Test basic connection
-      const { data, error } = await supabase.auth.getSession()
-      console.log('🔐 Test: Connection test result:', { data, error })
-
-      if (error) {
-        setTestResult(`Connection error: ${error.message}`)
-      } else {
-        setTestResult('Connection successful!')
-      }
-    } catch (error) {
-      console.error('🔐 Test: Connection exception:', error)
-      setTestResult(`Connection exception: ${error}`)
-    }
-  }
-
-  const testDirectSignIn = async () => {
-    console.log('🔐 Test: Testing direct Supabase sign in')
-    setTestResult('Testing direct sign in...')
-
-    if (!email || !password) {
-      setTestResult('Please enter both email and password')
-      return
-    }
-
-    try {
-      console.log('🔐 Test: Calling supabase.auth.signInWithPassword directly')
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      console.log('🔐 Test: Direct sign in result:', {
-        hasData: !!data,
-        hasUser: !!data?.user,
-        hasSession: !!data?.session,
-        error: error?.message,
-        fullResponse: { data, error }
-      })
-
-      if (error) {
-        setTestResult(`Direct sign in error: ${error.message}`)
-      } else {
-        setTestResult('Direct sign in successful!')
-      }
-    } catch (error) {
-      console.error('🔐 Test: Direct sign in exception:', error)
-      setTestResult(`Direct sign in exception: ${error}`)
-    }
-  }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Authentication Test Page</h1>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-2">Authentication Test Page</h1>
+          <p className="text-muted-foreground">
+            This page shows the current authentication state and user information
+          </p>
+        </div>
 
-        {/* Current Auth State */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Authentication Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="w-5 h-5" />
+                <span>Authentication Status</span>
+              </CardTitle>
+              <CardDescription>Current authentication state</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Status:</span>
+                <Badge variant={user ? "default" : "destructive"}>
+                  {user ? "Authenticated" : "Not Authenticated"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Loading:</span>
+                <Badge variant={loading ? "secondary" : "outline"}>
+                  {loading ? "Yes" : "No"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Has Session:</span>
+                <Badge variant={session ? "default" : "destructive"}>
+                  {session ? "Yes" : "No"}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="w-5 h-5" />
+                <span>User Information</span>
+              </CardTitle>
+              <CardDescription>Current user details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {user ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span>ID:</span>
+                    <span className="text-sm font-mono">{user.id}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Email:</span>
+                    <span className="text-sm">{user.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Role:</span>
+                    <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                      {user.role}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Full Name:</span>
+                    <span className="text-sm">{user.full_name || 'Not set'}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  No user information available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Session Information */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Clock className="w-5 h-5" />
+                <span>Session Information</span>
+              </CardTitle>
+              <CardDescription>Current session details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {session ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Session Details</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Access Token:</span>
+                        <span className="font-mono text-xs">
+                          {session.access_token ? `${session.access_token.substring(0, 20)}...` : 'None'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Expires At:</span>
+                        <span>
+                          {session.expires_at
+                            ? new Date(session.expires_at * 1000).toLocaleString()
+                            : 'Unknown'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Token Type:</span>
+                        <span>{session.token_type || 'bearer'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">User Metadata</h4>
+                    <div className="text-sm">
+                      <pre className="bg-muted p-2 rounded text-xs overflow-auto">
+                        {JSON.stringify(session.user.user_metadata, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  No session information available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Current Authentication State</CardTitle>
+            <CardTitle>Actions</CardTitle>
+            <CardDescription>Test authentication actions</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <strong>Loading:</strong> {loading ? 'Yes' : 'No'}
-            </div>
-            <div>
-              <strong>User:</strong> {user ? 'Authenticated' : 'Not authenticated'}
-            </div>
-            {user && (
-              <div className="space-y-2">
-                <div><strong>ID:</strong> {user.id}</div>
-                <div><strong>Email:</strong> {user.email}</div>
-                <div><strong>Role:</strong> {user.role || 'No role'}</div>
-                <div><strong>Name:</strong> {user.full_name || 'No name'}</div>
-                <div><strong>Raw User:</strong></div>
-                <pre className="bg-muted p-2 rounded text-xs overflow-auto">
-                  {JSON.stringify(user, null, 2)}
-                </pre>
-              </div>
+          <CardContent className="flex space-x-4">
+            {user ? (
+              <Button onClick={handleSignOut} variant="destructive">
+                Sign Out
+              </Button>
+            ) : (
+              <Button asChild>
+                <a href="/signin">Sign In</a>
+              </Button>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Test Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Authentication</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email:</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 border rounded bg-background text-foreground"
-                placeholder="Enter email"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Password:</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 border rounded bg-background text-foreground"
-                placeholder="Enter password"
-              />
-            </div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={testConnection}
-                  variant="secondary"
-                  disabled={loading}
-                  className="w-full"
-                >
-                  Test Connection
-                </Button>
-                <Button
-                  onClick={testDirectSignIn}
-                  variant="secondary"
-                  disabled={loading}
-                  className="w-full"
-                >
-                  Direct Sign In
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={testSignIn}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  Context Sign In
-                </Button>
-                <Button
-                  onClick={testSignOut}
-                  variant="outline"
-                  disabled={loading}
-                  className="w-full"
-                >
-                  Test Sign Out
-                </Button>
-              </div>
-            </div>
-            {testResult && (
-              <div className="p-4 bg-muted rounded">
-                <strong>Test Result:</strong> {testResult}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Environment Check */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Environment Check</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div>
-                <strong>Supabase URL:</strong> {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set'}
-              </div>
-              <div>
-                <strong>Supabase Key:</strong> {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set'}
-              </div>
-            </div>
+            <Button asChild variant="outline">
+              <a href="/dashboard">Go to Dashboard</a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="/">Go to Home</a>
+            </Button>
           </CardContent>
         </Card>
       </div>

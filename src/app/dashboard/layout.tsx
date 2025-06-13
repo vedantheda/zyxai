@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Menu, Bell, Plus, Brain, Search } from 'lucide-react'
 import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
-import { useSessionSync } from '@/hooks/useSessionSync'
-import { LoadingScreen } from '@/components/ui/loading-spinner'
+import { useAuth } from '@/contexts/AuthProvider'
+import { SimpleLoading } from '@/components/ui/simple-loading'
 import NotificationCenter from '@/components/notifications/NotificationCenter'
 import GlobalSearch from '@/components/search/GlobalSearch'
 import { MobileSearchTrigger } from '@/components/search/MobileSearch'
@@ -83,23 +82,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading } = useAuth()
 
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
-    return <LoadingScreen text="Loading dashboard..." />
+  // Show loading during auth initialization
+  if (loading) {
+    return <SimpleLoading text="Loading dashboard..." />
   }
 
   // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view dashboard" />
+  if (!user) {
+    return <SimpleLoading text="Please log in to view dashboard" />
   }
 
   // Determine user role
-  const userRole = user.role === 'client' ? 'client' : 'admin'
+  const userRole = user?.role === 'client' ? 'client' : 'admin'
 
   // If user is a client, use client layout
-  if (user.role === 'client') {
+  if (user?.role === 'client') {
     return (
       <ClientLayoutContent user={user}>
         {children}

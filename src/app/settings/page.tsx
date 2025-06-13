@@ -1,19 +1,17 @@
 'use client'
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Settings, User, Bell, Shield, Building } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
-
 export default function SettingsPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
-
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading settings..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view settings" />
@@ -28,7 +26,6 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
-
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
@@ -46,7 +43,6 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
             <Building className="h-5 w-5 text-muted-foreground mr-2" />
@@ -63,7 +59,6 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
             <Bell className="h-5 w-5 text-muted-foreground mr-2" />
@@ -80,7 +75,6 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
             <Shield className="h-5 w-5 text-muted-foreground mr-2" />
@@ -98,7 +92,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Settings</CardTitle>

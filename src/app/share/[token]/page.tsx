@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,7 +26,6 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
-
 interface SharedDocument {
   id: string
   name: string
@@ -37,7 +35,6 @@ interface SharedDocument {
   canView: boolean
   canDownload: boolean
 }
-
 interface ShareInfo {
   expiresAt: string | null
   maxDownloads: number | null
@@ -45,11 +42,9 @@ interface ShareInfo {
   isPasswordProtected: boolean
   requireAuth: boolean
 }
-
 export default function SharePage() {
   const params = useParams()
   const token = params.token as string
-
   const [document, setDocument] = useState<SharedDocument | null>(null)
   const [shareInfo, setShareInfo] = useState<ShareInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,18 +52,15 @@ export default function SharePage() {
   const [password, setPassword] = useState('')
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [downloading, setDownloading] = useState(false)
-
   useEffect(() => {
     if (token) {
       validateShareLink()
     }
   }, [token])
-
   const validateShareLink = async (passwordAttempt?: string) => {
     try {
       setLoading(true)
       setError(null)
-
       const response = await fetch('/api/share/validate', {
         method: 'POST',
         headers: {
@@ -79,9 +71,7 @@ export default function SharePage() {
           password: passwordAttempt
         })
       })
-
       const data = await response.json()
-
       if (!response.ok) {
         if (data.error === 'Password required') {
           setShowPasswordDialog(true)
@@ -89,7 +79,6 @@ export default function SharePage() {
         }
         throw new Error(data.error || 'Failed to validate share link')
       }
-
       setDocument(data.document)
       setShareInfo(data.shareInfo)
       setShowPasswordDialog(false)
@@ -99,25 +88,20 @@ export default function SharePage() {
       setLoading(false)
     }
   }
-
   const handlePasswordSubmit = async () => {
     if (!password.trim()) {
       toast.error('Please enter a password')
       return
     }
-
     await validateShareLink(password)
   }
-
   const handleDownload = async () => {
     if (!document || !document.canDownload) {
       toast.error('Download not permitted')
       return
     }
-
     try {
       setDownloading(true)
-
       const response = await fetch('/api/share/download', {
         method: 'POST',
         headers: {
@@ -125,12 +109,10 @@ export default function SharePage() {
         },
         body: JSON.stringify({ token })
       })
-
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error || 'Download failed')
       }
-
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const link = window.document.createElement('a')
@@ -138,7 +120,6 @@ export default function SharePage() {
       link.download = document?.name || 'download'
       link.click()
       window.URL.revokeObjectURL(url)
-
       toast.success('Download started')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Download failed')
@@ -146,22 +127,18 @@ export default function SharePage() {
       setDownloading(false)
     }
   }
-
   const handleView = () => {
     if (!document || !document.canView) {
       toast.error('View not permitted')
       return
     }
-
     window.open(`/api/share/view?token=${token}`, '_blank')
   }
-
   const getFileIcon = (type: string) => {
     if (type.startsWith('image/')) return <Image className="w-8 h-8" />
     if (type === 'application/pdf') return <FileText className="w-8 h-8" />
     return <File className="w-8 h-8" />
   }
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -169,11 +146,9 @@ export default function SharePage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
   }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -184,7 +159,6 @@ export default function SharePage() {
       </div>
     )
   }
-
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -199,7 +173,6 @@ export default function SharePage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -217,7 +190,6 @@ export default function SharePage() {
           </div>
         </div>
       </div>
-
       <div className="container mx-auto px-4 py-6">
         {document && shareInfo && (
           <div className="max-w-2xl mx-auto space-y-6">
@@ -251,7 +223,6 @@ export default function SharePage() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Share Info */}
             <Card>
               <CardHeader>
@@ -270,7 +241,6 @@ export default function SharePage() {
                       </Badge>
                     </div>
                   )}
-
                   {shareInfo.maxDownloads && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -282,7 +252,6 @@ export default function SharePage() {
                       </Badge>
                     </div>
                   )}
-
                   {shareInfo.isPasswordProtected && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -298,7 +267,6 @@ export default function SharePage() {
           </div>
         )}
       </div>
-
       {/* Password Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent>

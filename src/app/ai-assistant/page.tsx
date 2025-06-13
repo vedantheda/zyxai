@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,7 +21,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Brain,
@@ -53,9 +51,8 @@ import {
 } from 'lucide-react'
 import { useAIAssistant } from '@/hooks/useAIAssistant'
 import { useFileStorage } from '@/hooks/useFileStorage'
-import { useRealtimeClients, useRealtimeDocuments } from '@/hooks/useRealtimeData'
+import { useClients, useDocuments } from '@/hooks/useSimpleData'
 import { toast } from 'sonner'
-
 const quickActions = [
   {
     title: 'Document Analysis',
@@ -86,7 +83,6 @@ const quickActions = [
     action: 'generateTaxPlanningStrategy'
   }
 ]
-
 export default function AIAssistantPage() {
   const [message, setMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -98,7 +94,6 @@ export default function AIAssistantPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const shouldAutoScroll = useRef(true)
-
   const {
     conversations,
     currentConversation,
@@ -114,11 +109,9 @@ export default function AIAssistantPage() {
     quickActions: aiQuickActions,
     clearError
   } = useAIAssistant()
-
   const { uploadFile } = useFileStorage({ autoRefresh: true })
-  const { data: clients } = useRealtimeClients()
-  const { data: documents } = useRealtimeDocuments()
-
+  const { data: clients } = useClients()
+  const { data: documents } = useDocuments()
   // Memoize stats calculation for performance
   const stats = useMemo(() => [
     {
@@ -150,22 +143,18 @@ export default function AIAssistantPage() {
       color: 'text-orange-600'
     },
   ], [conversations.length, currentConversation?.messages.length, documents.length, clients.length])
-
   const handleSendMessage = useCallback(async () => {
     if (!message.trim() || isLoading) return
-
     const messageToSend = message.trim()
     setMessage('')
     setIsTyping(true)
     setShowTypingAnimation(true)
     shouldAutoScroll.current = true
-
     try {
       await sendMessage(messageToSend)
       // Enable auto-scroll for AI response
       shouldAutoScroll.current = true
     } catch (error) {
-      console.error('Send message error:', error)
       toast.error('Failed to send message', {
         description: 'Please check your connection and try again',
         duration: 4000,
@@ -176,7 +165,6 @@ export default function AIAssistantPage() {
       setShowTypingAnimation(false)
     }
   }, [message, sendMessage, isLoading])
-
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -188,15 +176,12 @@ export default function AIAssistantPage() {
       handleSendMessage()
     }
   }, [handleSendMessage])
-
   const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
   }, [])
-
   const handleSuggestedPrompt = useCallback((prompt: string) => {
     setMessage(prompt)
   }, [])
-
   const handleRenameConversation = useCallback(async (conversationId: string, title: string) => {
     try {
       await updateConversationTitle(conversationId, title)
@@ -207,19 +192,16 @@ export default function AIAssistantPage() {
       setRenamingConversation(null)
       setNewTitle('')
     } catch (error) {
-      console.error('Rename error:', error)
       toast.error('Failed to rename conversation', {
         description: 'Please try again',
         duration: 3000,
       })
     }
   }, [updateConversationTitle])
-
-  const startRename = useCallback((conversation: any) => {
+  const startRename = useCallback((conversation: { id: string; title: string }) => {
     setRenamingConversation(conversation.id)
     setNewTitle(conversation.title)
   }, [])
-
   const handleQuickAction = useCallback(async (actionKey: string) => {
     try {
       // Ensure we have a conversation first
@@ -230,14 +212,12 @@ export default function AIAssistantPage() {
         // Scroll to show the welcome message
         shouldAutoScroll.current = true
       }
-
       const actionMap = {
         analyzeLatestDocuments: aiQuickActions.analyzeLatestDocuments,
         calculateQuarterlyTaxes: aiQuickActions.calculateQuarterlyTaxes,
         getUpcomingDeadlines: aiQuickActions.getUpcomingDeadlines,
         generateTaxPlanningStrategy: aiQuickActions.generateTaxPlanningStrategy
       }
-
       const action = actionMap[actionKey as keyof typeof actionMap]
       if (action) {
         shouldAutoScroll.current = true
@@ -247,15 +227,12 @@ export default function AIAssistantPage() {
         toast.error('Unknown action')
       }
     } catch (error) {
-      console.error('Quick action error:', error)
       toast.error('Failed to execute action. Please try again.')
     }
   }, [aiQuickActions, currentConversation, createNewConversation])
-
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-
     // Validate file size (10MB limit)
     const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
@@ -265,9 +242,7 @@ export default function AIAssistantPage() {
       })
       return
     }
-
     setUploadProgress(0)
-
     try {
       // Simulate upload progress
       const progressInterval = setInterval(() => {
@@ -279,19 +254,15 @@ export default function AIAssistantPage() {
           return prev + 10
         })
       }, 200)
-
       const result = await uploadFile(file, { category: 'ai_analysis' })
-
       clearInterval(progressInterval)
       setUploadProgress(100)
-
       if (result.success && result.data) {
         await analyzeDocument(result.data.id)
         toast.success('Document uploaded successfully!', {
           description: `${file.name} has been analyzed and is ready for AI insights`,
           duration: 3000,
         })
-
         // Add a message about the upload
         await sendMessage(`I've uploaded and analyzed the document "${file.name}". Please provide insights about this document.`)
       } else {
@@ -301,7 +272,6 @@ export default function AIAssistantPage() {
         })
       }
     } catch (error) {
-      console.error('Upload error:', error)
       toast.error('Upload failed', {
         description: 'Please check your connection and try again',
         duration: 4000,
@@ -314,25 +284,20 @@ export default function AIAssistantPage() {
       }
     }
   }, [uploadFile, analyzeDocument, sendMessage])
-
   // Memoized timestamp formatter for performance
   const formatTimestamp = useCallback((timestamp: Date | string | number) => {
     try {
       // Ensure we have a proper Date object
       const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
-
       // Check if the date is valid
       if (isNaN(date.getTime())) {
         return 'Invalid date'
       }
-
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     } catch (error) {
-      console.warn('Error formatting timestamp:', error)
       return 'Invalid date'
     }
   }, [])
-
   // Copy message to clipboard
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -342,19 +307,16 @@ export default function AIAssistantPage() {
         duration: 2000,
       })
     } catch (error) {
-      console.error('Copy error:', error)
       toast.error('Failed to copy to clipboard', {
         description: 'Please try again or copy manually',
         duration: 3000,
       })
     }
   }, [])
-
   // Format message content with basic markdown-like formatting
   const formatMessageContent = useCallback((content: string) => {
     // Split by lines to preserve line breaks
     const lines = content.split('\n')
-
     return lines.map((line, lineIndex) => {
       // Handle bullet points
       if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
@@ -365,7 +327,6 @@ export default function AIAssistantPage() {
           </div>
         )
       }
-
       // Handle numbered lists
       if (/^\d+\.\s/.test(line.trim())) {
         const match = line.match(/^(\d+)\.\s(.*)/)
@@ -378,10 +339,8 @@ export default function AIAssistantPage() {
           )
         }
       }
-
       // Handle bold text **text**
-      let formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-
+      const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       // Handle headers (lines starting with #)
       if (line.trim().startsWith('#')) {
         const headerLevel = (line.match(/^#+/) || [''])[0].length
@@ -395,12 +354,10 @@ export default function AIAssistantPage() {
           </div>
         )
       }
-
       // Handle empty lines
       if (line.trim() === '') {
         return <div key={lineIndex} className="h-2" />
       }
-
       // Regular line with bold formatting
       return (
         <div
@@ -411,7 +368,6 @@ export default function AIAssistantPage() {
       )
     })
   }, [])
-
   // Typing animation component
   const TypingAnimation = () => (
     <div className="flex items-center space-x-1">
@@ -423,13 +379,11 @@ export default function AIAssistantPage() {
       <span className="text-sm text-muted-foreground ml-2">AI is thinking...</span>
     </div>
   )
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     const scrollToBottom = () => {
       // Find the ScrollArea viewport (it's a div with data-radix-scroll-area-viewport)
       const scrollAreaViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
-
       if (scrollAreaViewport) {
         // Always scroll when messages change during active chat
         if (shouldAutoScroll.current || isLoading || isTyping || showTypingAnimation) {
@@ -446,7 +400,6 @@ export default function AIAssistantPage() {
           })
         }
       }
-
       // Reset auto-scroll flag after a delay, but keep it active during typing
       if (shouldAutoScroll.current && !isLoading && !isTyping && !showTypingAnimation) {
         setTimeout(() => {
@@ -454,16 +407,13 @@ export default function AIAssistantPage() {
         }, 300)
       }
     }
-
     // Small delay to ensure DOM is updated
     setTimeout(scrollToBottom, 50)
   }, [currentConversation?.messages, isLoading, isTyping, showTypingAnimation])
-
   // Don't auto-scroll when switching conversations (let user see from top)
   useEffect(() => {
     shouldAutoScroll.current = false
   }, [currentConversation?.id])
-
   // Clear error when component mounts
   useEffect(() => {
     if (error) {
@@ -471,7 +421,6 @@ export default function AIAssistantPage() {
       clearError()
     }
   }, [error, clearError])
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -511,7 +460,6 @@ export default function AIAssistantPage() {
           </Button>
         </div>
       </div>
-
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {stats.map((stat) => (
@@ -529,7 +477,6 @@ export default function AIAssistantPage() {
           </Card>
         ))}
       </div>
-
       {/* Upload Progress */}
       {uploadProgress > 0 && uploadProgress < 100 && (
         <Alert>
@@ -543,7 +490,6 @@ export default function AIAssistantPage() {
           </AlertDescription>
         </Alert>
       )}
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Conversations Sidebar */}
         <Card>
@@ -619,7 +565,6 @@ export default function AIAssistantPage() {
                 )}
               </div>
             </ScrollArea>
-
             {/* Quick Actions */}
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm font-medium mb-3">Quick Actions</p>
@@ -646,7 +591,6 @@ export default function AIAssistantPage() {
             </div>
           </CardContent>
         </Card>
-
         {/* Chat Interface */}
         <Card className="lg:col-span-3">
           <CardHeader>
@@ -702,7 +646,6 @@ export default function AIAssistantPage() {
                     </div>
                   </div>
                 ))}
-
                 {(isLoading || isTyping || showTypingAnimation) && (
                   <div className="flex justify-start">
                     <div className="bg-background border p-3 rounded-lg">
@@ -717,7 +660,6 @@ export default function AIAssistantPage() {
                     </div>
                   </div>
                 )}
-
                 {!currentConversation && (
                   <div className="text-center py-8">
                     <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -737,11 +679,9 @@ export default function AIAssistantPage() {
                     </Button>
                   </div>
                 )}
-
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-
             {/* Message Input */}
             <div className="space-y-3">
               <div className="flex items-end space-x-2">
@@ -794,7 +734,6 @@ export default function AIAssistantPage() {
                   </Button>
                 </div>
               </div>
-
               {/* Character count and status */}
               <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <span>{message.length}/2000 characters</span>
@@ -814,7 +753,6 @@ export default function AIAssistantPage() {
                 </div>
               </div>
             </div>
-
             {/* Hidden file input */}
             <input
               type="file"
@@ -823,7 +761,6 @@ export default function AIAssistantPage() {
               className="hidden"
               ref={fileInputRef}
             />
-
             {/* Suggested Prompts */}
             {currentConversation && currentConversation.messages.length === 0 && (
               <div className="mt-4">
@@ -885,7 +822,6 @@ export default function AIAssistantPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Error Display */}
       {error && (
         <Alert variant="destructive">
@@ -898,7 +834,6 @@ export default function AIAssistantPage() {
           </AlertDescription>
         </Alert>
       )}
-
       {/* AI Capabilities */}
       <Card>
         <CardHeader>
@@ -946,7 +881,6 @@ export default function AIAssistantPage() {
               <Badge variant="secondary" className="mt-2 text-xs">Click to try</Badge>
             </div>
           </div>
-
           <div className="mt-6 p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center mb-2">
               <Brain className="w-4 h-4 mr-2 text-primary" />
@@ -959,7 +893,6 @@ export default function AIAssistantPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Rename Conversation Dialog */}
       <Dialog open={!!renamingConversation} onOpenChange={() => setRenamingConversation(null)}>
         <DialogContent>

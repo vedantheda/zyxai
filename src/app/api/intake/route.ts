@@ -3,7 +3,6 @@ import { OnboardingAutomation, IntakeFormData } from '@/lib/onboarding-automatio
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/lib/supabase'
 import { publicRateLimit, createRateLimitHeaders } from '@/lib/rateLimit'
-
 // Create Supabase client for server-side operations
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,7 +14,6 @@ const supabase = createClient<Database>(
     }
   }
 )
-
 // CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production'
@@ -24,17 +22,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
-
 export async function OPTIONS() {
   return new Response(null, { status: 200, headers: corsHeaders })
 }
-
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting check
     const rateLimitResult = await publicRateLimit.check(request)
     const rateLimitHeaders = createRateLimitHeaders(rateLimitResult)
-
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
@@ -52,14 +47,12 @@ export async function POST(request: NextRequest) {
         }
       )
     }
-
     // Add CORS and rate limit headers to response
     const headers = {
       ...corsHeaders,
       ...rateLimitHeaders,
       'Content-Type': 'application/json'
     }
-
     // For public intake forms, we allow unauthenticated access
     // but we still validate and sanitize the input
     const body = await request.json()
@@ -67,7 +60,6 @@ export async function POST(request: NextRequest) {
       formData: IntakeFormData
       practiceId?: string
     }
-
     // Validate and sanitize required fields
     if (!formData.firstName || !formData.lastName || !formData.email) {
       return NextResponse.json(
@@ -75,7 +67,6 @@ export async function POST(request: NextRequest) {
         { status: 400, headers }
       )
     }
-
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
@@ -84,7 +75,6 @@ export async function POST(request: NextRequest) {
         { status: 400, headers }
       )
     }
-
     // Sanitize input data
     const sanitizedFormData = {
       ...formData,
@@ -92,36 +82,19 @@ export async function POST(request: NextRequest) {
       lastName: formData.lastName.trim().slice(0, 100),
       email: formData.email.trim().toLowerCase().slice(0, 255),
     }
-
     // For demo purposes, use a default practice ID if not provided
     const defaultPracticeId = practiceId || 'demo-practice-001'
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📝 Processing intake form submission...')
-      console.log('Client:', formData.firstName, formData.lastName)
-      console.log('Email:', formData.email)
-      console.log('Service Level:', formData.serviceLevel)
-    }
-
+    
     // Process the intake form and trigger automation
     const result = await OnboardingAutomation.processIntakeForm(sanitizedFormData, defaultPracticeId)
-
     if (!result.success) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Automation failed:', result.error)
-      }
+      
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 500, headers }
       )
     }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Intake form processed successfully!')
-      console.log('Client ID:', result.clientId)
-      console.log('Workflow ID:', result.workflowId)
-    }
-
+    
     // Return success response
     return NextResponse.json({
       success: true,
@@ -132,15 +105,11 @@ export async function POST(request: NextRequest) {
         automationTriggered: true
       }
     }, { headers })
-
   } catch (error) {
-    console.error('❌ API Error:', error)
-
     const errorHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json'
     }
-
     return NextResponse.json(
       {
         success: false,
@@ -150,12 +119,10 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
 export async function GET(request: NextRequest) {
   try {
     // Add CORS headers to response
     const headers = { ...corsHeaders, 'Content-Type': 'application/json' }
-
     // For GET requests, require authentication for admin access
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -164,21 +131,17 @@ export async function GET(request: NextRequest) {
         { status: 401, headers }
       )
     }
-
     const token = authHeader.substring(7)
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Invalid token' },
         { status: 401, headers }
       )
     }
-
     const { searchParams } = new URL(request.url)
     const workflowId = searchParams.get('workflowId')
     const clientId = searchParams.get('clientId')
-
     if (workflowId) {
       // Get specific workflow status
       const { data, error } = await supabase
@@ -186,20 +149,17 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('id', workflowId)
         .single()
-
       if (error) {
         return NextResponse.json(
           { success: false, error: 'Workflow not found' },
           { status: 404, headers }
         )
       }
-
       return NextResponse.json({
         success: true,
         workflow: data
       }, { headers })
     }
-
     if (clientId) {
       // Get client's onboarding status
       const { data, error } = await supabase
@@ -209,20 +169,17 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
-
       if (error) {
         return NextResponse.json(
           { success: false, error: 'No onboarding workflow found for client' },
           { status: 404 }
         )
       }
-
       return NextResponse.json({
         success: true,
         workflow: data
       })
     }
-
     // Get all active workflows (for admin dashboard)
     const { data, error } = await supabase
       .from('onboarding_workflows')
@@ -236,22 +193,17 @@ export async function GET(request: NextRequest) {
         )
       `)
       .order('created_at', { ascending: false })
-
     if (error) {
       return NextResponse.json(
         { success: false, error: 'Failed to fetch workflows' },
         { status: 500 }
       )
     }
-
     return NextResponse.json({
       success: true,
       workflows: data
     })
-
   } catch (error) {
-    console.error('❌ API Error:', error)
-
     return NextResponse.json(
       {
         success: false,

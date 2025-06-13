@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/lib/supabase'
-
 // Create Supabase client for server-side operations
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +12,6 @@ const supabase = createClient<Database>(
     }
   }
 )
-
 export async function POST(request: NextRequest) {
   try {
     // Add CORS headers
@@ -23,23 +21,18 @@ export async function POST(request: NextRequest) {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     }
-
     const body = await request.json()
     const { action, data } = body
-
     // Get user from authorization header
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers })
     }
-
     const token = authHeader.substring(7)
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers })
     }
-
     switch (action) {
       case 'save_session':
         return await saveOnboardingSession(user.id, data, headers)
@@ -51,11 +44,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400, headers })
     }
   } catch (error) {
-    console.error('Onboarding API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
 async function saveOnboardingSession(userId: string, sessionData: any, headers: any) {
   try {
     // Check if session exists
@@ -65,7 +56,6 @@ async function saveOnboardingSession(userId: string, sessionData: any, headers: 
       .eq('user_id', userId)
       .eq('status', 'in_progress')
       .single()
-
     if (existingSession) {
       // Update existing session
       const { data, error } = await supabase
@@ -79,7 +69,6 @@ async function saveOnboardingSession(userId: string, sessionData: any, headers: 
         .eq('id', existingSession.id)
         .select()
         .single()
-
       if (error) throw error
       return NextResponse.json({ success: true, session: data }, { headers })
     } else {
@@ -95,16 +84,13 @@ async function saveOnboardingSession(userId: string, sessionData: any, headers: 
         })
         .select()
         .single()
-
       if (error) throw error
       return NextResponse.json({ success: true, session: data }, { headers })
     }
   } catch (error) {
-    console.error('Error saving session:', error)
     return NextResponse.json({ error: 'Failed to save session' }, { status: 500, headers })
   }
 }
-
 async function getOnboardingSession(userId: string, headers: any) {
   try {
     const { data, error } = await supabase
@@ -115,22 +101,17 @@ async function getOnboardingSession(userId: string, headers: any) {
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
-
     if (error && error.code !== 'PGRST116') {
       throw error
     }
-
     return NextResponse.json({ success: true, session: data }, { headers })
   } catch (error) {
-    console.error('Error getting session:', error)
     return NextResponse.json({ error: 'Failed to get session' }, { status: 500, headers })
   }
 }
-
 async function completeOnboarding(userId: string, completionData: any, headers: any) {
   try {
     const { sessionId, finalData } = completionData
-
     // Get the onboarding session
     const { data: session, error: sessionError } = await supabase
       .from('onboarding_sessions')
@@ -138,15 +119,12 @@ async function completeOnboarding(userId: string, completionData: any, headers: 
       .eq('id', sessionId)
       .eq('user_id', userId)
       .single()
-
     if (sessionError || !session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404, headers })
     }
-
     // Extract basic client info from form data
     const basicInfo = finalData['basic-info'] || {}
     const serviceSelection = finalData['service-selection'] || {}
-
     // Create client record
     const { data: client, error: clientError } = await supabase
       .from('clients')
@@ -164,12 +142,9 @@ async function completeOnboarding(userId: string, completionData: any, headers: 
       })
       .select()
       .single()
-
     if (clientError) {
-      console.error('Client creation error:', clientError)
       return NextResponse.json({ error: 'Failed to create client' }, { status: 500, headers })
     }
-
     // Create detailed intake data record
     const { error: intakeError } = await supabase
       .from('client_intake_data')
@@ -211,12 +186,9 @@ async function completeOnboarding(userId: string, completionData: any, headers: 
         service_level: serviceSelection.serviceLevel,
         service_preferences: serviceSelection.preferences,
       })
-
     if (intakeError) {
-      console.error('Intake data error:', intakeError)
       // Don't fail the whole process, just log the error
     }
-
     // Mark onboarding session as completed
     await supabase
       .from('onboarding_sessions')
@@ -226,18 +198,15 @@ async function completeOnboarding(userId: string, completionData: any, headers: 
         client_id: client.id,
       })
       .eq('id', sessionId)
-
     return NextResponse.json({
       success: true,
       client,
       message: 'Onboarding completed successfully!'
     }, { headers })
   } catch (error) {
-    console.error('Error completing onboarding:', error)
     return NextResponse.json({ error: 'Failed to complete onboarding' }, { status: 500, headers })
   }
 }
-
 export async function GET(request: NextRequest) {
   try {
     // Add CORS headers
@@ -247,27 +216,21 @@ export async function GET(request: NextRequest) {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     }
-
     // Get user from authorization header
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers })
     }
-
     const token = authHeader.substring(7)
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers })
     }
-
     return await getOnboardingSession(user.id, headers)
   } catch (error) {
-    console.error('Onboarding API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

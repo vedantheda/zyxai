@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,12 +46,11 @@ import {
   Target,
   History
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { DocumentProcessingService } from '@/services/DocumentProcessingService'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
 interface Document {
   id: string
   user_id: string
@@ -98,19 +96,16 @@ interface Document {
     status: string
   }
 }
-
 export default function DocumentDetailPage() {
   const { user } = useAuth()
   const params = useParams()
   const router = useRouter()
   const documentId = params.id as string
-
   const [document, setDocument] = useState<Document | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -118,22 +113,18 @@ export default function DocumentDetailPage() {
     tags: [] as string[],
     is_sensitive: false
   })
-
   const documentCategories = [
     'w2', '1099', 'receipts', 'bank-statements', 'mortgage-interest',
     'property-tax', 'medical-expenses', 'education-expenses', 'other'
   ]
-
   useEffect(() => {
     if (!user || !documentId) return
     fetchDocumentDetails()
   }, [user, documentId])
-
   const fetchDocumentDetails = async () => {
     try {
       setLoading(true)
       setError(null)
-
       const { data: documentData, error: documentError } = await supabase
         .from('documents')
         .select(`
@@ -148,10 +139,8 @@ export default function DocumentDetailPage() {
         .eq('id', documentId)
         .eq('user_id', user?.id)
         .single()
-
       if (documentError) throw documentError
       if (!documentData) throw new Error('Document not found')
-
       setDocument(documentData)
       setEditForm({
         name: documentData.name,
@@ -160,17 +149,14 @@ export default function DocumentDetailPage() {
         tags: documentData.tags || [],
         is_sensitive: documentData.is_sensitive || false
       })
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
   }
-
   const handleSaveDocument = async () => {
     if (!document || !user) return
-
     try {
       const updateData = {
         name: editForm.name,
@@ -180,27 +166,21 @@ export default function DocumentDetailPage() {
         is_sensitive: editForm.is_sensitive,
         updated_at: new Date().toISOString()
       }
-
       const { error } = await supabase
         .from('documents')
         .update(updateData)
         .eq('id', documentId)
         .eq('user_id', user.id)
-
       if (error) throw error
-
       setDocument({ ...document, ...updateData })
       setIsEditing(false)
       toast.success('Document updated successfully!')
-
     } catch (err) {
       toast.error('Failed to update document')
     }
   }
-
   const handleDeleteDocument = async () => {
     if (!document || !user) return
-
     try {
       // Delete file from storage
       if (document.file_url) {
@@ -209,34 +189,26 @@ export default function DocumentDetailPage() {
           await supabase.storage.from('documents').remove([fileName])
         }
       }
-
       // Delete from database
       const { error } = await supabase
         .from('documents')
         .delete()
         .eq('id', documentId)
         .eq('user_id', user.id)
-
       if (error) throw error
-
       toast.success('Document deleted successfully!')
       router.push('/documents')
-
     } catch (err) {
       toast.error('Failed to delete document')
     }
   }
-
   const triggerAIAnalysis = async () => {
     if (!document || !user) return
-
     try {
       toast.success('AI analysis started!')
-
       // Use the document processing service
       const processingService = DocumentProcessingService.getInstance()
       const result = await processingService.processDocument(documentId, user.id)
-
       if (result.success) {
         // Refresh document data
         await fetchDocumentDetails()
@@ -244,12 +216,10 @@ export default function DocumentDetailPage() {
       } else {
         toast.error(result.error || 'AI analysis failed')
       }
-
     } catch (err) {
       toast.error('Failed to start AI analysis')
     }
   }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800'
@@ -258,7 +228,6 @@ export default function DocumentDetailPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-5 h-5 text-green-600" />
@@ -267,7 +236,6 @@ export default function DocumentDetailPage() {
       default: return <FileText className="w-5 h-5 text-gray-600" />
     }
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -278,7 +246,6 @@ export default function DocumentDetailPage() {
       </div>
     )
   }
-
   if (error || !document) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -294,7 +261,6 @@ export default function DocumentDetailPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -367,7 +333,6 @@ export default function DocumentDetailPage() {
           </Button>
         </div>
       </div>
-
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -376,7 +341,6 @@ export default function DocumentDetailPage() {
           <TabsTrigger value="processing">Processing</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
-
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -398,7 +362,6 @@ export default function DocumentDetailPage() {
                         placeholder="Enter document name"
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="edit-description">Description</Label>
                       <Textarea
@@ -409,7 +372,6 @@ export default function DocumentDetailPage() {
                         rows={3}
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="edit-category">Category</Label>
                       <Select value={editForm.category} onValueChange={(value) => setEditForm({ ...editForm, category: value })}>
@@ -425,7 +387,6 @@ export default function DocumentDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -435,7 +396,6 @@ export default function DocumentDetailPage() {
                       />
                       <Label htmlFor="edit-sensitive">Mark as sensitive document</Label>
                     </div>
-
                     <div className="flex justify-end space-x-2">
                       <Button variant="outline" onClick={() => setIsEditing(false)}>
                         Cancel
@@ -454,7 +414,6 @@ export default function DocumentDetailPage() {
                         <p className="text-sm text-muted-foreground mt-1">{document.description}</p>
                       </div>
                     )}
-
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Status</Label>
@@ -470,7 +429,6 @@ export default function DocumentDetailPage() {
                         </p>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">File Type</Label>
@@ -483,7 +441,6 @@ export default function DocumentDetailPage() {
                         </p>
                       </div>
                     </div>
-
                     {document.tags && document.tags.length > 0 && (
                       <div>
                         <Label className="text-sm font-medium">Tags</Label>
@@ -500,7 +457,6 @@ export default function DocumentDetailPage() {
                 )}
               </CardContent>
             </Card>
-
             {/* Quick Stats */}
             <div className="space-y-4">
               <Card>
@@ -539,7 +495,6 @@ export default function DocumentDetailPage() {
                   )}
                 </CardContent>
               </Card>
-
               {document.clients && (
                 <Card>
                   <CardHeader className="pb-3">
@@ -577,7 +532,6 @@ export default function DocumentDetailPage() {
             </div>
           </div>
         </TabsContent>
-
         {/* AI Analysis Tab */}
         <TabsContent value="analysis" className="space-y-6">
           <Card>
@@ -608,7 +562,6 @@ export default function DocumentDetailPage() {
                       <p className="text-sm text-muted-foreground">Confidence</p>
                     </div>
                   </div>
-
                   {document.ai_analysis_result.extractedData && (
                     <div>
                       <h4 className="font-medium mb-3">Extracted Data</h4>
@@ -622,7 +575,6 @@ export default function DocumentDetailPage() {
                       </div>
                     </div>
                   )}
-
                   {document.ai_analysis_result.fields && (
                     <div>
                       <h4 className="font-medium mb-3">Detected Fields</h4>
@@ -654,7 +606,6 @@ export default function DocumentDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         {/* Processing Tab */}
         <TabsContent value="processing" className="space-y-6">
           <Card>
@@ -705,7 +656,6 @@ export default function DocumentDetailPage() {
                     )}
                   </div>
                 </div>
-
                 <div>
                   <h4 className="font-medium mb-3">Technical Details</h4>
                   <div className="space-y-2 text-sm">
@@ -738,7 +688,6 @@ export default function DocumentDetailPage() {
                   </div>
                 </div>
               </div>
-
               {document.ocr_text && (
                 <div>
                   <h4 className="font-medium mb-3">Extracted Text (OCR)</h4>
@@ -750,7 +699,6 @@ export default function DocumentDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         {/* History Tab */}
         <TabsContent value="history" className="space-y-6">
           <Card>
@@ -782,7 +730,6 @@ export default function DocumentDetailPage() {
                     </p>
                   </div>
                 </div>
-
                 {document.updated_at !== document.created_at && (
                   <div className="flex items-start space-x-3 pb-4 border-b">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
@@ -802,7 +749,6 @@ export default function DocumentDetailPage() {
                     </div>
                   </div>
                 )}
-
                 {document.processing_completed_at && (
                   <div className="flex items-start space-x-3 pb-4">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
@@ -827,7 +773,6 @@ export default function DocumentDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

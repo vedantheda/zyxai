@@ -23,10 +23,10 @@ import {
   Download,
   Sparkles
 } from 'lucide-react'
-import { useRequireAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthProvider'
 
 export default function AIAnalysisPage() {
-  const { user, loading } = useRequireAuth()
+  const { user, loading } = useAuth()
 
   // Mock data for AI document analysis
   const analysisStats = {
@@ -285,7 +285,7 @@ export default function AIAnalysisPage() {
               <div>
                 <h3 className="text-lg font-semibold">AI Document Analysis</h3>
                 <p className="text-muted-foreground max-w-md">
-                  Advanced AI system for automated document processing, data extraction, 
+                  Advanced AI system for automated document processing, data extraction,
                   and intelligent tax form analysis.
                 </p>
               </div>

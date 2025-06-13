@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,7 +26,6 @@ import {
   Send
 } from 'lucide-react'
 import { toast } from 'sonner'
-
 interface IntakeFormData {
   // Personal Information
   firstName: string
@@ -36,23 +34,19 @@ interface IntakeFormData {
   phone: string
   dateOfBirth: string
   ssn: string
-
   // Address
   address: string
   city: string
   state: string
   zipCode: string
-
   // Client Type & Services
   clientType: 'individual' | 'business' | 'both'
   filingStatus: string
   serviceLevel: string
-
   // Business Information (if applicable)
   businessName?: string
   businessType?: string
   ein?: string
-
   // Tax Situation
   previousYear: boolean
   previousPreparer: string
@@ -62,24 +56,20 @@ interface IntakeFormData {
   hasBusinessIncome: boolean
   hasRentalIncome: boolean
   hasInvestments: boolean
-
   // Special Circumstances
   specialCircumstances: string[]
   additionalNotes: string
-
   // Consent & Agreements
   consentToContact: boolean
   consentToElectronic: boolean
   agreesToTerms: boolean
 }
-
 const INTAKE_STEPS = [
   { id: 'personal', title: 'Personal Information', icon: User },
   { id: 'client-type', title: 'Client Type & Services', icon: Building },
   { id: 'tax-situation', title: 'Tax Situation', icon: DollarSign },
   { id: 'review', title: 'Review & Submit', icon: CheckCircle }
 ]
-
 export default function IntakeFormPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState<IntakeFormData>({
@@ -116,17 +106,14 @@ export default function IntakeFormPage() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const router = useRouter()
-
   const updateFormData = (field: keyof IntakeFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
-
   const validateCurrentStep = (): boolean => {
     const newErrors: Record<string, string> = {}
-
     switch (currentStep) {
       case 0: // Personal Information
         if (!formData.firstName.trim()) newErrors.firstName = 'First name is required'
@@ -148,32 +135,24 @@ export default function IntakeFormPage() {
         if (!formData.agreesToTerms) newErrors.agreesToTerms = 'Agreement to terms is required'
         break
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-
   const nextStep = () => {
     if (validateCurrentStep() && currentStep < INTAKE_STEPS.length - 1) {
       setCurrentStep(currentStep + 1)
     }
   }
-
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
     }
   }
-
   const submitForm = async () => {
     if (!validateCurrentStep()) return
-
     setLoading(true)
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🚀 Submitting intake form...')
-      }
-
+      
       const response = await fetch('/api/intake', {
         method: 'POST',
         headers: {
@@ -184,36 +163,24 @@ export default function IntakeFormPage() {
           practiceId: 'demo-practice-001' // In production, this would come from the practice
         }),
       })
-
       const result = await response.json()
-
       if (!result.success) {
         throw new Error(result.error || 'Failed to submit form')
       }
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Intake form submitted successfully!')
-        console.log('Automation triggered:', result.data)
-      }
-
+      
       toast.success('Intake form submitted successfully! Automated onboarding has begun.')
-
       // Store the client ID for the success page
       if (result.data.clientId) {
         localStorage.setItem('newClientId', result.data.clientId)
       }
-
       router.push('/intake/success')
     } catch (error) {
-      console.error('❌ Submission failed:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to submit intake form. Please try again.')
     } finally {
       setLoading(false)
     }
   }
-
   const progress = ((currentStep + 1) / INTAKE_STEPS.length) * 100
-
   const renderPersonalInformation = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -238,7 +205,6 @@ export default function IntakeFormPage() {
           {errors.lastName && <p className="text-sm text-red-600">{errors.lastName}</p>}
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email Address *</Label>
@@ -263,7 +229,6 @@ export default function IntakeFormPage() {
           {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
         </div>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="address">Address *</Label>
         <Input
@@ -274,7 +239,6 @@ export default function IntakeFormPage() {
         />
         {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="city">City</Label>
@@ -303,7 +267,6 @@ export default function IntakeFormPage() {
       </div>
     </div>
   )
-
   const renderClientTypeServices = () => (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -319,7 +282,6 @@ export default function IntakeFormPage() {
           </SelectContent>
         </Select>
       </div>
-
       <div className="space-y-2">
         <Label>Service Level *</Label>
         <Select value={formData.serviceLevel} onValueChange={(value) => updateFormData('serviceLevel', value)}>
@@ -334,7 +296,6 @@ export default function IntakeFormPage() {
           </SelectContent>
         </Select>
       </div>
-
       {formData.clientType !== 'individual' && (
         <div className="space-y-4 p-4 border rounded-lg bg-accent/50">
           <h4 className="font-medium">Business Information</h4>
@@ -366,7 +327,6 @@ export default function IntakeFormPage() {
       )}
     </div>
   )
-
   const renderTaxSituation = () => (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -384,7 +344,6 @@ export default function IntakeFormPage() {
           </SelectContent>
         </Select>
       </div>
-
       <div className="space-y-4">
         <Label>Income Sources (check all that apply)</Label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -406,7 +365,6 @@ export default function IntakeFormPage() {
           ))}
         </div>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="additionalNotes">Additional Notes</Label>
         <Textarea
@@ -419,7 +377,6 @@ export default function IntakeFormPage() {
       </div>
     </div>
   )
-
   const renderReviewSubmit = () => (
     <div className="space-y-6">
       <div className="p-4 border rounded-lg bg-accent/50">
@@ -439,7 +396,6 @@ export default function IntakeFormPage() {
           </div>
         </div>
       </div>
-
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -451,7 +407,6 @@ export default function IntakeFormPage() {
             I consent to be contacted by email and phone regarding my tax preparation services *
           </Label>
         </div>
-
         <div className="flex items-center space-x-2">
           <Checkbox
             id="consentToElectronic"
@@ -462,7 +417,6 @@ export default function IntakeFormPage() {
             I agree to receive documents and communications electronically *
           </Label>
         </div>
-
         <div className="flex items-center space-x-2">
           <Checkbox
             id="agreesToTerms"
@@ -474,7 +428,6 @@ export default function IntakeFormPage() {
           </Label>
         </div>
       </div>
-
       {Object.keys(errors).length > 0 && (
         <div className="p-4 border border-red-200 rounded-lg bg-red-50">
           <p className="text-red-600 text-sm">Please complete all required fields and agreements.</p>
@@ -482,7 +435,6 @@ export default function IntakeFormPage() {
       )}
     </div>
   )
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 0: return renderPersonalInformation()
@@ -492,7 +444,6 @@ export default function IntakeFormPage() {
       default: return null
     }
   }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -505,7 +456,6 @@ export default function IntakeFormPage() {
                 Please provide your information to begin the tax preparation process
               </p>
             </div>
-
             <div className="flex justify-between text-sm text-muted-foreground mb-2">
               <span>Step {currentStep + 1} of {INTAKE_STEPS.length}</span>
               <span>{Math.round(progress)}% Complete</span>
@@ -514,7 +464,6 @@ export default function IntakeFormPage() {
           </div>
         </div>
       </div>
-
       {/* Step Navigation */}
       <div className="border-b bg-card/50">
         <div className="container mx-auto px-4 py-4">
@@ -523,7 +472,6 @@ export default function IntakeFormPage() {
               {INTAKE_STEPS.map((step, index) => {
                 const isCurrent = index === currentStep
                 const isCompleted = index < currentStep
-
                 return (
                   <div
                     key={step.id}
@@ -544,7 +492,6 @@ export default function IntakeFormPage() {
           </div>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -559,7 +506,6 @@ export default function IntakeFormPage() {
               {renderStepContent()}
             </CardContent>
           </Card>
-
           {/* Navigation */}
           <div className="flex justify-between mt-6">
             <Button
@@ -570,7 +516,6 @@ export default function IntakeFormPage() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
             </Button>
-
             {currentStep === INTAKE_STEPS.length - 1 ? (
               <Button onClick={submitForm} disabled={loading}>
                 {loading ? (

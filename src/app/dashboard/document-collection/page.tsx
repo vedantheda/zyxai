@@ -35,7 +35,7 @@ import {
   Filter,
   Plus
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useClients } from '@/hooks/useSupabaseData'
 import DocumentChecklistManager from '@/components/document-collection/DocumentChecklistManager'
@@ -45,7 +45,7 @@ import { UploadTrackingDashboard } from '@/components/document-collection/Upload
 import { DocumentAlerts } from '@/components/document-collection/DocumentAlerts'
 
 export default function DocumentCollectionPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading, isAuthenticated, isReady } = usePageAuth()
   const { clients, loading: clientsLoading } = useClients()
   const [selectedClient, setSelectedClient] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
@@ -66,7 +66,7 @@ export default function DocumentCollectionPage() {
   }
 
   // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  if (loading || !isReady) {
     return <LoadingScreen text="Loading document collection..." />
   }
 

@@ -1,5 +1,4 @@
 'use client'
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,22 +13,20 @@ import {
   Filter,
   AlertTriangle
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
-
 export default function ReportsPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
-
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading reports..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view reports" />
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -51,7 +48,6 @@ export default function ReportsPage() {
           </Button>
         </div>
       </div>
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
@@ -66,7 +62,6 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
@@ -79,7 +74,6 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Returns Completed</CardTitle>
@@ -92,7 +86,6 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Processing Time</CardTitle>
@@ -106,7 +99,6 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Report Categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
@@ -133,7 +125,6 @@ export default function ReportsPage() {
             ))}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -158,7 +149,6 @@ export default function ReportsPage() {
             ))}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -184,7 +174,6 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Quick Insights */}
       <Card>
         <CardHeader>
@@ -221,7 +210,6 @@ export default function ReportsPage() {
                 </div>
               </div>
             </div>
-
             <div className="space-y-4">
               <h4 className="font-medium">Areas for Improvement</h4>
               <div className="space-y-3">
@@ -244,7 +232,6 @@ export default function ReportsPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Feature Notice */}
       <Card className="border-dashed">
         <CardContent className="flex items-center justify-center py-12">

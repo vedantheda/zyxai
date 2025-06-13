@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Brain, FileText, Zap } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
-import { useHydrationSafe } from '@/hooks/useHydrationSafe'
+import { useAuth } from '@/contexts/AuthProvider'
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -19,133 +18,52 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const { signIn, user, loading, isHydrated: authHydrated } = useAuth()
-  const isHydrated = useHydrationSafe() && authHydrated
+  const { user, loading } = useAuth()
+  const searchParams = useSearchParams()
 
-  // Get redirect URL from query params with better handling
-  const redirectTo = typeof window !== 'undefined'
-    ? decodeURIComponent(new URLSearchParams(window.location.search).get('redirectTo') || '')
-    : ''
+  // Get redirect URL from query params
+  const redirectTo = searchParams.get('redirectTo') || '/pipeline'
 
-  // FIXED: Robust redirect logic with race condition prevention
+  // Redirect if already authenticated
   useEffect(() => {
-    console.log('🔐 Login: Checking redirect', {
-      loading,
-      hasUser: !!user,
-      userRole: user?.role,
-      redirectTo,
-      pathname: window.location.pathname
-    })
-
-    // Only redirect if user is authenticated, not loading, and we're still on login page
-    if (!loading && user && window.location.pathname === '/login') {
-      console.log('🔐 Login: User authenticated, preparing redirect...')
-
-      // Use requestAnimationFrame to ensure DOM is ready and prevent race conditions
-      requestAnimationFrame(() => {
-        // Double-check we're still on login page (prevent double redirects)
-        if (window.location.pathname !== '/login') {
-          console.log('🔐 Login: Already redirected, skipping')
-          return
-        }
-
-        // Determine redirect destination
-        let destination = '/dashboard' // default
-
-        if (redirectTo && redirectTo !== '/login' && redirectTo !== '/register') {
-          destination = redirectTo
-          console.log('🔐 Login: Using redirectTo parameter:', destination)
-        } else if (user.role === 'admin' || user.role === 'staff') {
-          destination = '/pipeline'
-          console.log('🔐 Login: Admin user, redirecting to pipeline')
-        } else {
-          console.log('🔐 Login: Client user, redirecting to dashboard')
-        }
-
-        console.log('🔐 Login: Executing redirect to:', destination)
-        setIsLoading(false) // Clear loading state before redirect
-        router.replace(destination)
-      })
+    if (!loading && user) {
+      console.log('🔐 Login: User already authenticated, redirecting to:', redirectTo)
+      router.replace(redirectTo)
     }
   }, [user, loading, router, redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('🔐 Login: Form submitted', { email, isHydrated, authLoading: loading })
-
-    // Prevent sign-in before hydration or while auth is loading
-    if (!isHydrated) {
-      console.log('🔐 Login: Waiting for hydration before sign-in')
-      setError('Please wait for the page to load completely...')
-      return
-    }
-
-    if (loading) {
-      console.log('🔐 Login: Auth system still loading')
-      setError('Authentication system is initializing, please wait...')
-      return
-    }
-
     setIsLoading(true)
     setError('')
 
     try {
-      console.log('🔐 Login: Calling signIn')
-      const { error } = await signIn(email, password)
+      console.log('🔐 Login: Attempting sign in for:', email)
 
-      console.log('🔐 Login: SignIn result', { hasError: !!error, errorMessage: error?.message })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
       if (error) {
-        console.error('🔐 Login: SignIn error', error)
+        console.error('🔐 Login: Error:', error)
         setError(error.message)
-        setIsLoading(false) // Clear loading state on error
-      } else {
-        console.log('🔐 Login: SignIn successful, implementing session sync...')
+        setIsLoading(false)
+        return
+      }
 
-        // Set auth timestamp cookie to help middleware with timing
-        document.cookie = `auth-timestamp=${Date.now()}; path=/; max-age=10`
-
-        // Get the session from Supabase directly for sync
-        try {
-          const { data: sessionData } = await supabase.auth.getSession()
-
-          if (sessionData?.session) {
-            console.log('🔐 Login: Got session, syncing with server...')
-
-            // Force server-side session sync
-            const syncResponse = await fetch('/api/auth/sync-session', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${sessionData.session.access_token}`
-              },
-              body: JSON.stringify({
-                session: sessionData.session,
-                user: sessionData.session.user
-              })
-            })
-
-            if (syncResponse.ok) {
-              console.log('🔐 Login: Session synced successfully, redirecting...')
-              // Clear loading and let useEffect handle redirect
-              setIsLoading(false)
-            } else {
-              console.log('🔐 Login: Session sync failed, using fallback...')
-              setIsLoading(false)
-            }
-          } else {
-            console.log('🔐 Login: No session found, using fallback...')
-            setIsLoading(false)
-          }
-        } catch (syncError) {
-          console.error('🔐 Login: Session sync error:', syncError)
-          setIsLoading(false)
-        }
+      if (data.user) {
+        console.log('🔐 Login: Success, redirecting to:', redirectTo)
+        // Use window.location.href for reliable redirect (avoids hydration issues)
+        setTimeout(() => {
+          console.log('🔐 Login: Performing redirect with full page reload')
+          window.location.href = redirectTo
+        }, 800)
       }
     } catch (err) {
-      console.error('🔐 Login: Exception during signIn', err)
-      setError('An error occurred. Please try again.')
-      setIsLoading(false) // Clear loading state on exception
+      console.error('🔐 Login: Exception:', err)
+      setError('An unexpected error occurred. Please try again.')
+      setIsLoading(false)
     }
   }
 
@@ -190,7 +108,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  autoComplete={isHydrated ? "email" : "off"}
+                  autoComplete="email"
                   key="email-input"
                 />
               </div>
@@ -205,18 +123,13 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  autoComplete={isHydrated ? "current-password" : "off"}
+                  autoComplete="current-password"
                   key="password-input"
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading || !isHydrated || loading}>
-                {!isHydrated ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading page...
-                  </>
-                ) : loading ? (
+              <Button type="submit" className="w-full" disabled={isLoading || loading}>
+                {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Initializing auth...

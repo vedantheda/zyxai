@@ -1,24 +1,21 @@
 import { BaseService } from './BaseService';
-import { 
-  IWorkflowOrchestrator, 
-  WorkflowStatus, 
+import {
+  IWorkflowOrchestrator,
+  WorkflowStatus,
   WorkflowStep,
-  ProcessingResult, 
+  ProcessingResult,
   ServiceConfig,
-  ServiceError 
+  ServiceError
 } from './types';
-
 export class WorkflowOrchestrationService extends BaseService implements IWorkflowOrchestrator {
   private workflows: Map<string, WorkflowStatus>;
   private workflowDefinitions: Map<string, WorkflowDefinition>;
-
   constructor(config: ServiceConfig = {}) {
     super(config);
     this.workflows = new Map();
     this.workflowDefinitions = new Map();
     this.initializeWorkflowDefinitions();
   }
-
   async startWorkflow(clientId: string, workflowType: string): Promise<ProcessingResult<string>> {
     return this.executeWithRetry(async () => {
       const definition = this.workflowDefinitions.get(workflowType);
@@ -29,7 +26,6 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
           { workflowType, availableTypes: Array.from(this.workflowDefinitions.keys()) }
         );
       }
-
       const workflowId = this.generateWorkflowId(clientId, workflowType);
       const workflow: WorkflowStatus = {
         id: workflowId,
@@ -43,16 +39,12 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
         createdAt: new Date(),
         updatedAt: new Date()
       };
-
       this.workflows.set(workflowId, workflow);
-      
       // Start the workflow execution
       this.executeWorkflow(workflowId);
-
       return workflowId;
     }, 'startWorkflow');
   }
-
   async getWorkflowStatus(workflowId: string): Promise<ProcessingResult<WorkflowStatus>> {
     return this.executeWithRetry(async () => {
       const workflow = this.workflows.get(workflowId);
@@ -62,11 +54,9 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
           'WORKFLOW_NOT_FOUND'
         );
       }
-
       return workflow;
     }, 'getWorkflowStatus');
   }
-
   async updateWorkflowStep(workflowId: string, step: string, status: string): Promise<ProcessingResult<void>> {
     return this.executeWithRetry(async () => {
       const workflow = this.workflows.get(workflowId);
@@ -76,7 +66,6 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
           'WORKFLOW_NOT_FOUND'
         );
       }
-
       const stepIndex = workflow.steps.findIndex(s => s.id === step);
       if (stepIndex === -1) {
         throw new ServiceError(
@@ -84,18 +73,14 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
           'STEP_NOT_FOUND'
         );
       }
-
       workflow.steps[stepIndex].status = status as any;
       workflow.steps[stepIndex].completedAt = new Date();
       workflow.updatedAt = new Date();
-
       // Update workflow status based on step completion
       this.updateWorkflowStatus(workflow);
-
       this.workflows.set(workflowId, workflow);
     }, 'updateWorkflowStep');
   }
-
   private initializeWorkflowDefinitions(): void {
     // Tax Preparation Workflow
     this.workflowDefinitions.set('tax_preparation', {
@@ -153,7 +138,6 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
         }
       ]
     });
-
     // Document Processing Workflow
     this.workflowDefinitions.set('document_processing', {
       id: 'document_processing',
@@ -198,7 +182,6 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
         }
       ]
     });
-
     // Client Onboarding Workflow
     this.workflowDefinitions.set('client_onboarding', {
       id: 'client_onboarding',
@@ -244,30 +227,24 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
       ]
     });
   }
-
   private async executeWorkflow(workflowId: string): Promise<void> {
     // This would be executed asynchronously
     setTimeout(async () => {
       try {
         const workflow = this.workflows.get(workflowId);
         if (!workflow) return;
-
         workflow.status = 'in_progress';
         this.workflows.set(workflowId, workflow);
-
         // Execute steps sequentially
         for (const step of workflow.steps) {
           await this.executeStep(workflowId, step);
-          
           // Simulate processing time
           await this.delay(step.metadata?.estimatedDuration || 1000);
         }
-
         // Mark workflow as completed
         workflow.status = 'completed';
         workflow.updatedAt = new Date();
         this.workflows.set(workflowId, workflow);
-
       } catch (error) {
         const workflow = this.workflows.get(workflowId);
         if (workflow) {
@@ -278,11 +255,9 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
       }
     }, 100);
   }
-
   private async executeStep(workflowId: string, step: WorkflowStep): Promise<void> {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) return;
-
     // Update step status
     const stepIndex = workflow.steps.findIndex(s => s.id === step.id);
     if (stepIndex !== -1) {
@@ -292,10 +267,8 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
       workflow.updatedAt = new Date();
       this.workflows.set(workflowId, workflow);
     }
-
     // Execute step logic based on step type
     await this.performStepAction(step);
-
     // Mark step as completed
     if (stepIndex !== -1) {
       workflow.steps[stepIndex].status = 'completed';
@@ -304,12 +277,10 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
       this.workflows.set(workflowId, workflow);
     }
   }
-
   private async performStepAction(step: WorkflowStep): Promise<void> {
     // This is where specific step logic would be implemented
     // For now, we'll just simulate the action
     this.logger.info(`Executing step: ${step.name}`);
-    
     switch (step.id) {
       case 'intake_review':
         // Review intake data
@@ -339,12 +310,10 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
         this.logger.debug(`No specific action for step: ${step.id}`);
     }
   }
-
   private updateWorkflowStatus(workflow: WorkflowStatus): void {
     const completedSteps = workflow.steps.filter(s => s.status === 'completed').length;
     const failedSteps = workflow.steps.filter(s => s.status === 'failed').length;
     const totalSteps = workflow.steps.length;
-
     if (failedSteps > 0) {
       workflow.status = 'failed';
     } else if (completedSteps === totalSteps) {
@@ -353,12 +322,10 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
       workflow.status = 'in_progress';
     }
   }
-
   private generateWorkflowId(clientId: string, workflowType: string): string {
     const timestamp = Date.now();
     return `${workflowType}_${clientId}_${timestamp}`;
   }
-
   protected async performHealthCheck(): Promise<Record<string, any>> {
     return {
       activeWorkflows: this.workflows.size,
@@ -370,27 +337,22 @@ export class WorkflowOrchestrationService extends BaseService implements IWorkfl
       }))
     };
   }
-
   // Utility methods
   public getAvailableWorkflowTypes(): string[] {
     return Array.from(this.workflowDefinitions.keys());
   }
-
   public getWorkflowDefinition(workflowType: string): WorkflowDefinition | undefined {
     return this.workflowDefinitions.get(workflowType);
   }
-
   public getActiveWorkflows(): WorkflowStatus[] {
-    return Array.from(this.workflows.values()).filter(w => 
+    return Array.from(this.workflows.values()).filter(w =>
       w.status === 'pending' || w.status === 'in_progress'
     );
   }
-
   public getCompletedWorkflows(): WorkflowStatus[] {
     return Array.from(this.workflows.values()).filter(w => w.status === 'completed');
   }
 }
-
 interface WorkflowDefinition {
   id: string;
   name: string;

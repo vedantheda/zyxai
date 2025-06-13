@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-
 export interface AIMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
@@ -12,7 +11,6 @@ export interface AIMessage {
     confidence?: number
   }
 }
-
 export interface AIConversation {
   id: string
   userId: string
@@ -22,7 +20,6 @@ export interface AIConversation {
   updatedAt: Date
   metadata?: Record<string, any>
 }
-
 export interface DocumentAnalysisResult {
   documentId: string
   documentType: string
@@ -33,7 +30,6 @@ export interface DocumentAnalysisResult {
   errors: string[]
   processingTime: number
 }
-
 export interface TaxCalculationRequest {
   clientId?: string
   income: Record<string, number>
@@ -42,7 +38,6 @@ export interface TaxCalculationRequest {
   taxYear: number
   state?: string
 }
-
 export interface TaxCalculationResult {
   federalTax: number
   stateTax: number
@@ -54,19 +49,15 @@ export interface TaxCalculationResult {
   breakdown: Record<string, number>
   recommendations: string[]
 }
-
 export class AIService {
   private apiKey: string
   private baseUrl: string = 'https://openrouter.ai/api/v1'
-
   constructor(private userId: string) {
     // Try both possible environment variable names
     this.apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || ''
     if (!this.apiKey) {
-      console.warn('OpenRouter API key not found. AI features will run in demo mode.')
-    }
+      }
   }
-
   /**
    * Send a chat message and get AI response
    */
@@ -82,20 +73,16 @@ export class AIService {
     try {
       // Get or create conversation with fallback
       let conversation: AIConversation | null = null
-
       if (conversationId) {
         conversation = await this.getConversation(conversationId)
       }
-
       if (!conversation) {
         conversation = await this.createConversation('New Chat')
       }
-
       // If still no conversation, create a local fallback
       if (!conversation) {
         conversation = this.createLocalConversation('Local Chat')
       }
-
       // Add user message to conversation
       const userMessage: AIMessage = {
         id: this.generateId(),
@@ -104,10 +91,8 @@ export class AIService {
         timestamp: new Date(),
         metadata: context
       }
-
       // Get context for the AI
       const systemContext = await this.buildSystemContext(context)
-
       // Prepare messages for AI
       const messages = [
         {
@@ -123,10 +108,8 @@ export class AIService {
           content: message
         }
       ]
-
       // Call AI API
       const aiResponse = await this.callAI(messages)
-
       // Create assistant message
       const assistantMessage: AIMessage = {
         id: this.generateId(),
@@ -134,43 +117,34 @@ export class AIService {
         content: aiResponse,
         timestamp: new Date()
       }
-
       // Update conversation
       conversation.messages.push(userMessage, assistantMessage)
       conversation.updatedAt = new Date()
-
       // Try to save conversation, but don't fail if it doesn't work
       try {
         await this.saveConversation(conversation)
       } catch (saveError) {
-        console.warn('Failed to save conversation to database, continuing with local state:', saveError)
-      }
-
+        }
       return {
         response: aiResponse,
         conversationId: conversation.id
       }
     } catch (error) {
-      console.error('AI Service error:', error)
-
       // Fallback: return a basic response even if everything fails
       const fallbackResponse = this.getFallbackResponse(message)
       const fallbackId = 'fallback-' + Date.now()
-
       return {
         response: fallbackResponse,
         conversationId: fallbackId
       }
     }
   }
-
   /**
    * Analyze a document using AI
    */
   async analyzeDocument(documentId: string): Promise<DocumentAnalysisResult> {
     try {
       const startTime = Date.now()
-
       // Get document from database
       const { data: document, error } = await supabase
         .from('documents')
@@ -178,17 +152,14 @@ export class AIService {
         .eq('id', documentId)
         .eq('user_id', this.userId)
         .single()
-
       if (error || !document) {
         throw new Error('Document not found')
       }
-
       // For now, simulate AI analysis
       // In production, this would:
       // 1. Extract text using OCR if needed
       // 2. Send to AI for analysis
       // 3. Parse and structure the response
-
       const mockResult: DocumentAnalysisResult = {
         documentId,
         documentType: this.identifyDocumentType(document.name, document.type),
@@ -207,7 +178,6 @@ export class AIService {
         errors: [],
         processingTime: Date.now() - startTime
       }
-
       // Update document with analysis results
       await supabase
         .from('documents')
@@ -217,14 +187,11 @@ export class AIService {
           processing_status: 'completed'
         })
         .eq('id', documentId)
-
       return mockResult
     } catch (error) {
-      console.error('Document analysis error:', error)
       throw new Error('Failed to analyze document')
     }
   }
-
   /**
    * Perform tax calculations
    */
@@ -234,16 +201,13 @@ export class AIService {
       const totalIncome = Object.values(request.income).reduce((sum, val) => sum + val, 0)
       const totalDeductions = Object.values(request.deductions).reduce((sum, val) => sum + val, 0)
       const taxableIncome = Math.max(0, totalIncome - totalDeductions)
-
       // Simplified tax calculation (this would be much more complex in reality)
       const federalTax = this.calculateFederalTax(taxableIncome, request.filingStatus)
       const stateTax = this.calculateStateTax(taxableIncome, request.state || 'CA')
       const selfEmploymentTax = this.calculateSelfEmploymentTax(request.income.selfEmployment || 0)
-
       const totalTax = federalTax + stateTax + selfEmploymentTax
       const effectiveRate = totalIncome > 0 ? (totalTax / totalIncome) * 100 : 0
       const marginalRate = this.getMarginalTaxRate(taxableIncome, request.filingStatus)
-
       return {
         federalTax,
         stateTax,
@@ -262,11 +226,9 @@ export class AIService {
         recommendations: this.generateTaxRecommendations(request, totalTax)
       }
     } catch (error) {
-      console.error('Tax calculation error:', error)
       throw new Error('Failed to calculate taxes')
     }
   }
-
   /**
    * Get client insights and recommendations
    */
@@ -278,13 +240,11 @@ export class AIService {
         .select('*')
         .eq('id', clientId)
         .single()
-
       const { data: documents } = await supabase
         .from('documents')
         .select('*')
         .eq('client_id', clientId)
         .eq('user_id', this.userId)
-
       // Generate insights based on client data
       const insights = [
         'Client has submitted all required documents for tax preparation',
@@ -292,105 +252,79 @@ export class AIService {
         'Consider quarterly estimated tax payments for next year',
         'Review business expense categorization for optimization'
       ]
-
       return insights
     } catch (error) {
-      console.error('Client insights error:', error)
       return ['Unable to generate insights at this time']
     }
   }
-
   // Private helper methods
   private async callAI(messages: any[]): Promise<string> {
     if (!this.apiKey) {
       // Demo mode with realistic responses
       const userMessage = messages[messages.length - 1]?.content?.toLowerCase() || ''
-
       if (userMessage.includes('document') || userMessage.includes('analyze')) {
         return `I can help you analyze documents! Here's what I found:
-
 📄 **Document Analysis Summary:**
 - Document type: Tax form (W-2/1099)
 - Confidence level: 95%
 - Key data extracted: Income, withholdings, employer info
 - Status: Ready for processing
-
 **Recommendations:**
 • Verify all amounts match your records
 • Check for any missing forms
 • Consider tax optimization opportunities
-
 Would you like me to help with tax calculations or planning strategies?`
       }
-
       if (userMessage.includes('tax') || userMessage.includes('calculate')) {
         return `I can help with tax calculations! Here's a sample analysis:
-
 💰 **Tax Calculation Summary:**
 - Estimated Federal Tax: $12,450
 - State Tax (CA): $3,200
 - Total Tax Liability: $15,650
 - Effective Tax Rate: 18.2%
-
 **Tax Planning Opportunities:**
 • Maximize retirement contributions (save ~$2,400)
 • Consider itemized deductions
 • Plan quarterly payments for next year
-
 Need help with specific calculations or planning strategies?`
       }
-
       if (userMessage.includes('client') || userMessage.includes('deadline')) {
         return `Here's your client overview:
-
 👥 **Client Status Summary:**
 - Total active clients: 24
 - Pending document reviews: 3
 - Upcoming deadlines: 5 clients
-
 **Priority Actions:**
 • Johnson LLC - Quarterly filing due March 15
 • Smith Family - Missing W-2 forms
 • ABC Corp - Schedule review meeting
-
 Would you like me to provide detailed insights for any specific client?`
       }
-
       if (userMessage.includes('planning') || userMessage.includes('strategy')) {
         return `Here's a comprehensive tax planning strategy:
-
 📊 **Strategic Tax Planning:**
-
 **Short-term (This Year):**
 • Maximize retirement contributions
 • Harvest tax losses
 • Accelerate/defer income as needed
-
 **Long-term (Multi-year):**
 • Roth conversion strategies
 • Estate planning considerations
 • Business structure optimization
-
 **Key Recommendations:**
 • Review quarterly to adjust strategies
 • Monitor tax law changes
 • Coordinate with financial planning
-
 Need help implementing any of these strategies?`
       }
-
       return `Hello! I'm Neuronize AI, your intelligent tax practice assistant. I can help you with:
-
 🔍 **Document Analysis** - Extract data from tax forms with high accuracy
 📊 **Tax Calculations** - Perform complex calculations and projections
 👥 **Client Management** - Track deadlines and provide insights
 💡 **Tax Planning** - Strategic recommendations and optimization
-
 *Note: I'm currently in demo mode. With a proper API key, I'd provide real-time AI assistance.*
-
 What would you like help with today?`
     }
-
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -405,41 +339,32 @@ What would you like help with today?`
           max_tokens: 1000
         })
       })
-
       if (!response.ok) {
         throw new Error(`AI API error: ${response.statusText}`)
       }
-
       const data = await response.json()
       return data.choices[0]?.message?.content || 'No response generated'
     } catch (error) {
-      console.error('AI API call failed:', error)
       return "I'm having trouble connecting to the AI service. Please try again later."
     }
   }
-
   private async buildSystemContext(context?: any): Promise<string> {
     let systemPrompt = `You are Neuronize AI, an expert tax preparation assistant. You help tax professionals with:
 - Document analysis and data extraction
 - Tax calculations and planning
 - Client management and insights
 - Compliance and regulatory guidance
-
 Always provide accurate, helpful, and professional responses. When analyzing documents or performing calculations, be precise and cite relevant tax codes when applicable.`
-
     if (context?.clientId) {
       // Add client-specific context
       systemPrompt += `\n\nYou are currently working with a specific client. Provide personalized advice and insights.`
     }
-
     if (context?.documentIds?.length) {
       // Add document context
       systemPrompt += `\n\nYou have access to the client's uploaded documents. Reference them when providing analysis.`
     }
-
     return systemPrompt
   }
-
   private async createConversation(title: string): Promise<AIConversation | null> {
     try {
       const conversation: AIConversation = {
@@ -451,15 +376,12 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
         updatedAt: new Date(),
         metadata: {}
       }
-
       await this.saveConversation(conversation)
       return conversation
     } catch (error) {
-      console.error('Error creating conversation:', error)
       return null
     }
   }
-
   private createLocalConversation(title: string): AIConversation {
     return {
       id: 'local-' + this.generateId(),
@@ -471,25 +393,19 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
       metadata: { local: true }
     }
   }
-
   private getFallbackResponse(message: string): string {
     const lowerMessage = message.toLowerCase()
-
     if (lowerMessage.includes('document') || lowerMessage.includes('analyze')) {
       return `I understand you want to analyze documents. I'm currently in demo mode, but I can help you with document analysis once properly configured.`
     }
-
     if (lowerMessage.includes('tax') || lowerMessage.includes('calculate')) {
       return `I can help with tax calculations! I'm currently in demo mode, but I can provide tax calculation assistance once properly configured.`
     }
-
     if (lowerMessage.includes('client')) {
       return `I can help with client management! I'm currently in demo mode, but I can provide client insights once properly configured.`
     }
-
     return `Hello! I'm Neuronize AI. I'm currently in demo mode, but I can help you with tax preparation, document analysis, and client management once properly configured. What would you like to know about?`
   }
-
   private async getConversation(id: string): Promise<AIConversation | null> {
     try {
       const { data, error } = await supabase
@@ -498,9 +414,7 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
         .eq('id', id)
         .eq('user_id', this.userId)
         .single()
-
       if (error || !data) return null
-
       return {
         id: data.id,
         userId: data.user_id,
@@ -511,17 +425,14 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
         metadata: data.metadata
       }
     } catch (error) {
-      console.error('Error getting conversation:', error)
       return null
     }
   }
-
   private async saveConversation(conversation: AIConversation): Promise<void> {
     // Don't try to save local conversations
     if (conversation.metadata?.local) {
       return
     }
-
     try {
       const { error } = await supabase
         .from('ai_conversations')
@@ -536,17 +447,13 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
         }, {
           onConflict: 'id'
         })
-
       if (error) {
-        console.error('Error saving conversation:', error)
         throw new Error(`Failed to save conversation: ${error.message}`)
       }
     } catch (err) {
-      console.error('Save conversation error:', err)
       throw err
     }
   }
-
   private identifyDocumentType(filename: string, mimeType: string): string {
     const name = filename.toLowerCase()
     if (name.includes('w-2') || name.includes('w2')) return 'W-2'
@@ -556,7 +463,6 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
     if (name.includes('bank') || name.includes('statement')) return 'Bank Statement'
     return 'Unknown'
   }
-
   private generateMockExtractedData(filename: string): Record<string, any> {
     // Mock extracted data based on document type
     if (filename.toLowerCase().includes('w-2')) {
@@ -570,16 +476,13 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
     }
     return { processed: true }
   }
-
   private calculateFederalTax(taxableIncome: number, filingStatus: string): number {
     // Simplified federal tax calculation
     const brackets = filingStatus === 'married_filing_jointly'
       ? [[0, 0.10], [22550, 0.12], [89450, 0.22], [190750, 0.24]]
       : [[0, 0.10], [11000, 0.12], [44725, 0.22], [95375, 0.24]]
-
     let tax = 0
     let previousBracket = 0
-
     for (const [threshold, rate] of brackets) {
       if (taxableIncome > threshold) {
         const taxableAtThisRate = Math.min(taxableIncome - threshold,
@@ -588,10 +491,8 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
         previousBracket = threshold
       }
     }
-
     return Math.round(tax)
   }
-
   private calculateStateTax(taxableIncome: number, state: string): number {
     // Simplified state tax calculation
     const stateRates: Record<string, number> = {
@@ -602,11 +503,9 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
     }
     return Math.round(taxableIncome * (stateRates[state] || 0.05))
   }
-
   private calculateSelfEmploymentTax(selfEmploymentIncome: number): number {
     return Math.round(selfEmploymentIncome * 0.1413) // Simplified SE tax rate
   }
-
   private getMarginalTaxRate(taxableIncome: number, filingStatus: string): number {
     // Return marginal tax rate as percentage
     if (taxableIncome > 95375) return 24
@@ -614,7 +513,6 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
     if (taxableIncome > 11000) return 12
     return 10
   }
-
   private getStandardDeduction(filingStatus: string, taxYear: number): number {
     const deductions: Record<string, number> = {
       'single': 14600,
@@ -624,25 +522,19 @@ Always provide accurate, helpful, and professional responses. When analyzing doc
     }
     return deductions[filingStatus] || 14600
   }
-
   private generateTaxRecommendations(request: TaxCalculationRequest, totalTax: number): string[] {
     const recommendations = []
-
     if (totalTax > 10000) {
       recommendations.push('Consider maximizing retirement contributions to reduce taxable income')
     }
-
     if (request.income.selfEmployment && request.income.selfEmployment > 0) {
       recommendations.push('Review business expenses for additional deductions')
       recommendations.push('Consider quarterly estimated tax payments')
     }
-
     recommendations.push('Evaluate tax-loss harvesting opportunities')
     recommendations.push('Review withholding amounts for next year')
-
     return recommendations
   }
-
   private generateId(): string {
     // Generate a proper UUID v4
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {

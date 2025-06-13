@@ -1,6 +1,5 @@
 import { ExtractedTaxData, DocumentAnalysisResult } from './DocumentAnalysisEngine'
 import { supabase } from '@/lib/supabase'
-
 export interface TaxForm {
   id: string
   formType: TaxFormType
@@ -22,7 +21,6 @@ export interface TaxForm {
   createdAt: Date
   updatedAt: Date
 }
-
 export interface TaxFormField {
   value: any
   confidence: number
@@ -35,7 +33,6 @@ export interface TaxFormField {
   lastUpdated: Date
   updatedBy: 'ai' | 'user' | 'calculation'
 }
-
 export interface AutoFillResult {
   success: boolean
   formId: string
@@ -52,7 +49,6 @@ export interface AutoFillResult {
   documentId: string
   clientId: string
 }
-
 export interface FieldUpdate {
   formId: string
   formType: string
@@ -66,7 +62,6 @@ export interface FieldUpdate {
   timestamp: Date
   requiresReview: boolean
 }
-
 export interface FieldConflict {
   fieldName: string
   existingValue: any
@@ -78,7 +73,6 @@ export interface FieldConflict {
   recommendation: 'keep_existing' | 'use_new' | 'manual_review'
   conflictReason: string
 }
-
 export type TaxFormType =
   | 'Form-1040'
   | 'Schedule-C'
@@ -86,10 +80,8 @@ export type TaxFormType =
   | 'Schedule-E'
   | 'Form-1120'
   | 'Form-1065'
-
 export class TaxFormAutoFillService {
   private openRouterApiKey: string = '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'
-
   /**
    * Auto-fill tax forms based on document analysis results
    */
@@ -101,18 +93,14 @@ export class TaxFormAutoFillService {
     const startTime = Date.now()
     const warnings: string[] = []
     const errors: string[] = []
-
     try {
       // Determine which forms need to be updated
       const targetForms = await this.determineTargetForms(clientId, analysisResult)
-
       if (targetForms.length === 0) {
         warnings.push('No applicable tax forms found for this document type')
       }
-
       // Process each form
       const results: AutoFillResult[] = []
-
       for (const formType of targetForms) {
         try {
           const result = await this.fillSpecificForm(
@@ -124,18 +112,12 @@ export class TaxFormAutoFillService {
           results.push(result)
         } catch (error) {
           errors.push(`Failed to fill ${formType}: ${error}`)
-          console.error(`Error filling ${formType}:`, error)
-        }
+          }
       }
-
       // Combine results from all forms
       const combinedResult = this.combineResults(results, clientId, documentId, startTime, warnings, errors)
-
       return combinedResult
-
     } catch (error) {
-      console.error('Auto-fill error:', error)
-
       return {
         success: false,
         formId: '',
@@ -154,7 +136,6 @@ export class TaxFormAutoFillService {
       }
     }
   }
-
   /**
    * Combine results from multiple forms
    */
@@ -184,15 +165,12 @@ export class TaxFormAutoFillService {
         clientId
       }
     }
-
     // For now, return the first result but enhance it
     const primaryResult = results[0]
     const allFieldsUpdated = results.flatMap(r => r.fieldsUpdated)
     const allFieldsAdded = results.flatMap(r => r.fieldsAdded)
     const allConflicts = results.flatMap(r => r.conflicts)
-
     const overallConfidence = results.reduce((sum, r) => sum + r.confidence, 0) / results.length
-
     return {
       success: true,
       formId: primaryResult.formId,
@@ -210,7 +188,6 @@ export class TaxFormAutoFillService {
       clientId
     }
   }
-
   /**
    * Generate combined summary for multiple forms
    */
@@ -218,16 +195,12 @@ export class TaxFormAutoFillService {
     const totalUpdated = results.reduce((sum, r) => sum + r.fieldsUpdated.length, 0)
     const totalAdded = results.reduce((sum, r) => sum + r.fieldsAdded.length, 0)
     const totalConflicts = results.reduce((sum, r) => sum + r.conflicts.length, 0)
-
     const parts: string[] = []
-
     if (totalAdded > 0) parts.push(`${totalAdded} fields added`)
     if (totalUpdated > 0) parts.push(`${totalUpdated} fields updated`)
     if (totalConflicts > 0) parts.push(`${totalConflicts} conflicts detected`)
-
     return parts.length > 0 ? parts.join(', ') : 'No changes made'
   }
-
   /**
    * Determine which tax forms should be updated based on document type
    */
@@ -237,7 +210,6 @@ export class TaxFormAutoFillService {
   ): Promise<TaxFormType[]> {
     const { documentType } = analysisResult
     const forms: TaxFormType[] = []
-
     switch (documentType) {
       case 'W-2':
       case '1099-NEC':
@@ -246,11 +218,9 @@ export class TaxFormAutoFillService {
       case '1099-DIV':
         forms.push('Form-1040')
         break
-
       case 'Schedule-C':
         forms.push('Schedule-C', 'Form-1040')
         break
-
       case 'Receipt':
       case 'Invoice':
         // Determine if it's business expense (Schedule C) or personal
@@ -260,10 +230,8 @@ export class TaxFormAutoFillService {
         }
         break
     }
-
     return forms
   }
-
   /**
    * Fill a specific tax form
    */
@@ -275,25 +243,20 @@ export class TaxFormAutoFillService {
   ): Promise<AutoFillResult> {
     // Get or create the tax form
     let taxForm = await this.getTaxForm(clientId, formType, new Date().getFullYear())
-
     if (!taxForm) {
       taxForm = await this.createTaxForm(clientId, formType, new Date().getFullYear())
     }
-
     // Map document data to form fields
     const fieldMappings = this.getFieldMappings(formType, analysisResult.documentType)
     const fieldsToUpdate: Record<string, TaxFormField> = {}
     const fieldsUpdated: string[] = []
     const fieldsAdded: string[] = []
     const conflicts: FieldConflict[] = []
-
     // Process each field mapping
     for (const [formField, documentField] of Object.entries(fieldMappings)) {
       const documentValue = this.getDocumentValue(analysisResult.extractedData, documentField)
-
       if (documentValue !== undefined && documentValue !== null) {
         const existingField = taxForm.fields[formField]
-
         if (existingField && existingField.value !== documentValue) {
           // Handle conflict
           const conflict: FieldConflict = {
@@ -308,7 +271,6 @@ export class TaxFormAutoFillService {
             conflictReason: this.getConflictReason(existingField.value, documentValue)
           }
           conflicts.push(conflict)
-
           if (conflict.recommendation === 'use_new') {
             fieldsToUpdate[formField] = this.createFormField(documentValue, documentId, documentField, analysisResult.confidence)
             fieldsUpdated.push(formField)
@@ -316,7 +278,6 @@ export class TaxFormAutoFillService {
         } else {
           // New field or no conflict
           fieldsToUpdate[formField] = this.createFormField(documentValue, documentId, documentField, analysisResult.confidence)
-
           if (existingField) {
             fieldsUpdated.push(formField)
           } else {
@@ -325,13 +286,10 @@ export class TaxFormAutoFillService {
         }
       }
     }
-
     // Update the tax form
     const updatedForm = await this.updateTaxForm(taxForm.id, fieldsToUpdate, documentId)
-
     // Calculate overall confidence
     const confidence = this.calculateFormConfidence(updatedForm)
-
     return {
       success: true,
       formId: taxForm.id,
@@ -349,7 +307,6 @@ export class TaxFormAutoFillService {
       clientId
     }
   }
-
   /**
    * Get field mappings between document types and tax forms
    */
@@ -387,25 +344,20 @@ export class TaxFormAutoFillService {
         }
       }
     }
-
     return mappings[formType]?.[documentType] || {}
   }
-
   /**
    * Get value from extracted document data
    */
   private getDocumentValue(data: ExtractedTaxData, fieldPath: string): any {
     const keys = fieldPath.split('.')
     let value: any = data
-
     for (const key of keys) {
       value = value?.[key]
       if (value === undefined) break
     }
-
     return value
   }
-
   /**
    * Create a tax form field
    */
@@ -427,7 +379,6 @@ export class TaxFormAutoFillService {
       updatedBy: 'ai'
     }
   }
-
   /**
    * Get conflict reason description
    */
@@ -437,14 +388,11 @@ export class TaxFormAutoFillService {
       const percentDiff = (diff / Math.max(existingValue, newValue)) * 100
       return `Values differ by ${diff.toFixed(2)} (${percentDiff.toFixed(1)}%)`
     }
-
     if (existingValue && newValue) {
       return `Different values: "${existingValue}" vs "${newValue}"`
     }
-
     return 'Values do not match'
   }
-
   /**
    * Resolve conflicts between existing and new values
    */
@@ -462,18 +410,15 @@ export class TaxFormAutoFillService {
       return 'manual_review'
     }
   }
-
   /**
    * Calculate overall form confidence
    */
   private calculateFormConfidence(form: TaxForm): number {
     const fields = Object.values(form.fields)
     if (fields.length === 0) return 0
-
     const totalConfidence = fields.reduce((sum, field) => sum + field.confidence, 0)
     return totalConfidence / fields.length
   }
-
   /**
    * Generate auto-fill summary
    */
@@ -483,22 +428,17 @@ export class TaxFormAutoFillService {
     conflicts: FieldConflict[]
   ): string {
     const parts: string[] = []
-
     if (fieldsAdded.length > 0) {
       parts.push(`Added ${fieldsAdded.length} new fields`)
     }
-
     if (fieldsUpdated.length > 0) {
       parts.push(`Updated ${fieldsUpdated.length} existing fields`)
     }
-
     if (conflicts.length > 0) {
       parts.push(`${conflicts.length} conflicts require review`)
     }
-
     return parts.length > 0 ? parts.join(', ') : 'No changes made'
   }
-
   /**
    * Check if expense is business-related
    */
@@ -508,11 +448,9 @@ export class TaxFormAutoFillService {
       'office supplies', 'travel', 'meals', 'equipment',
       'software', 'advertising', 'professional services'
     ]
-
     const category = (data as any).category?.toLowerCase() || ''
     return businessCategories.some(cat => category.includes(cat))
   }
-
   /**
    * Get existing tax form
    */
@@ -524,9 +462,7 @@ export class TaxFormAutoFillService {
       .eq('form_type', formType)
       .eq('tax_year', taxYear)
       .single()
-
     if (error || !data) return null
-
     return {
       id: data.id,
       formType: data.form_type,
@@ -549,7 +485,6 @@ export class TaxFormAutoFillService {
       updatedAt: new Date(data.updated_at)
     }
   }
-
   /**
    * Create new tax form
    */
@@ -558,7 +493,6 @@ export class TaxFormAutoFillService {
     if (!user.user) {
       throw new Error('User not authenticated')
     }
-
     const { data, error } = await supabase
       .from('tax_forms')
       .insert({
@@ -576,11 +510,9 @@ export class TaxFormAutoFillService {
       })
       .select()
       .single()
-
     if (error || !data) {
       throw new Error('Failed to create tax form')
     }
-
     return {
       id: data.id,
       formType: data.form_type,
@@ -598,7 +530,6 @@ export class TaxFormAutoFillService {
       updatedAt: new Date(data.updated_at)
     }
   }
-
   /**
    * Update tax form with new fields
    */
@@ -613,18 +544,14 @@ export class TaxFormAutoFillService {
       .select('*')
       .eq('id', formId)
       .single()
-
     if (fetchError || !currentForm) {
       throw new Error('Failed to fetch current form')
     }
-
     // Merge fields
     const updatedFields = { ...currentForm.fields, ...fieldsToUpdate }
     const updatedSourceDocuments = [...(currentForm.source_documents || []), sourceDocumentId]
-
     // Calculate new confidence based on updated fields
     const newConfidence = this.calculateFormConfidenceFromFields(updatedFields)
-
     // Update in database
     const { data, error } = await supabase
       .from('tax_forms')
@@ -641,11 +568,9 @@ export class TaxFormAutoFillService {
       .eq('id', formId)
       .select()
       .single()
-
     if (error || !data) {
       throw new Error('Failed to update tax form')
     }
-
     return {
       id: data.id,
       formType: data.form_type,
@@ -668,14 +593,12 @@ export class TaxFormAutoFillService {
       updatedAt: new Date(data.updated_at)
     }
   }
-
   /**
    * Calculate form confidence from fields
    */
   private calculateFormConfidenceFromFields(fields: Record<string, TaxFormField>): number {
     const fieldValues = Object.values(fields)
     if (fieldValues.length === 0) return 0
-
     const totalConfidence = fieldValues.reduce((sum, field) => sum + field.confidence, 0)
     return totalConfidence / fieldValues.length
   }

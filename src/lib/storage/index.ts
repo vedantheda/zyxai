@@ -1,7 +1,6 @@
 // Core storage services
 export { FileStorageService } from './FileStorageService'
 export { FileSharingService } from './FileSharingService'
-
 // Types
 export type {
   FileUploadOptions,
@@ -9,23 +8,19 @@ export type {
   FileVersion,
   FileMetadata
 } from './FileStorageService'
-
 export type {
   ShareLink,
   SharePermission,
   ShareOptions,
   ClientPortalAccess
 } from './FileSharingService'
-
 // Components
 export { default as EnhancedFileUpload } from '@/components/storage/EnhancedFileUpload'
 export { default as FileManagementDashboard } from '@/components/storage/FileManagementDashboard'
 export { default as ClientPortal } from '@/components/storage/ClientPortal'
-
 // Hooks
 export { useFileStorage } from '@/hooks/useFileStorage'
 export type { UseFileStorageOptions, FileFilter } from '@/hooks/useFileStorage'
-
 // Utilities
 export const StorageUtils = {
   /**
@@ -38,7 +33,6 @@ export const StorageUtils = {
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   },
-
   /**
    * Get file icon based on MIME type
    */
@@ -53,18 +47,16 @@ export const StorageUtils = {
     if (mimeType.startsWith('text/')) return 'text'
     return 'file'
   },
-
   /**
    * Validate file type against allowed types
    */
   validateFileType: (file: File, allowedTypes: string[]): boolean => {
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase()
-    return allowedTypes.some(type => 
-      type === fileExtension || 
+    return allowedTypes.some(type =>
+      type === fileExtension ||
       file.type.startsWith(type.replace('*', ''))
     )
   },
-
   /**
    * Generate secure filename
    */
@@ -73,10 +65,8 @@ export const StorageUtils = {
     const randomId = Math.random().toString(36).substring(2, 15)
     const extension = originalName.split('.').pop()
     const baseName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_')
-    
     return `${userId}_${timestamp}_${randomId}_${baseName}`
   },
-
   /**
    * Extract file metadata
    */
@@ -89,21 +79,18 @@ export const StorageUtils = {
       lastModifiedDate: new Date(file.lastModified).toISOString()
     }
   },
-
   /**
    * Create file preview URL
    */
   createPreviewUrl: (file: File): string => {
     return URL.createObjectURL(file)
   },
-
   /**
    * Cleanup preview URL
    */
   cleanupPreviewUrl: (url: string): void => {
     URL.revokeObjectURL(url)
   },
-
   /**
    * Check if file can be previewed in browser
    */
@@ -117,7 +104,6 @@ export const StorageUtils = {
     ]
     return previewableTypes.some(type => mimeType.startsWith(type))
   },
-
   /**
    * Generate file hash for deduplication
    */
@@ -127,7 +113,6 @@ export const StorageUtils = {
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   },
-
   /**
    * Compress image file
    */
@@ -136,14 +121,11 @@ export const StorageUtils = {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
       const img = new Image()
-      
       img.onload = () => {
         const ratio = Math.min(maxWidth / img.width, maxWidth / img.height)
         canvas.width = img.width * ratio
         canvas.height = img.height * ratio
-        
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        
         canvas.toBlob((blob) => {
           if (blob) {
             const compressedFile = new File([blob], file.name, {
@@ -156,25 +138,21 @@ export const StorageUtils = {
           }
         }, file.type, quality)
       }
-      
       img.src = URL.createObjectURL(file)
     })
   }
 }
-
 // Constants
 export const STORAGE_CONSTANTS = {
   // File size limits (in bytes)
   MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB
   MAX_IMAGE_SIZE: 10 * 1024 * 1024,  // 10MB
   MAX_DOCUMENT_SIZE: 50 * 1024 * 1024, // 50MB
-
   // Allowed file types
   ALLOWED_IMAGE_TYPES: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff'],
   ALLOWED_DOCUMENT_TYPES: ['.pdf', '.doc', '.docx', '.txt', '.rtf'],
   ALLOWED_SPREADSHEET_TYPES: ['.xls', '.xlsx', '.csv'],
   ALLOWED_ARCHIVE_TYPES: ['.zip', '.rar', '.7z', '.tar', '.gz'],
-
   // Document categories
   DOCUMENT_CATEGORIES: [
     { value: 'tax_documents', label: 'Tax Documents', icon: 'FileText' },
@@ -187,7 +165,6 @@ export const STORAGE_CONSTANTS = {
     { value: 'reports', label: 'Reports', icon: 'BarChart' },
     { value: 'other', label: 'Other', icon: 'File' }
   ],
-
   // Share link expiration options (in hours)
   SHARE_EXPIRATION_OPTIONS: [
     { value: 1, label: '1 Hour' },
@@ -197,7 +174,6 @@ export const STORAGE_CONSTANTS = {
     { value: 24 * 90, label: '3 Months' },
     { value: null, label: 'Never' }
   ],
-
   // Storage buckets
   STORAGE_BUCKETS: {
     DOCUMENTS: 'documents',
@@ -205,7 +181,6 @@ export const STORAGE_CONSTANTS = {
     TEMP: 'temp'
   }
 }
-
 // Error types
 export class StorageError extends Error {
   constructor(
@@ -217,14 +192,12 @@ export class StorageError extends Error {
     this.name = 'StorageError'
   }
 }
-
 export class UploadError extends StorageError {
   constructor(message: string, public fileName: string) {
     super(message, 'UPLOAD_ERROR', { fileName })
     this.name = 'UploadError'
   }
 }
-
 export class ShareError extends StorageError {
   constructor(message: string, public shareId?: string) {
     super(message, 'SHARE_ERROR', { shareId })

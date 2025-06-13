@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-
 export interface TaxDeadline {
   id: string
   type: 'individual' | 'business' | 'quarterly' | 'annual' | 'extension' | 'amendment'
@@ -16,7 +15,6 @@ export interface TaxDeadline {
   reminderSchedule: ReminderSchedule[]
   complianceRequirements: string[]
 }
-
 export interface ReminderSchedule {
   id: string
   deadlineId: string
@@ -27,7 +25,6 @@ export interface ReminderSchedule {
   isSent: boolean
   sentAt?: Date
 }
-
 export interface ClientInactivityAlert {
   id: string
   clientId: string
@@ -40,7 +37,6 @@ export interface ClientInactivityAlert {
   isResolved: boolean
   resolvedAt?: Date
 }
-
 export interface EscalationWorkflow {
   id: string
   name: string
@@ -49,13 +45,11 @@ export interface EscalationWorkflow {
   isActive: boolean
   priority: number
 }
-
 export interface EscalationCondition {
   field: 'days_overdue' | 'client_inactivity' | 'missing_documents' | 'compliance_score'
   operator: 'greater_than' | 'less_than' | 'equals'
   value: number
 }
-
 export interface EscalationStep {
   stepNumber: number
   delayHours: number
@@ -63,7 +57,6 @@ export interface EscalationStep {
   recipients: string[]
   message?: string
 }
-
 export interface ComplianceAlert {
   id: string
   type: 'deadline_approaching' | 'deadline_overdue' | 'client_inactive' | 'document_missing' | 'compliance_violation'
@@ -83,7 +76,6 @@ export interface ComplianceAlert {
   createdAt: Date
   metadata?: Record<string, any>
 }
-
 export interface AlertDashboard {
   summary: {
     totalAlerts: number
@@ -98,10 +90,8 @@ export interface AlertDashboard {
   recentAlerts: ComplianceAlert[]
   escalatedItems: ComplianceAlert[]
 }
-
 export class DeadlineAlertService {
   constructor(private userId: string) {}
-
   /**
    * Get comprehensive alert dashboard
    */
@@ -120,7 +110,6 @@ export class DeadlineAlertService {
         this.getRecentAlerts(50),
         this.getEscalatedItems()
       ])
-
       const summary = {
         totalAlerts: recentAlerts.length,
         criticalAlerts: recentAlerts.filter(alert => alert.severity === 'critical').length,
@@ -128,7 +117,6 @@ export class DeadlineAlertService {
         inactiveClients: inactiveClients.length,
         complianceIssues: recentAlerts.filter(alert => alert.type === 'compliance_violation').length
       }
-
       return {
         summary,
         upcomingDeadlines,
@@ -138,11 +126,9 @@ export class DeadlineAlertService {
         escalatedItems
       }
     } catch (error) {
-      console.error('Error getting alert dashboard:', error)
       throw new Error('Failed to get alert dashboard')
     }
   }
-
   /**
    * Create tax deadline with automatic reminders
    */
@@ -157,20 +143,15 @@ export class DeadlineAlertService {
         })
         .select()
         .single()
-
       if (error) throw error
-
       // Create automatic reminder schedule
       const reminderSchedule = this.generateReminderSchedule(data.id, deadline.dueDate, deadline.priority)
       await this.createReminderSchedule(reminderSchedule)
-
       return this.transformDeadlineData({ ...data, reminder_schedule: reminderSchedule })
     } catch (error) {
-      console.error('Error creating tax deadline:', error)
       throw new Error('Failed to create tax deadline')
     }
   }
-
   /**
    * Monitor client inactivity and create alerts
    */
@@ -185,19 +166,14 @@ export class DeadlineAlertService {
           emails (received_at)
         `)
         .eq('user_id', this.userId)
-
       if (error) throw error
-
       const inactiveClients: ClientInactivityAlert[] = []
       const now = new Date()
-
       for (const client of clients || []) {
         const lastActivity = this.getLastActivity(client)
         const inactiveDays = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
-
         if (inactiveDays > 30) { // 30 days threshold
           const riskLevel = this.calculateRiskLevel(inactiveDays)
-
           const alert: ClientInactivityAlert = {
             id: this.generateId(),
             clientId: client.id,
@@ -208,9 +184,7 @@ export class DeadlineAlertService {
             suggestedActions: this.generateSuggestedActions(inactiveDays, riskLevel),
             isResolved: false
           }
-
           inactiveClients.push(alert)
-
           // Create compliance alert
           await this.createComplianceAlert({
             type: 'client_inactive',
@@ -222,16 +196,12 @@ export class DeadlineAlertService {
           })
         }
       }
-
       return inactiveClients
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error monitoring client inactivity:', error)
-      }
+      
       throw new Error('Failed to monitor client inactivity')
     }
   }
-
   /**
    * Run automated compliance checks
    */
@@ -239,28 +209,20 @@ export class DeadlineAlertService {
     try {
       // Check upcoming deadlines
       await this.checkUpcomingDeadlines()
-
       // Check overdue items
       await this.checkOverdueDeadlines()
-
       // Monitor client inactivity
       await this.monitorClientInactivity()
-
       // Check missing documents
       await this.checkMissingDocuments()
-
       // Process escalation workflows
       await this.processEscalationWorkflows()
-
       // Send scheduled reminders
       await this.sendScheduledReminders()
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error running compliance checks:', error)
-      }
+      
     }
   }
-
   /**
    * Create escalation workflow
    */
@@ -274,16 +236,12 @@ export class DeadlineAlertService {
         })
         .select()
         .single()
-
       if (error) throw error
-
       return this.transformWorkflowData(data)
     } catch (error) {
-      console.error('Error creating escalation workflow:', error)
       throw new Error('Failed to create escalation workflow')
     }
   }
-
   /**
    * Acknowledge alert
    */
@@ -299,11 +257,9 @@ export class DeadlineAlertService {
         .eq('id', alertId)
         .eq('user_id', this.userId)
     } catch (error) {
-      console.error('Error acknowledging alert:', error)
       throw new Error('Failed to acknowledge alert')
     }
   }
-
   /**
    * Resolve alert
    */
@@ -319,16 +275,13 @@ export class DeadlineAlertService {
         .eq('id', alertId)
         .eq('user_id', this.userId)
     } catch (error) {
-      console.error('Error resolving alert:', error)
       throw new Error('Failed to resolve alert')
     }
   }
-
   // Private helper methods
   private async getUpcomingDeadlines(days: number): Promise<TaxDeadline[]> {
     const endDate = new Date()
     endDate.setDate(endDate.getDate() + days)
-
     const { data, error } = await supabase
       .from('tax_deadlines')
       .select('*')
@@ -337,12 +290,9 @@ export class DeadlineAlertService {
       .lte('due_date', endDate.toISOString())
       .neq('status', 'completed')
       .order('due_date', { ascending: true })
-
     if (error) throw error
-
     return (data || []).map(this.transformDeadlineData)
   }
-
   private async getOverdueDeadlines(): Promise<TaxDeadline[]> {
     const { data, error } = await supabase
       .from('tax_deadlines')
@@ -351,12 +301,9 @@ export class DeadlineAlertService {
       .lt('due_date', new Date().toISOString())
       .neq('status', 'completed')
       .order('due_date', { ascending: true })
-
     if (error) throw error
-
     return (data || []).map(this.transformDeadlineData)
   }
-
   private async getInactiveClients(): Promise<ClientInactivityAlert[]> {
     const { data, error } = await supabase
       .from('client_inactivity_alerts')
@@ -364,12 +311,9 @@ export class DeadlineAlertService {
       .eq('user_id', this.userId)
       .eq('is_resolved', false)
       .order('inactive_days', { ascending: false })
-
     if (error) throw error
-
     return (data || []).map(this.transformInactivityAlert)
   }
-
   private async getRecentAlerts(limit: number): Promise<ComplianceAlert[]> {
     const { data, error } = await supabase
       .from('compliance_alerts')
@@ -377,12 +321,9 @@ export class DeadlineAlertService {
       .eq('user_id', this.userId)
       .order('created_at', { ascending: false })
       .limit(limit)
-
     if (error) throw error
-
     return (data || []).map(this.transformAlertData)
   }
-
   private async getEscalatedItems(): Promise<ComplianceAlert[]> {
     const { data, error } = await supabase
       .from('compliance_alerts')
@@ -391,20 +332,15 @@ export class DeadlineAlertService {
       .gt('escalation_level', 0)
       .eq('is_resolved', false)
       .order('escalation_level', { ascending: false })
-
     if (error) throw error
-
     return (data || []).map(this.transformAlertData)
   }
-
   private generateReminderSchedule(deadlineId: string, dueDate: Date, priority: string): ReminderSchedule[] {
     const reminders: ReminderSchedule[] = []
     const reminderDays = priority === 'critical' ? [30, 14, 7, 3, 1] : [30, 7, 1]
-
     reminderDays.forEach((days, index) => {
       const reminderDate = new Date(dueDate)
       reminderDate.setDate(reminderDate.getDate() - days)
-
       if (reminderDate > new Date()) {
         reminders.push({
           id: this.generateId(),
@@ -417,13 +353,10 @@ export class DeadlineAlertService {
         })
       }
     })
-
     return reminders
   }
-
   private async createReminderSchedule(reminders: ReminderSchedule[]): Promise<void> {
     if (reminders.length === 0) return
-
     await supabase
       .from('reminder_schedule')
       .insert(reminders.map(reminder => ({
@@ -431,7 +364,6 @@ export class DeadlineAlertService {
         user_id: this.userId
       })))
   }
-
   private async createComplianceAlert(alert: Omit<ComplianceAlert, 'id' | 'isAcknowledged' | 'isResolved' | 'createdAt'>): Promise<void> {
     await supabase
       .from('compliance_alerts')
@@ -443,41 +375,32 @@ export class DeadlineAlertService {
         created_at: new Date().toISOString()
       })
   }
-
   private getLastActivity(client: any): Date {
     const activities = [
       ...(client.tasks || []).map((t: any) => new Date(t.updated_at || t.created_at)),
       ...(client.documents || []).map((d: any) => new Date(d.created_at)),
       ...(client.emails || []).map((e: any) => new Date(e.received_at))
     ]
-
     return activities.length > 0 ? new Date(Math.max(...activities.map(d => d.getTime()))) : new Date(client.created_at)
   }
-
   private calculateRiskLevel(inactiveDays: number): 'low' | 'medium' | 'high' | 'critical' {
     if (inactiveDays > 90) return 'critical'
     if (inactiveDays > 60) return 'high'
     if (inactiveDays > 45) return 'medium'
     return 'low'
   }
-
   private generateSuggestedActions(inactiveDays: number, riskLevel: string): string[] {
     const actions = ['Send check-in email', 'Schedule follow-up call']
-
     if (riskLevel === 'high' || riskLevel === 'critical') {
       actions.push('Review client status', 'Consider retention strategy')
     }
-
     if (inactiveDays > 90) {
       actions.push('Escalate to manager', 'Review contract terms')
     }
-
     return actions
   }
-
   private async checkUpcomingDeadlines(): Promise<void> {
     const upcomingDeadlines = await this.getUpcomingDeadlines(7) // Next 7 days
-
     for (const deadline of upcomingDeadlines) {
       if (deadline.status === 'pending') {
         await this.createComplianceAlert({
@@ -493,10 +416,8 @@ export class DeadlineAlertService {
       }
     }
   }
-
   private async checkOverdueDeadlines(): Promise<void> {
     const overdueDeadlines = await this.getOverdueDeadlines()
-
     for (const deadline of overdueDeadlines) {
       await this.createComplianceAlert({
         type: 'deadline_overdue',
@@ -510,19 +431,15 @@ export class DeadlineAlertService {
       })
     }
   }
-
   private async checkMissingDocuments(): Promise<void> {
     // Implementation would check for missing required documents
   }
-
   private async processEscalationWorkflows(): Promise<void> {
     // Implementation would process escalation workflows
   }
-
   private async sendScheduledReminders(): Promise<void> {
     // Implementation would send scheduled reminders
   }
-
   private transformDeadlineData(data: any): TaxDeadline {
     return {
       id: data.id,
@@ -541,7 +458,6 @@ export class DeadlineAlertService {
       complianceRequirements: data.compliance_requirements || []
     }
   }
-
   private transformInactivityAlert(data: any): ClientInactivityAlert {
     return {
       id: data.id,
@@ -556,7 +472,6 @@ export class DeadlineAlertService {
       resolvedAt: data.resolved_at ? new Date(data.resolved_at) : undefined
     }
   }
-
   private transformAlertData(data: any): ComplianceAlert {
     return {
       id: data.id,
@@ -578,7 +493,6 @@ export class DeadlineAlertService {
       metadata: data.metadata
     }
   }
-
   private transformWorkflowData(data: any): EscalationWorkflow {
     return {
       id: data.id,
@@ -589,7 +503,6 @@ export class DeadlineAlertService {
       priority: data.priority
     }
   }
-
   private generateId(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36)
   }

@@ -1,6 +1,6 @@
-import { 
-  DocumentChecklistTemplate, 
-  PersonalizedChecklist, 
+import {
+  DocumentChecklistTemplate,
+  PersonalizedChecklist,
   PersonalizedChecklistItem,
   DocumentAlert,
   DocumentCollectionSession,
@@ -9,17 +9,14 @@ import {
   ChecklistAlert,
   ClientEngagement
 } from '@/types/document-collection'
-
 export class MockDocumentCollectionService implements DocumentCollectionService {
   private templates: DocumentChecklistTemplate[] = []
   private checklists: PersonalizedChecklist[] = []
   private alerts: DocumentAlert[] = []
   private sessions: DocumentCollectionSession[] = []
-
   constructor() {
     this.initializeMockData()
   }
-
   private initializeMockData() {
     // Create default templates
     this.templates = [
@@ -87,7 +84,6 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
         updatedAt: new Date('2024-01-15')
       }
     ]
-
     // Create sample personalized checklist
     this.checklists = [
       {
@@ -201,7 +197,6 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
         updatedAt: new Date('2024-02-10')
       }
     ]
-
     // Create sample alerts
     this.alerts = [
       {
@@ -242,7 +237,6 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
         }
       }
     ]
-
     // Create sample session
     this.sessions = [
       {
@@ -274,11 +268,9 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
       }
     ]
   }
-
   async getTemplates(): Promise<DocumentChecklistTemplate[]> {
     return [...this.templates]
   }
-
   async createTemplate(template: Omit<DocumentChecklistTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<DocumentChecklistTemplate> {
     const newTemplate: DocumentChecklistTemplate = {
       ...template,
@@ -289,18 +281,15 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
     this.templates.push(newTemplate)
     return newTemplate
   }
-
   async updateTemplate(id: string, updates: Partial<DocumentChecklistTemplate>): Promise<void> {
     const index = this.templates.findIndex(t => t.id === id)
     if (index !== -1) {
       this.templates[index] = { ...this.templates[index], ...updates, updatedAt: new Date() }
     }
   }
-
   async createPersonalizedChecklist(clientId: string, templateId: string, customizations?: any): Promise<PersonalizedChecklist> {
     const template = this.templates.find(t => t.id === templateId)
     if (!template) throw new Error('Template not found')
-
     const checklist: PersonalizedChecklist = {
       id: `checklist-${clientId}-${Date.now()}`,
       clientId,
@@ -338,15 +327,12 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
       createdAt: new Date(),
       updatedAt: new Date()
     }
-
     this.checklists.push(checklist)
     return checklist
   }
-
   async getClientChecklist(clientId: string): Promise<PersonalizedChecklist | null> {
     return this.checklists.find(c => c.clientId === clientId) || null
   }
-
   async updateChecklistItem(itemId: string, updates: Partial<PersonalizedChecklistItem>): Promise<void> {
     for (const checklist of this.checklists) {
       const itemIndex = checklist.items.findIndex(item => item.id === itemId)
@@ -358,7 +344,6 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
       }
     }
   }
-
   async markItemComplete(itemId: string, documentIds: string[]): Promise<void> {
     await this.updateChecklistItem(itemId, {
       status: 'completed',
@@ -374,21 +359,18 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
       }))
     })
   }
-
   async getUploadMetrics(clientId?: string): Promise<UploadTrackingMetrics> {
-    const relevantChecklists = clientId 
+    const relevantChecklists = clientId
       ? this.checklists.filter(c => c.clientId === clientId)
       : this.checklists
-
     const allItems = relevantChecklists.flatMap(c => c.items)
     const completedItems = allItems.filter(item => item.status === 'completed')
     const totalDocuments = allItems.reduce((sum, item) => sum + item.uploadedDocuments.length, 0)
-
     return {
       totalDocuments,
       completedDocuments: completedItems.length,
       pendingDocuments: allItems.filter(item => item.status === 'pending').length,
-      rejectedDocuments: allItems.filter(item => 
+      rejectedDocuments: allItems.filter(item =>
         item.uploadedDocuments.some(doc => doc.status === 'rejected')
       ).length,
       averageUploadTime: 5,
@@ -399,18 +381,15 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
       firstTimeAcceptanceRate: 82
     }
   }
-
   async trackDocumentUpload(itemId: string, documentId: string): Promise<void> {
     // Implementation would track the upload
     console.log(`Tracking upload: ${documentId} for item: ${itemId}`)
   }
-
   async getActiveAlerts(clientId?: string): Promise<DocumentAlert[]> {
-    return clientId 
+    return clientId
       ? this.alerts.filter(alert => alert.clientId === clientId && alert.status === 'active')
       : this.alerts.filter(alert => alert.status === 'active')
   }
-
   async createAlert(alert: Omit<DocumentAlert, 'id' | 'createdAt'>): Promise<DocumentAlert> {
     const newAlert: DocumentAlert = {
       ...alert,
@@ -420,7 +399,6 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
     this.alerts.push(newAlert)
     return newAlert
   }
-
   async resolveAlert(alertId: string, resolution: string): Promise<void> {
     const alert = this.alerts.find(a => a.id === alertId)
     if (alert) {
@@ -429,35 +407,29 @@ export class MockDocumentCollectionService implements DocumentCollectionService 
       alert.metadata.resolution = resolution
     }
   }
-
   async getCollectionSession(clientId: string): Promise<DocumentCollectionSession | null> {
     return this.sessions.find(s => s.clientId === clientId) || null
   }
-
   async updateSessionProgress(sessionId: string, progress: Partial<DocumentCollectionSession>): Promise<void> {
     const session = this.sessions.find(s => s.id === sessionId)
     if (session) {
       Object.assign(session, progress, { updatedAt: new Date() })
     }
   }
-
   private updateChecklistProgress(checklist: PersonalizedChecklist): void {
     const completedItems = checklist.items.filter(item => item.status === 'completed').length
-    const completedRequiredItems = checklist.items.filter(item => 
+    const completedRequiredItems = checklist.items.filter(item =>
       item.isRequired && item.status === 'completed'
     ).length
-
     checklist.completedItems = completedItems
     checklist.completedRequiredItems = completedRequiredItems
     checklist.progress = Math.round((completedItems / checklist.totalItems) * 100)
     checklist.actualTimeSpent = checklist.items.reduce((sum, item) => sum + item.timeSpent, 0)
-
     if (completedItems === checklist.totalItems) {
       checklist.status = 'completed'
       checklist.completedAt = new Date()
     }
   }
 }
-
 // Export singleton instance
 export const documentCollectionService = new MockDocumentCollectionService()

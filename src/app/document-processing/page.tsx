@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,10 +35,9 @@ import {
   Search,
   Filter
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useClients } from '@/hooks/useSupabaseData'
-
 interface ProcessingClient {
   id: string
   name: string
@@ -51,18 +49,17 @@ interface ProcessingClient {
   status: 'pending' | 'processing' | 'review' | 'complete'
   last_activity: string
 }
-
 export default function DocumentProcessingPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   const { clients, loading: clientsLoading } = useClients()
   const [selectedClient, setSelectedClient] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [processingClients, setProcessingClients] = useState<ProcessingClient[]>([])
-
   // Optimized client transformation with memoization
   const transformedClients = useMemo(() => {
     if (!clients) return []
-
     return clients.map(client => ({
       id: client.id,
       name: client.name,
@@ -75,11 +72,9 @@ export default function DocumentProcessingPage() {
       last_activity: client.last_activity
     }))
   }, [clients])
-
   useEffect(() => {
     setProcessingClients(transformedClients)
   }, [transformedClients])
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
@@ -89,7 +84,6 @@ export default function DocumentProcessingPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4" />
@@ -99,7 +93,6 @@ export default function DocumentProcessingPage() {
       default: return <FileText className="w-4 h-4" />
     }
   }
-
   // Memoized processing stats for performance
   const processingStats = useMemo(() => ({
     total_documents: processingClients.reduce((sum, client) => sum + client.documents_uploaded, 0),
@@ -108,17 +101,14 @@ export default function DocumentProcessingPage() {
     forms_generated: processingClients.reduce((sum, client) => sum + client.forms_generated, 0),
     time_saved: 12.5
   }), [processingClients])
-
   // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading document processing..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view document processing" />
   }
-
   // Show loading for clients data
   if (clientsLoading) {
     return (
@@ -130,7 +120,6 @@ export default function DocumentProcessingPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -152,7 +141,6 @@ export default function DocumentProcessingPage() {
           </Button>
         </div>
       </div>
-
       {/* Processing Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
@@ -165,7 +153,6 @@ export default function DocumentProcessingPage() {
             <p className="text-xs text-muted-foreground">Across all clients</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Processed Today</CardTitle>
@@ -178,7 +165,6 @@ export default function DocumentProcessingPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">AI Accuracy</CardTitle>
@@ -189,7 +175,6 @@ export default function DocumentProcessingPage() {
             <p className="text-xs text-muted-foreground">Data extraction accuracy</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Forms Generated</CardTitle>
@@ -200,7 +185,6 @@ export default function DocumentProcessingPage() {
             <p className="text-xs text-muted-foreground">Auto-filled tax forms</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Time Saved</CardTitle>
@@ -212,7 +196,6 @@ export default function DocumentProcessingPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -233,7 +216,6 @@ export default function DocumentProcessingPage() {
             Processing Queue
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="overview" className="space-y-6">
           {/* Client Processing Status */}
           <Card>
@@ -329,7 +311,6 @@ export default function DocumentProcessingPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="documents" className="space-y-6">
           <Card>
             <CardHeader>
@@ -357,7 +338,6 @@ export default function DocumentProcessingPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Data Extraction</CardTitle>
@@ -375,7 +355,6 @@ export default function DocumentProcessingPage() {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Classification</CardTitle>
@@ -394,7 +373,6 @@ export default function DocumentProcessingPage() {
                   </CardContent>
                 </Card>
               </div>
-
               <div className="mt-6">
                 <h4 className="text-lg font-semibold mb-4">Recent Processing Activity</h4>
                 <div className="space-y-3">
@@ -426,7 +404,6 @@ export default function DocumentProcessingPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="forms" className="space-y-6">
           <Card>
             <CardHeader>
@@ -468,7 +445,6 @@ export default function DocumentProcessingPage() {
                   </Card>
                 ))}
               </div>
-
               <div className="space-y-4">
                 <h4 className="text-lg font-semibold">Recent Form Generation Activity</h4>
                 <div className="space-y-3">
@@ -494,7 +470,6 @@ export default function DocumentProcessingPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="queue" className="space-y-6">
           <Card>
             <CardContent className="flex items-center justify-center py-12">

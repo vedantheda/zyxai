@@ -20,9 +20,8 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
-import { LoadingScreen } from '@/components/ui/loading-spinner'
-// import { ClientRouteGuard } from '@/components/auth/ClientRouteGuard'
+import { useAuth } from '@/contexts/AuthProvider'
+import { SimpleLoading } from '@/components/ui/simple-loading'
 
 // Memoized StatCard component for better performance
 const StatCard = memo(({ stat }: { stat: any }) => (
@@ -237,12 +236,7 @@ function DashboardPageContent({ user }: { user: any }) {
     )
   }
 
-  // Redirect to pipeline for tax professionals (admin users)
-  useEffect(() => {
-    if (user && user.role !== 'client') {
-      window.location.href = '/pipeline'
-    }
-  }, [user])
+  // Admin users should be redirected at the page level, not here
 
   // Simple mock data instead of complex hooks
   const dashboardData = {
@@ -524,16 +518,28 @@ function DashboardPageContent({ user }: { user: any }) {
 }
 
 export default function DashboardPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading } = useAuth()
 
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
-    return <LoadingScreen text="Loading your dashboard..." />
+  if (loading) {
+    return <SimpleLoading text="Loading dashboard..." />
   }
 
-  // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view dashboard" />
+  if (!user) {
+    return <SimpleLoading text="Please log in to view dashboard" />
+  }
+
+  // Debug user role
+  console.log('🔐 Dashboard: User role check', {
+    user: user.email,
+    role: user.role,
+    userMetadata: user
+  })
+
+  // If user is admin or tax_professional, redirect to pipeline
+  if (user.role === 'admin' || user.role === 'tax_professional') {
+    console.log('🔐 Dashboard: Admin user detected, redirecting to pipeline')
+    window.location.href = '/pipeline'
+    return <SimpleLoading text="Redirecting to admin dashboard..." />
   }
 
   return <DashboardPageContent user={user} />

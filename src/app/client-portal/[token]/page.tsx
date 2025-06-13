@@ -1,12 +1,9 @@
 'use client'
-
 import { useParams } from 'next/navigation'
 import ClientPortal from '@/components/storage/ClientPortal'
-
 export default function ClientPortalPage() {
   const params = useParams()
   const token = params.token as string
-
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -19,6 +16,5 @@ export default function ClientPortalPage() {
       </div>
     )
   }
-
   return <ClientPortal accessToken={token} />
 }

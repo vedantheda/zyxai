@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useClients } from '@/hooks/useSupabaseData'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -24,7 +24,7 @@ interface Client {
 }
 
 export default function EditClientPage() {
-  const { user, loading: authLoading } = useRequireAuth()
+  const { user, loading: authLoading } = useAuth()
   const { updateClient } = useClients()
   const params = useParams()
   const router = useRouter()

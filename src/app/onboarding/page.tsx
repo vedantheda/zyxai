@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,12 +29,11 @@ import {
   Eye,
   Send
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import ClientIntakeForm from '@/components/onboarding/ClientIntakeForm'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
 interface OnboardingWorkflow {
   id: string
   clientId: string
@@ -55,15 +53,15 @@ interface OnboardingWorkflow {
     documentChecklist: boolean
   }
 }
-
 export default function ClientOnboardingPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   const router = useRouter()
   const [activeWorkflows, setActiveWorkflows] = useState<OnboardingWorkflow[]>([])
   const [loading, setLoading] = useState(true)
   const [showIntakeForm, setShowIntakeForm] = useState(false)
   const [completedIntake, setCompletedIntake] = useState<string | null>(null)
-
   // Mock data for onboarding workflows
   const mockWorkflows: OnboardingWorkflow[] = [
     {
@@ -122,7 +120,6 @@ export default function ClientOnboardingPage() {
       }
     }
   ]
-
   useEffect(() => {
     // Simulate loading workflows
     setTimeout(() => {
@@ -130,7 +127,6 @@ export default function ClientOnboardingPage() {
       setLoading(false)
     }, 1000)
   }, [])
-
   const handleIntakeComplete = (clientId: string) => {
     setCompletedIntake(clientId)
     setShowIntakeForm(false)
@@ -154,11 +150,9 @@ export default function ClientOnboardingPage() {
       }
     }])
   }
-
   const viewClient = (clientId: string) => {
     router.push(`/clients/${clientId}`)
   }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800'
@@ -168,24 +162,20 @@ export default function ClientOnboardingPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const onboardingStats = {
     totalWorkflows: activeWorkflows.length,
     completedWorkflows: activeWorkflows.filter(w => w.status === 'completed').length,
     inProgressWorkflows: activeWorkflows.filter(w => w.status === 'in_progress').length,
     averageCompletionTime: '2.3 days'
   }
-
   // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading onboarding..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view onboarding" />
   }
-
   // Show loading for onboarding data
   if (loading) {
     return (
@@ -197,7 +187,6 @@ export default function ClientOnboardingPage() {
       </div>
     )
   }
-
   if (showIntakeForm) {
     return (
       <div className="space-y-6">
@@ -214,7 +203,6 @@ export default function ClientOnboardingPage() {
       </div>
     )
   }
-
   if (completedIntake) {
     return (
       <div className="space-y-6">
@@ -240,7 +228,6 @@ export default function ClientOnboardingPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -262,7 +249,6 @@ export default function ClientOnboardingPage() {
           </Button>
         </div>
       </div>
-
       {/* Onboarding Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
@@ -277,7 +263,6 @@ export default function ClientOnboardingPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
@@ -290,7 +275,6 @@ export default function ClientOnboardingPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
@@ -303,7 +287,6 @@ export default function ClientOnboardingPage() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Completion</CardTitle>
@@ -317,7 +300,6 @@ export default function ClientOnboardingPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Onboarding Workflows */}
       <Tabs defaultValue="active" className="space-y-4">
         <TabsList>
@@ -325,7 +307,6 @@ export default function ClientOnboardingPage() {
           <TabsTrigger value="templates">Workflow Templates</TabsTrigger>
           <TabsTrigger value="automation">Automation Settings</TabsTrigger>
         </TabsList>
-
         <TabsContent value="active" className="space-y-4">
           <Card>
             <CardHeader>
@@ -403,7 +384,6 @@ export default function ClientOnboardingPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="templates" className="space-y-4">
           <Card>
             <CardHeader>
@@ -450,7 +430,6 @@ export default function ClientOnboardingPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="automation" className="space-y-4">
           <Card>
             <CardHeader>

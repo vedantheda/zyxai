@@ -9,7 +9,6 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, RefreshCw, Eye, ArrowRight, MoreHorizontal, Edit } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { useSessionSync } from '@/hooks/useSessionSync'
 import { AdminRouteGuard } from '@/components/auth/AdminRouteGuard'
 import { useClients } from '@/hooks/useSupabaseData'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
@@ -23,7 +22,6 @@ import {
 import { PipelineClient } from '@/types/pipeline'
 
 function PipelinePageContent() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
   const { clients, loading: clientsLoading, updateClient } = useClients()
   const [pipelineClients, setPipelineClients] = useState<PipelineClient[]>([])
   const [selectedStage, setSelectedStage] = useState<string>('all')
@@ -131,17 +129,7 @@ function PipelinePageContent() {
     router.push('/dashboard/clients/new')
   }
 
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
-    return <LoadingScreen text="Loading pipeline..." />
-  }
-
-  // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view pipeline" />
-  }
-
-  // REMOVED: Don't block on clients loading at all
+  // REMOVED: Auth checks - middleware handles authentication
   // Just show the page and let individual components handle their loading states
 
   return (
@@ -316,7 +304,7 @@ function PipelinePageContent() {
 
 export default function PipelinePage() {
   return (
-    <AdminRouteGuard>
+    <AdminRouteGuard fallbackPath="/dashboard">
       <PipelinePageContent />
     </AdminRouteGuard>
   )

@@ -1,6 +1,5 @@
 'use client'
-
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, memo, lazy, Suspense } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,15 +28,15 @@ import {
   FileType,
   BarChart3
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useDropzone } from 'react-dropzone'
-import { useRealtimeDocuments, useRealtimeClients } from '@/hooks/useRealtimeData'
-import { useDocumentAutomation } from '@/hooks/useDocumentAutomation'
+
+import { useDocuments, useClients } from '@/hooks/useSimpleData'
+import { useDocumentAutomation } from '@/hooks/features/useDocumentAutomation'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
 interface Document {
   id: string
   name: string
@@ -51,7 +50,6 @@ interface Document {
   created_at: string
   updated_at: string
 }
-
 interface DocumentCategory {
   id: string
   name: string
@@ -60,33 +58,39 @@ interface DocumentCategory {
   examples: string[]
   status: 'missing' | 'uploaded' | 'verified'
 }
-
 export default function DocumentsPage() {
-  console.log('🔥 DOCUMENTS PAGE - LOADING')
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
-
-  // Use real-time documents and clients hooks
+  const { user, loading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !loading
+  // Early return for loading states
+  if (loading || !isReady) {
+    return <LoadingScreen text="Loading documents..." />
+  }
+  if (!isAuthenticated) {
+    return <LoadingScreen text="Please log in to view documents" />
+  }
+  return <DocumentsPageContent user={user} />
+}
+const DocumentsPageContent = memo(function DocumentsPageContent({ user }: { user: any }) {
+  // Use simple documents hook
   const {
-    data: documents,
+    documents,
     loading: documentsLoading,
     error: documentsError,
-    insertItem: createDocument,
-    deleteItem: deleteDocument,
-    updateItem: updateDocument
-  } = useRealtimeDocuments()
-
+    addDocument: createDocument,
+    deleteDocument,
+    updateDocument
+  } = useDocuments()
   const {
     data: clients,
     loading: clientsLoading
-  } = useRealtimeClients()
-
+  } = useClients()
   const {
     requirements,
     getDocumentCompletionStatus,
     getPersonalizedRecommendations,
     markTaskCompleted
   } = useDocumentAutomation()
-
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
@@ -95,7 +99,6 @@ export default function DocumentsPage() {
   const [selectedTab, setSelectedTab] = useState('all')
   const [clientSearchTerm, setClientSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-
   // Get dynamic document categories with completion status
   const completionStatus = getDocumentCompletionStatus()
   const documentCategories: DocumentCategory[] = requirements.map(req => ({
@@ -108,14 +111,15 @@ export default function DocumentsPage() {
       ? 'verified'
       : 'missing'
   }))
-
   // Get personalized recommendations
   const recommendations = getPersonalizedRecommendations()
-
   // Filter documents based on search and filters
   const filteredDocuments = useMemo(() => {
+    // Safety check - ensure documents is defined and is an array
+    if (!documents || !Array.isArray(documents)) {
+      return []
+    }
     let filtered = documents
-
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(doc =>
@@ -124,53 +128,52 @@ export default function DocumentsPage() {
         doc.type.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
-
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(doc => doc.category === selectedCategory)
     }
-
     // Filter by status
     if (selectedStatus !== 'all') {
       filtered = filtered.filter(doc => doc.status === selectedStatus)
     }
-
     // Filter by tab
     if (selectedTab !== 'all') {
       filtered = filtered.filter(doc => doc.status === selectedTab)
     }
-
     return filtered
   }, [documents, searchTerm, selectedCategory, selectedStatus, selectedTab])
-
   // Get unique categories for filter dropdown
   const availableCategories = useMemo(() => {
+    if (!documents || !Array.isArray(documents)) {
+      return []
+    }
     const categories = [...new Set(documents.map(doc => doc.category))]
     return categories.sort()
   }, [documents])
-
   // Document statistics
   const documentStats = useMemo(() => {
+    if (!documents || !Array.isArray(documents)) {
+      return { total: 0, pending: 0, processing: 0, completed: 0, error: 0 }
+    }
     const total = documents.length
     const pending = documents.filter(doc => doc.status === 'pending').length
     const processing = documents.filter(doc => doc.status === 'processing').length
     const completed = documents.filter(doc => doc.status === 'completed').length
     const error = documents.filter(doc => doc.status === 'error').length
-
     return { total, pending, processing, completed, error }
   }, [documents])
-
   // Filter clients based on search
   const filteredClients = useMemo(() => {
+    if (!clients || !Array.isArray(clients)) {
+      return []
+    }
     if (!clientSearchTerm) return clients
-
     return clients.filter(client =>
       client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
       client.status.toLowerCase().includes(clientSearchTerm.toLowerCase())
     )
   }, [clients, clientSearchTerm])
-
   // Document categorization function
   const categorizeDocument = useCallback((fileName: string): string => {
     const name = fileName.toLowerCase()
@@ -184,31 +187,25 @@ export default function DocumentsPage() {
     if (name.includes('education') || name.includes('tuition')) return 'education-expenses'
     return 'other'
   }, [])
-
   const uploadDocument = useCallback(async (file: File, category: string) => {
     if (!user?.id) {
       return { success: false, error: 'User not authenticated' }
     }
-
     try {
       // Generate unique filename
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
         .upload(fileName, file)
-
       if (uploadError) {
         throw uploadError
       }
-
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(fileName)
-
       // Create document record
       const documentData = {
         name: file.name,
@@ -221,54 +218,42 @@ export default function DocumentsPage() {
         mime_type: file.type,
         processing_status: 'pending'
       }
-
       const result = await createDocument(documentData)
       if (result.error) {
         // Clean up uploaded file if database insert fails
         await supabase.storage.from('documents').remove([fileName])
         throw new Error(result.error)
       }
-
       return { success: true, document: result.data }
     } catch (error) {
-      console.error('Upload error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Upload failed'
       }
     }
   }, [user, createDocument])
-
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user) return
-
     setUploading(true)
     setUploadProgress(0)
-
     try {
       const totalFiles = acceptedFiles.length
       let completedFiles = 0
-
       for (const file of acceptedFiles) {
         // Auto-categorize the document
         const category = categorizeDocument(file.name)
-
         // Upload to Supabase
         const result = await uploadDocument(file, category)
-
         if (result.success) {
           completedFiles++
           setUploadProgress((completedFiles / totalFiles) * 100)
-
           // Mark related tasks as completed
           await markTaskCompleted(category)
-
           toast.success(`${file.name} uploaded successfully!`)
         } else {
           toast.error(result.error || `Failed to upload ${file.name}`)
         }
       }
-
       if (completedFiles === totalFiles) {
         toast.success(`Successfully uploaded ${completedFiles} document${completedFiles === 1 ? '' : 's'}!`)
       }
@@ -279,18 +264,15 @@ export default function DocumentsPage() {
       setUploadProgress(0)
     }
   }, [user, uploadDocument, categorizeDocument, markTaskCompleted])
-
   const handleDeleteDocument = useCallback(async (documentId: string, documentName: string) => {
     try {
       // Find the document to get the file URL
-      const document = documents.find(doc => doc.id === documentId)
-
+      const document = (documents || []).find(doc => doc.id === documentId)
       // Delete from database
       const result = await deleteDocument(documentId)
       if (result.error) {
         throw new Error(result.error)
       }
-
       // Delete file from storage if it exists
       if (document?.file_url) {
         const fileName = document.file_url.split('/').pop()
@@ -298,13 +280,11 @@ export default function DocumentsPage() {
           await supabase.storage.from('documents').remove([fileName])
         }
       }
-
       toast.success(`${documentName} deleted successfully!`)
     } catch (error) {
       toast.error(`Failed to delete ${documentName}. Please try again.`)
     }
   }, [deleteDocument, documents])
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800'
@@ -313,7 +293,6 @@ export default function DocumentsPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   // Download checklist functionality
   const downloadChecklist = useCallback(() => {
     const checklistData = {
@@ -354,11 +333,9 @@ export default function DocumentsPage() {
         }
       ]
     }
-
     // Create downloadable content
     let content = `${checklistData.title}\n`
     content += `Generated: ${checklistData.generatedDate}\n\n`
-
     checklistData.categories.forEach(category => {
       content += `${category.name}:\n`
       category.items.forEach(item => {
@@ -366,7 +343,6 @@ export default function DocumentsPage() {
       })
       content += '\n'
     })
-
     // Create and download file
     const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
@@ -377,25 +353,26 @@ export default function DocumentsPage() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-
     toast.success('Checklist downloaded successfully!')
   }, [])
-
   // Export all documents data
   const exportDocuments = useCallback(async () => {
     try {
+      // Safety checks for arrays
+      const safeDocuments = documents || []
+      const safeClients = clients || []
       const exportData = {
         exportDate: new Date().toISOString(),
-        totalDocuments: documents.length,
-        totalClients: clients.length,
+        totalDocuments: safeDocuments.length,
+        totalClients: safeClients.length,
         summary: {
           pending: documentStats.pending,
           processing: documentStats.processing,
           completed: documentStats.completed,
           errors: documentStats.error
         },
-        clients: clients.map(client => {
-          const clientDocs = documents.filter(doc => doc.client_id === client.id)
+        clients: safeClients.map(client => {
+          const clientDocs = safeDocuments.filter(doc => doc.client_id === client.id)
           return {
             id: client.id,
             name: client.name,
@@ -417,10 +394,8 @@ export default function DocumentsPage() {
           }
         })
       }
-
       // Create CSV content
       let csvContent = "Client Name,Email,Status,Total Documents,Completed,Pending,Document Name,Category,Document Status,Upload Date,File Size\n"
-
       exportData.clients.forEach(client => {
         if (client.documents.length === 0) {
           csvContent += `"${client.name}","${client.email}","${client.status}",0,0,0,"No documents","","","",""\n`
@@ -430,7 +405,6 @@ export default function DocumentsPage() {
           })
         }
       })
-
       // Download CSV
       const blob = new Blob([csvContent], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
@@ -441,13 +415,11 @@ export default function DocumentsPage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-
       toast.success('Document data exported successfully!')
     } catch (error) {
       toast.error('Failed to export document data')
     }
   }, [documents, clients, documentStats])
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-4 h-4" />
@@ -456,7 +428,6 @@ export default function DocumentsPage() {
       default: return <FileText className="w-4 h-4" />
     }
   }
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -468,17 +439,6 @@ export default function DocumentsPage() {
     maxSize: 10 * 1024 * 1024, // 10MB
     multiple: true
   })
-
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
-    return <LoadingScreen text="Loading documents..." />
-  }
-
-  // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view documents" />
-  }
-
   // Show loading for documents data
   if (documentsLoading) {
     return (
@@ -490,7 +450,6 @@ export default function DocumentsPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -510,7 +469,6 @@ export default function DocumentsPage() {
           </Button>
         </div>
       </div>
-
       {/* Client Selection */}
       <Card>
         <CardHeader>
@@ -538,7 +496,6 @@ export default function DocumentsPage() {
               </Button>
             </div>
           </div>
-
           {/* Client Search */}
           <div className="mt-4">
             <div className="relative">
@@ -558,7 +515,7 @@ export default function DocumentsPage() {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               <span className="ml-2 text-muted-foreground">Loading clients...</span>
             </div>
-          ) : clients.length === 0 ? (
+          ) : !clients || clients.length === 0 ? (
             <div className="text-center py-8">
               <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">No clients found</p>
@@ -583,10 +540,9 @@ export default function DocumentsPage() {
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredClients.map((client) => {
-                const clientDocuments = documents.filter(doc => doc.client_id === client.id)
+                const clientDocuments = (documents || []).filter(doc => doc.client_id === client.id)
                 const completedDocs = clientDocuments.filter(doc => doc.status === 'completed').length
                 const pendingDocs = clientDocuments.filter(doc => doc.status === 'pending').length
-
                 return (
                   <Card key={client.id} className="hover:shadow-md transition-shadow cursor-pointer">
                     <CardContent className="p-4">
@@ -604,7 +560,6 @@ export default function DocumentsPage() {
                           </div>
                         </div>
                       </div>
-
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>Documents</span>
@@ -618,7 +573,6 @@ export default function DocumentsPage() {
                           <span>Pending</span>
                           <span className="text-yellow-600 font-medium">{pendingDocs}</span>
                         </div>
-
                         {clientDocuments.length > 0 && (
                           <div className="mt-2">
                             <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -632,7 +586,6 @@ export default function DocumentsPage() {
                           </div>
                         )}
                       </div>
-
                       <div className="mt-4 flex space-x-2">
                         <Button asChild size="sm" className="flex-1">
                           <Link href={`/clients/${client.id}/documents`}>
@@ -654,12 +607,11 @@ export default function DocumentsPage() {
           ) : (
             <div className="space-y-3">
               {filteredClients.map((client) => {
-                const clientDocuments = documents.filter(doc => doc.client_id === client.id)
+                const clientDocuments = (documents || []).filter(doc => doc.client_id === client.id)
                 const completedDocs = clientDocuments.filter(doc => doc.status === 'completed').length
                 const pendingDocs = clientDocuments.filter(doc => doc.status === 'pending').length
                 const processingDocs = clientDocuments.filter(doc => doc.status === 'processing').length
                 const errorDocs = clientDocuments.filter(doc => doc.status === 'error').length
-
                 return (
                   <Card key={client.id} className="hover:shadow-sm transition-shadow">
                     <CardContent className="p-4">
@@ -679,7 +631,6 @@ export default function DocumentsPage() {
                             </div>
                           </div>
                         </div>
-
                         <div className="flex items-center space-x-6">
                           <div className="grid grid-cols-4 gap-4 text-center">
                             <div>
@@ -699,7 +650,6 @@ export default function DocumentsPage() {
                               <div className="text-xs text-muted-foreground">Processing</div>
                             </div>
                           </div>
-
                           <div className="flex space-x-2">
                             <Button asChild size="sm">
                               <Link href={`/clients/${client.id}/documents`}>
@@ -715,7 +665,6 @@ export default function DocumentsPage() {
                           </div>
                         </div>
                       </div>
-
                       {clientDocuments.length > 0 && (
                         <div className="mt-4">
                           <div className="flex justify-between text-xs text-muted-foreground mb-2">
@@ -736,9 +685,8 @@ export default function DocumentsPage() {
           )}
         </CardContent>
       </Card>
-
       {/* All Documents Overview */}
-      {documents.length > 0 && (
+      {documents && documents.length > 0 && (
         <>
           {/* Document Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -752,7 +700,6 @@ export default function DocumentsPage() {
                 <p className="text-xs text-muted-foreground">Across all clients</p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pending</CardTitle>
@@ -763,7 +710,6 @@ export default function DocumentsPage() {
                 <p className="text-xs text-muted-foreground">Awaiting processing</p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Processing</CardTitle>
@@ -774,7 +720,6 @@ export default function DocumentsPage() {
                 <p className="text-xs text-muted-foreground">AI analysis in progress</p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Completed</CardTitle>
@@ -785,19 +730,17 @@ export default function DocumentsPage() {
                 <p className="text-xs text-muted-foreground">Ready for review</p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Clients</CardTitle>
                 <User className="h-4 w-4 text-purple-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-purple-600">{clients.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{clients?.length || 0}</div>
                 <p className="text-xs text-muted-foreground">Total clients</p>
               </CardContent>
             </Card>
           </div>
-
           {/* Recent Documents */}
           <Card>
             <CardHeader>
@@ -814,11 +757,11 @@ export default function DocumentsPage() {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {documents
+                  {(documents || [])
                     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                     .slice(0, 10)
                     .map((doc) => {
-                      const client = clients.find(c => c.id === doc.client_id)
+                      const client = (clients || []).find(c => c.id === doc.client_id)
                       return (
                         <div key={doc.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:shadow-sm transition-shadow">
                           <div className="flex-shrink-0">
@@ -846,7 +789,7 @@ export default function DocumentsPage() {
                                   {client.name}
                                 </Link>
                               )}
-                              <span>{doc.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                              <span>{doc.category.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
                               <span>{(doc.size / 1024 / 1024).toFixed(2)} MB</span>
                               <span>{new Date(doc.created_at).toLocaleDateString()}</span>
                             </div>
@@ -882,8 +825,6 @@ export default function DocumentsPage() {
           </Card>
         </>
       )}
-
-
     </div>
   )
-}
+})

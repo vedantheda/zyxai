@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,11 +44,10 @@ import {
   Trash2,
   Eye
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { supabase } from '@/lib/supabase'
-import { getFromCache, setCache } from '@/lib/globalCache'
-
+// Removed complex caching - using simple React state
 interface AutomationWorkflow {
   id: string
   user_id: string
@@ -68,7 +66,6 @@ interface AutomationWorkflow {
     email: string
   }
 }
-
 interface DocumentAlert {
   id: string
   client_id: string
@@ -86,7 +83,6 @@ interface DocumentAlert {
     due_date?: string
   }
 }
-
 interface WorkflowStats {
   total: number
   active: number
@@ -95,9 +91,10 @@ interface WorkflowStats {
   pendingAlerts: number
   clientsWithActiveWorkflows: number
 }
-
 export default function WorkflowsPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   const [workflows, setWorkflows] = useState<AutomationWorkflow[]>([])
   const [alerts, setAlerts] = useState<DocumentAlert[]>([])
   const [loading, setLoading] = useState(true)
@@ -109,34 +106,15 @@ export default function WorkflowsPage() {
     pendingAlerts: 0,
     clientsWithActiveWorkflows: 0
   })
-
   useEffect(() => {
     if (!user) return
     fetchWorkflowData()
   }, [user])
-
-  // Optimized data fetching with better error handling
+  // Simple data fetching
   const fetchWorkflowData = useCallback(async () => {
     if (!user?.id) return
-
-    console.log('🔥 WORKFLOWS PAGE - CHECKING CACHE')
-
-    // Check cache first
-    const cacheKey = `workflows-${user.id}`
-    const cached = getFromCache(cacheKey)
-    if (cached) {
-      console.log('🚀 WORKFLOWS PAGE - USING CACHE')
-      setWorkflows(cached.workflows)
-      setAlerts(cached.alerts)
-      setStats(cached.stats)
-      setLoading(false)
-      return
-    }
-
     try {
       setLoading(true)
-      console.log('🔥 WORKFLOWS PAGE - FETCHING FROM DATABASE')
-
       // Parallel data fetching for better performance
       const [workflowsResult, alertsResult] = await Promise.all([
         supabase
@@ -150,7 +128,6 @@ export default function WorkflowsPage() {
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
-
         supabase
           .from('document_alerts')
           .select(`
@@ -168,16 +145,12 @@ export default function WorkflowsPage() {
           .order('scheduled_for', { ascending: true })
           .limit(50)
       ])
-
       if (workflowsResult.error) throw workflowsResult.error
       if (alertsResult.error) throw alertsResult.error
-
       const workflowsData = workflowsResult.data || []
       const alertsData = alertsResult.data || []
-
       setWorkflows(workflowsData)
       setAlerts(alertsData)
-
       // Optimized stats calculation
       const activeWorkflows = workflowsData.filter(w => w.status === 'in_progress' || w.status === 'pending')
       const workflowStats = {
@@ -189,23 +162,11 @@ export default function WorkflowsPage() {
         clientsWithActiveWorkflows: new Set(activeWorkflows.map(w => w.client_id)).size
       }
       setStats(workflowStats)
-
-      // Cache all the data
-      setCache(cacheKey, {
-        workflows: workflowsData,
-        alerts: alertsData,
-        stats: workflowStats
-      })
-
-      console.log('✅ WORKFLOWS PAGE - DATA FETCHED AND CACHED')
-
     } catch (error) {
-      console.error('❌ WORKFLOWS PAGE - FETCH ERROR:', error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }, [user?.id])
-
   // Memoized utility functions for performance
   const getStatusColor = useCallback((status: string) => {
     switch (status) {
@@ -216,7 +177,6 @@ export default function WorkflowsPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }, [])
-
   const getStatusIcon = useCallback((status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-4 h-4 text-green-600" />
@@ -226,7 +186,6 @@ export default function WorkflowsPage() {
       default: return <Clock className="w-4 h-4 text-gray-600" />
     }
   }, [])
-
   const getAlertTypeColor = useCallback((type: string) => {
     switch (type) {
       case 'overdue': return 'bg-red-100 text-red-800'
@@ -236,7 +195,6 @@ export default function WorkflowsPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }, [])
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -246,23 +204,19 @@ export default function WorkflowsPage() {
       minute: '2-digit'
     })
   }
-
   const formatWorkflowType = (type: string) => {
     return type.split('_').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ')
   }
-
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  // Show loading during auth
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading workflows..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view workflows" />
   }
-
   // Show loading for workflows data
   if (loading) {
     return (
@@ -274,7 +228,6 @@ export default function WorkflowsPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -299,7 +252,6 @@ export default function WorkflowsPage() {
           </Button>
         </div>
       </div>
-
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -313,7 +265,6 @@ export default function WorkflowsPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -325,7 +276,6 @@ export default function WorkflowsPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -337,7 +287,6 @@ export default function WorkflowsPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -350,7 +299,6 @@ export default function WorkflowsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Workflow Management Tabs */}
       <Tabs defaultValue="workflows" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
@@ -359,7 +307,6 @@ export default function WorkflowsPage() {
           <TabsTrigger value="templates">Workflow Templates</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
-
         <TabsContent value="workflows" className="space-y-4">
           <Card>
             <CardHeader>
@@ -494,7 +441,6 @@ export default function WorkflowsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="alerts" className="space-y-4">
           <Card>
             <CardHeader>
@@ -603,7 +549,6 @@ export default function WorkflowsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="templates" className="space-y-4">
           <Card>
             <CardHeader>
@@ -644,7 +589,6 @@ export default function WorkflowsPage() {
                     </Button>
                   </CardContent>
                 </Card>
-
                 <Card className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Document Collection</CardTitle>
@@ -672,7 +616,6 @@ export default function WorkflowsPage() {
                     </Button>
                   </CardContent>
                 </Card>
-
                 <Card className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Tax Preparation</CardTitle>
@@ -704,7 +647,6 @@ export default function WorkflowsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="analytics" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -726,7 +668,6 @@ export default function WorkflowsPage() {
                     value={stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}
                     className="w-full"
                   />
-
                   <div className="grid grid-cols-2 gap-4 mt-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
@@ -740,7 +681,6 @@ export default function WorkflowsPage() {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -760,7 +700,6 @@ export default function WorkflowsPage() {
                     value={alerts.length > 0 ? (alerts.filter(a => a.status === 'sent').length / alerts.length) * 100 : 0}
                     className="w-full"
                   />
-
                   <div className="grid grid-cols-2 gap-4 mt-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">

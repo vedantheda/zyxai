@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -72,13 +71,10 @@ import {
   User,
   BarChart3
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
-import { LoadingScreen } from '@/components/ui/loading-spinner'
-import { AdminRouteGuard } from '@/components/auth/AdminRouteGuard'
+import { ClientSideRouteGuard } from '@/components/auth/ClientSideRouteGuard'
 import { useClients } from '@/hooks/useSupabaseData'
-import { getFromCache, setCache } from '@/lib/globalCache'
+// Removed complex caching - using simple React state
 import Link from 'next/link'
-
 interface Client {
   id: string
   user_id: string
@@ -94,7 +90,6 @@ interface Client {
   created_at: string
   updated_at: string
 }
-
 interface FilterState {
   search: string
   status: string[]
@@ -112,16 +107,12 @@ interface FilterState {
   }
   hasPhone: boolean | null
 }
-
 interface SortState {
   field: keyof Client
   direction: 'asc' | 'desc'
 }
-
 function ClientsPageContent() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
   const { clients: allClients, loading: clientsLoading, error: clientsError, addClient, updateClient } = useClients()
-
   // Enhanced state management
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -129,7 +120,6 @@ function ClientsPageContent() {
   const [selectedClients, setSelectedClients] = useState<string[]>([])
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [sortState, setSortState] = useState<SortState>({ field: 'created_at', direction: 'desc' })
-
   // Advanced filters state
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -141,7 +131,6 @@ function ClientsPageContent() {
     documentCount: {},
     hasPhone: null
   })
-
   // Enhanced filtering logic
   const filteredAndSortedClients = useMemo(() => {
     let filtered = allClients.filter(client => {
@@ -150,13 +139,10 @@ function ClientsPageContent() {
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (client.phone && client.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-
       // Status filter
       const matchesStatus = statusFilter === 'all' || client.status === statusFilter
-
       // Priority filter
       const matchesPriority = priorityFilter === 'all' || client.priority === priorityFilter
-
       // Advanced filters
       const matchesAdvancedStatus = filters.status.length === 0 || filters.status.includes(client.status)
       const matchesAdvancedPriority = filters.priority.length === 0 || filters.priority.includes(client.priority)
@@ -165,11 +151,9 @@ function ClientsPageContent() {
       const matchesPhone = filters.hasPhone === null ||
         (filters.hasPhone === true && !!client.phone) ||
         (filters.hasPhone === false && !client.phone)
-
       // Document count filter
       const matchesDocCount = (!filters.documentCount.min || client.documents_count >= filters.documentCount.min) &&
         (!filters.documentCount.max || client.documents_count <= filters.documentCount.max)
-
       // Date range filter
       let matchesDateRange = true
       if (filters.dateRange && (filters.dateRange.from || filters.dateRange.to)) {
@@ -177,37 +161,30 @@ function ClientsPageContent() {
         if (filters.dateRange.from && clientDate < filters.dateRange.from) matchesDateRange = false
         if (filters.dateRange.to && clientDate > filters.dateRange.to) matchesDateRange = false
       }
-
       return matchesSearch && matchesStatus && matchesPriority &&
              matchesAdvancedStatus && matchesAdvancedPriority && matchesType &&
              matchesProgress && matchesPhone && matchesDocCount && matchesDateRange
     })
-
     // Sorting
     filtered.sort((a, b) => {
       const aValue = a[sortState.field]
       const bValue = b[sortState.field]
-
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         const comparison = aValue.localeCompare(bValue)
         return sortState.direction === 'asc' ? comparison : -comparison
       }
-
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         const comparison = aValue - bValue
         return sortState.direction === 'asc' ? comparison : -comparison
       }
-
       // For dates
       const aDate = new Date(aValue as string).getTime()
       const bDate = new Date(bValue as string).getTime()
       const comparison = aDate - bDate
       return sortState.direction === 'asc' ? comparison : -comparison
     })
-
     return filtered
   }, [allClients, searchTerm, statusFilter, priorityFilter, filters, sortState])
-
   const getStatusColor = (status: Client['status']) => {
     switch (status) {
       case 'complete': return 'bg-green-100 text-green-800'
@@ -217,7 +194,6 @@ function ClientsPageContent() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getPriorityColor = (priority: Client['priority']) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800'
@@ -226,7 +202,6 @@ function ClientsPageContent() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   // Utility functions
   const getActiveFiltersCount = () => {
     let count = 0
@@ -239,7 +214,6 @@ function ClientsPageContent() {
     if (filters.hasPhone !== null) count++
     return count
   }
-
   const clearAllFilters = () => {
     setSearchTerm('')
     setStatusFilter('all')
@@ -256,7 +230,6 @@ function ClientsPageContent() {
     })
     setSelectedClients([])
   }
-
   const toggleClientSelection = (clientId: string) => {
     setSelectedClients(prev =>
       prev.includes(clientId)
@@ -264,7 +237,6 @@ function ClientsPageContent() {
         : [...prev, clientId]
     )
   }
-
   const toggleSelectAll = () => {
     if (selectedClients.length === filteredAndSortedClients.length) {
       setSelectedClients([])
@@ -272,37 +244,23 @@ function ClientsPageContent() {
       setSelectedClients(filteredAndSortedClients.map(client => client.id))
     }
   }
-
   const handleSort = (field: keyof Client) => {
     setSortState(prev => ({
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }))
   }
-
   // Memoized handlers to prevent focus loss
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
   }, [])
-
   const handleStatusFilterChange = useCallback((value: string) => {
     setStatusFilter(value)
   }, [])
-
   const handlePriorityFilterChange = useCallback((value: string) => {
     setPriorityFilter(value)
   }, [])
-
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
-    return <LoadingScreen text="Loading clients..." />
-  }
-
-  // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view clients" />
-  }
-
+  // Removed: Auth checks - middleware handles authentication
   // Show loading for clients data
   if (clientsLoading) {
     return (
@@ -311,7 +269,6 @@ function ClientsPageContent() {
       </div>
     )
   }
-
   if (clientsError) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -321,7 +278,6 @@ function ClientsPageContent() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
@@ -386,7 +342,6 @@ function ClientsPageContent() {
           </Button>
         </div>
       </div>
-
       {/* Enhanced Search and Filters */}
       <Card>
         <CardHeader>
@@ -460,7 +415,6 @@ function ClientsPageContent() {
               </Select>
             </div>
           </div>
-
           {/* Advanced Filters Panel */}
           {showAdvancedFilters && (
             <div className="border rounded-lg p-4 bg-muted/50 space-y-4">
@@ -509,7 +463,6 @@ function ClientsPageContent() {
                     </PopoverContent>
                   </Popover>
                 </div>
-
                 {/* Client Type Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Client Type</label>
@@ -552,7 +505,6 @@ function ClientsPageContent() {
                     </PopoverContent>
                   </Popover>
                 </div>
-
                 {/* Phone Number Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Phone Number</label>
@@ -576,9 +528,7 @@ function ClientsPageContent() {
                   </Select>
                 </div>
               </div>
-
               <Separator />
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Document Count Range */}
                 <div className="space-y-2">
@@ -607,7 +557,6 @@ function ClientsPageContent() {
                     />
                   </div>
                 </div>
-
                 {/* Progress Range */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Progress Range</label>
@@ -644,7 +593,6 @@ function ClientsPageContent() {
           )}
         </CardContent>
       </Card>
-
       {/* Enhanced Client List */}
       <Card>
         <CardHeader>
@@ -879,11 +827,10 @@ function ClientsPageContent() {
     </div>
   )
 }
-
 export default function ClientsPage() {
   return (
-    <AdminRouteGuard>
+    <ClientSideRouteGuard requireAdmin={true} fallbackPath="/dashboard">
       <ClientsPageContent />
-    </AdminRouteGuard>
+    </ClientSideRouteGuard>
   )
 }

@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,54 +29,48 @@ import {
   BarChart3,
   ArrowLeft
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useDropzone } from 'react-dropzone'
-import { useRealtimeDocuments, useRealtimeClients } from '@/hooks/useRealtimeData'
+import { useDocuments, useClients } from '@/hooks/useSimpleData'
 import { useDocumentAutomation } from '@/hooks/useDocumentAutomation'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
 export default function ClientDocumentsPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !loading
   const params = useParams()
   const clientId = params.id as string
-
   // Get client data
   const {
     data: clients,
     loading: clientsLoading
-  } = useRealtimeClients()
-
+  } = useClients()
   // Get documents for this specific client
   const {
     data: allDocuments,
     loading: documentsLoading,
     error: documentsError,
-    insertItem: createDocument,
+    addItem: createDocument,
     deleteItem: deleteDocument,
     updateItem: updateDocument
-  } = useRealtimeDocuments()
-
+  } = useDocuments(clientId)
   // Filter documents for this client
   const documents = useMemo(() => {
     return allDocuments.filter(doc => doc.client_id === clientId)
   }, [allDocuments, clientId])
-
   const client = useMemo(() => {
     return clients.find(c => c.id === clientId)
   }, [clients, clientId])
-
   const { markTaskCompleted } = useDocumentAutomation()
-
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedTab, setSelectedTab] = useState('all')
-
   // Document categorization function
   const categorizeDocument = useCallback((fileName: string): string => {
     const name = fileName.toLowerCase()
@@ -91,31 +84,25 @@ export default function ClientDocumentsPage() {
     if (name.includes('education') || name.includes('tuition')) return 'education-expenses'
     return 'other'
   }, [])
-
   const uploadDocument = useCallback(async (file: File, category: string) => {
     if (!user?.id || !clientId) {
       return { success: false, error: 'User not authenticated or client not specified' }
     }
-
     try {
       // Generate unique filename
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${clientId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
         .upload(fileName, file)
-
       if (uploadError) {
         throw uploadError
       }
-
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(fileName)
-
       // Create document record
       const documentData = {
         name: file.name,
@@ -129,54 +116,42 @@ export default function ClientDocumentsPage() {
         processing_status: 'pending',
         client_id: clientId
       }
-
       const result = await createDocument(documentData)
       if (result.error) {
         // Clean up uploaded file if database insert fails
         await supabase.storage.from('documents').remove([fileName])
         throw new Error(result.error)
       }
-
       return { success: true, document: result.data }
     } catch (error) {
-      console.error('Upload error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Upload failed'
       }
     }
   }, [user, clientId, createDocument])
-
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user || !clientId) return
-
     setUploading(true)
     setUploadProgress(0)
-
     try {
       const totalFiles = acceptedFiles.length
       let completedFiles = 0
-
       for (const file of acceptedFiles) {
         // Auto-categorize the document
         const category = categorizeDocument(file.name)
-
         // Upload to Supabase
         const result = await uploadDocument(file, category)
-
         if (result.success) {
           completedFiles++
           setUploadProgress((completedFiles / totalFiles) * 100)
-
           // Mark related tasks as completed
           await markTaskCompleted(category)
-
           toast.success(`${file.name} uploaded successfully!`)
         } else {
           toast.error(result.error || `Failed to upload ${file.name}`)
         }
       }
-
       if (completedFiles === totalFiles) {
         toast.success(`Successfully uploaded ${completedFiles} document${completedFiles === 1 ? '' : 's'}!`)
       }
@@ -187,7 +162,6 @@ export default function ClientDocumentsPage() {
       setUploadProgress(0)
     }
   }, [user, clientId, uploadDocument, categorizeDocument, markTaskCompleted])
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -199,18 +173,15 @@ export default function ClientDocumentsPage() {
     maxSize: 10 * 1024 * 1024, // 10MB
     disabled: uploading
   })
-
   const handleDeleteDocument = useCallback(async (documentId: string, documentName: string) => {
     try {
       // Find the document to get the file URL
       const document = documents.find(doc => doc.id === documentId)
-
       // Delete from database
       const result = await deleteDocument(documentId)
       if (result.error) {
         throw new Error(result.error)
       }
-
       // Delete file from storage if it exists
       if (document?.file_url) {
         const fileName = document.file_url.split('/').pop()
@@ -218,23 +189,19 @@ export default function ClientDocumentsPage() {
           await supabase.storage.from('documents').remove([fileName])
         }
       }
-
       toast.success(`${documentName} deleted successfully!`)
     } catch (error) {
       toast.error(`Failed to delete ${documentName}. Please try again.`)
     }
   }, [deleteDocument, documents])
-
   // Download all client documents
   const downloadClientDocuments = useCallback(async (clientId: string, clientName: string) => {
     try {
       const clientDocs = documents.filter(doc => doc.client_id === clientId)
-
       if (clientDocs.length === 0) {
         toast.error('No documents found for this client')
         return
       }
-
       // Create a summary report
       const reportData = {
         client: clientName,
@@ -253,13 +220,11 @@ export default function ClientDocumentsPage() {
           aiAnalysisStatus: doc.ai_analysis_status
         }))
       }
-
       // Create CSV content
       let csvContent = "Document Name,Category,Status,Upload Date,File Size,Type,AI Analysis Status\n"
       reportData.documents.forEach(doc => {
         csvContent += `"${doc.name}","${doc.category}","${doc.status}","${doc.uploadDate}","${doc.size}","${doc.type}","${doc.aiAnalysisStatus}"\n`
       })
-
       // Add summary at the top
       const summaryContent = `Client Document Report for ${clientName}\n` +
         `Generated: ${reportData.generatedDate}\n` +
@@ -268,7 +233,6 @@ export default function ClientDocumentsPage() {
         `Pending: ${reportData.pendingDocuments}\n` +
         `Processing: ${reportData.processingDocuments}\n\n` +
         csvContent
-
       // Download the report
       const blob = new Blob([summaryContent], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
@@ -279,17 +243,14 @@ export default function ClientDocumentsPage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-
       toast.success(`Document report for ${clientName} downloaded successfully!`)
     } catch (error) {
       toast.error('Failed to download client documents')
     }
   }, [documents])
-
   // Filter documents based on search and filters
   const filteredDocuments = useMemo(() => {
     let filtered = documents
-
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(doc =>
@@ -298,31 +259,25 @@ export default function ClientDocumentsPage() {
         doc.type.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
-
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(doc => doc.category === selectedCategory)
     }
-
     // Filter by status
     if (selectedStatus !== 'all') {
       filtered = filtered.filter(doc => doc.status === selectedStatus)
     }
-
     // Filter by tab
     if (selectedTab !== 'all') {
       filtered = filtered.filter(doc => doc.status === selectedTab)
     }
-
     return filtered
   }, [documents, searchTerm, selectedCategory, selectedStatus, selectedTab])
-
   // Get unique categories for filter dropdown
   const availableCategories = useMemo(() => {
     const categories = [...new Set(documents.map(doc => doc.category))]
     return categories.sort()
   }, [documents])
-
   // Document statistics
   const documentStats = useMemo(() => {
     const total = documents.length
@@ -330,10 +285,8 @@ export default function ClientDocumentsPage() {
     const processing = documents.filter(doc => doc.status === 'processing').length
     const completed = documents.filter(doc => doc.status === 'completed').length
     const error = documents.filter(doc => doc.status === 'error').length
-
     return { total, pending, processing, completed, error }
   }, [documents])
-
   // Get personalized recommendations
   const getPersonalizedRecommendations = useCallback(() => {
     // This would typically come from an AI service
@@ -358,9 +311,7 @@ export default function ClientDocumentsPage() {
       }
     ]
   }, [])
-
   const recommendations = getPersonalizedRecommendations()
-
   // Document categories with status tracking
   const documentCategories = [
     {
@@ -400,7 +351,6 @@ export default function ClientDocumentsPage() {
               documents.some(doc => doc.category === 'bank-statements') ? 'uploaded' : 'missing'
     }
   ]
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-5 h-5 text-green-600" />
@@ -409,7 +359,6 @@ export default function ClientDocumentsPage() {
       default: return <FileText className="w-5 h-5 text-gray-600" />
     }
   }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800'
@@ -418,17 +367,14 @@ export default function ClientDocumentsPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  if (loading || !isReady) {
     return <LoadingScreen text="Loading client documents..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view client documents" />
   }
-
   // Show loading for clients data
   if (clientsLoading) {
     return (
@@ -440,7 +386,6 @@ export default function ClientDocumentsPage() {
       </div>
     )
   }
-
   if (!client) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -456,7 +401,6 @@ export default function ClientDocumentsPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -488,7 +432,6 @@ export default function ClientDocumentsPage() {
           </Button>
         </div>
       </div>
-
       {/* Client Info Card */}
       <Card>
         <CardContent className="p-4">
@@ -514,7 +457,6 @@ export default function ClientDocumentsPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Document Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
@@ -527,7 +469,6 @@ export default function ClientDocumentsPage() {
             <p className="text-xs text-muted-foreground">All uploaded files</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
@@ -538,7 +479,6 @@ export default function ClientDocumentsPage() {
             <p className="text-xs text-muted-foreground">Awaiting processing</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Processing</CardTitle>
@@ -549,7 +489,6 @@ export default function ClientDocumentsPage() {
             <p className="text-xs text-muted-foreground">AI analysis in progress</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
@@ -560,7 +499,6 @@ export default function ClientDocumentsPage() {
             <p className="text-xs text-muted-foreground">Ready for review</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Errors</CardTitle>
@@ -572,7 +510,6 @@ export default function ClientDocumentsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -594,7 +531,7 @@ export default function ClientDocumentsPage() {
             <SelectItem value="all">All Categories</SelectItem>
             {availableCategories.map(category => (
               <SelectItem key={category} value={category}>
-                {category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {category.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
               </SelectItem>
             ))}
           </SelectContent>
@@ -612,7 +549,6 @@ export default function ClientDocumentsPage() {
           </SelectContent>
         </Select>
       </div>
-
       {/* Main Content with Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -622,7 +558,6 @@ export default function ClientDocumentsPage() {
           <TabsTrigger value="completed">Completed ({documentStats.completed})</TabsTrigger>
           <TabsTrigger value="error">Errors ({documentStats.error})</TabsTrigger>
         </TabsList>
-
         <TabsContent value={selectedTab} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Document Categories Checklist */}
@@ -665,7 +600,6 @@ export default function ClientDocumentsPage() {
                 ))}
               </CardContent>
             </Card>
-
             {/* Upload Area and Document List */}
             <div className="lg:col-span-2 space-y-6">
               {/* Upload Area */}
@@ -704,7 +638,6 @@ export default function ClientDocumentsPage() {
                       </div>
                     )}
                   </div>
-
                   {/* Recommendations */}
                   {recommendations.length > 0 && (
                     <div className="mt-6">
@@ -723,7 +656,6 @@ export default function ClientDocumentsPage() {
                   )}
                 </CardContent>
               </Card>
-
               {/* Uploaded Documents List */}
               <Card>
                 <CardHeader>
@@ -782,7 +714,7 @@ export default function ClientDocumentsPage() {
                             </div>
                             <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
                               <span>{(doc.size / 1024 / 1024).toFixed(2)} MB</span>
-                              <span>{doc.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                              <span>{doc.category.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
                               <span>{doc.type}</span>
                               <span>{new Date(doc.created_at).toLocaleDateString()}</span>
                             </div>

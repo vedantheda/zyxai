@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -10,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Brain, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -19,13 +17,11 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-
   useEffect(() => {
     // Check if this is a password reset callback
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
     const accessToken = hashParams.get('access_token')
     const refreshToken = hashParams.get('refresh_token')
-    
     if (accessToken && refreshToken) {
       // Set the session with the tokens from the URL
       supabase.auth.setSession({
@@ -34,30 +30,25 @@ export default function ResetPasswordPage() {
       })
     }
   }, [])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
     // Validation
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       setIsLoading(false)
       return
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters long')
       setIsLoading(false)
       return
     }
-
     try {
       const { error } = await supabase.auth.updateUser({
         password: password
       })
-
       if (error) {
         setError(error.message)
       } else {
@@ -73,7 +64,6 @@ export default function ResetPasswordPage() {
       setIsLoading(false)
     }
   }
-
   if (success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -93,7 +83,6 @@ export default function ResetPasswordPage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
@@ -108,7 +97,6 @@ export default function ResetPasswordPage() {
           <h2 className="text-xl font-semibold text-foreground">Reset Your Password</h2>
           <p className="text-muted-foreground">Enter your new password below</p>
         </div>
-
         {/* Reset Password Form */}
         <Card>
           <CardHeader>
@@ -124,7 +112,6 @@ export default function ResetPasswordPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
               <div className="space-y-2">
                 <Label htmlFor="password">New Password</Label>
                 <Input
@@ -137,7 +124,6 @@ export default function ResetPasswordPage() {
                   disabled={isLoading}
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
                 <Input
@@ -150,7 +136,6 @@ export default function ResetPasswordPage() {
                   disabled={isLoading}
                 />
               </div>
-
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
@@ -162,7 +147,6 @@ export default function ResetPasswordPage() {
                 )}
               </Button>
             </form>
-
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Remember your password?{' '}

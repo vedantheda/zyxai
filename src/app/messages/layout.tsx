@@ -1,13 +1,8 @@
-import { AppLayout } from '@/components/layout/AppLayout'
-
+import DashboardLayout from '@/app/dashboard/layout'
 export default function MessagesLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AppLayout title="Messages">
-      {children}
-    </AppLayout>
-  )
+  return <DashboardLayout>{children}</DashboardLayout>
 }

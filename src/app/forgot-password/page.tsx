@@ -1,5 +1,4 @@
 'use client'
-
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,23 +7,22 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Brain, Mail, ArrowLeft } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
-
+// Removed complex auth - using simple Supabase calls
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const { resetPassword } = useAuth()
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
     try {
-      const { error } = await resetPassword(email)
-
+      // Simple password reset using Supabase directly
+      const { supabase } = await import('@/lib/supabase')
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
       if (error) {
         setError(error.message)
       } else {
@@ -36,7 +34,6 @@ export default function ForgotPasswordPage() {
       setIsLoading(false)
     }
   }
-
   if (success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -53,7 +50,6 @@ export default function ForgotPasswordPage() {
               We've sent a password reset link to <strong>{email}</strong>
             </p>
           </div>
-
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
@@ -67,8 +63,8 @@ export default function ForgotPasswordPage() {
                       Back to Sign In
                     </Link>
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full"
                     onClick={() => {
                       setSuccess(false)
@@ -85,7 +81,6 @@ export default function ForgotPasswordPage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
@@ -102,7 +97,6 @@ export default function ForgotPasswordPage() {
             Enter your email address and we'll send you a link to reset your password
           </p>
         </div>
-
         {/* Forgot Password Form */}
         <Card>
           <CardHeader>
@@ -118,7 +112,6 @@ export default function ForgotPasswordPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <Input
@@ -131,7 +124,6 @@ export default function ForgotPasswordPage() {
                   disabled={isLoading}
                 />
               </div>
-
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
@@ -146,7 +138,6 @@ export default function ForgotPasswordPage() {
                 )}
               </Button>
             </form>
-
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Remember your password?{' '}

@@ -3,14 +3,8 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import { ClientBody } from "./ClientBody";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { TRPCProvider } from "@/components/providers/TRPCProvider";
+import { AuthProvider } from "@/contexts/AuthProvider";
 import { ToastProvider } from "@/components/ui/toast";
-import { RoutePrefetcher } from "@/components/RoutePrefetcher";
-import { HydrationProvider } from "@/components/providers/HydrationProvider";
-import { LoadingProvider } from "@/components/providers/LoadingProvider";
-import { SessionTimeoutWarning } from "@/components/security/SessionTimeoutWarning";
-import { NavigationPerformanceMonitor } from "@/components/performance/NavigationPerformanceMonitor";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -18,7 +12,6 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   display: "swap",
 });
-
 export const metadata: Metadata = {
   title: "Neuronize - AI-Powered Tax Practice Management",
   description:
@@ -67,7 +60,6 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -76,22 +68,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${dmSans.variable} font-sans`}>
-        <HydrationProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <LoadingProvider>
-              <AuthProvider>
-                <TRPCProvider>
-                  <ToastProvider>
-                    <RoutePrefetcher />
-                    <NavigationPerformanceMonitor />
-                    <SessionTimeoutWarning />
-                    <ClientBody>{children}</ClientBody>
-                  </ToastProvider>
-                </TRPCProvider>
-              </AuthProvider>
-            </LoadingProvider>
-          </ThemeProvider>
-        </HydrationProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <AuthProvider>
+            <ToastProvider>
+              <ClientBody>{children}</ClientBody>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

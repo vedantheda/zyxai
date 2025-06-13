@@ -45,7 +45,7 @@ import {
   Trash2,
   Eye
 } from 'lucide-react'
-import { useRequireAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthProvider'
 import { supabase } from '@/lib/supabase'
 
 interface AutomationWorkflow {
@@ -95,7 +95,7 @@ interface WorkflowStats {
 }
 
 export default function WorkflowsPage() {
-  const { user, loading: authLoading } = useRequireAuth()
+  const { user, loading: authLoading } = useAuth()
   const [workflows, setWorkflows] = useState<AutomationWorkflow[]>([])
   const [alerts, setAlerts] = useState<DocumentAlert[]>([])
   const [loading, setLoading] = useState(true)

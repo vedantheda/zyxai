@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -45,17 +44,15 @@ import {
   History,
   Upload
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { supabase } from '@/lib/supabase'
 import DocumentManager from '@/components/documents/DocumentManager'
 import TaskManager from '@/components/tasks/TaskManager'
 import Link from 'next/link'
-
 // SIMPLE cache - no over-engineering
 const cache = new Map<string, { data: any; time: number }>()
 const CACHE_TIME = 2 * 60 * 1000 // 2 minutes only
-
 const getFromCache = (key: string) => {
   const entry = cache.get(key)
   if (entry && Date.now() - entry.time < CACHE_TIME) {
@@ -63,11 +60,9 @@ const getFromCache = (key: string) => {
   }
   return null
 }
-
 const setCache = (key: string, data: any) => {
   cache.set(key, { data, time: Date.now() })
 }
-
 interface Client {
   id: string
   user_id: string
@@ -83,7 +78,6 @@ interface Client {
   created_at: string
   updated_at: string
 }
-
 interface ClientIntakeData {
   id: string
   client_id: string
@@ -103,7 +97,6 @@ interface ClientIntakeData {
   created_at: string
   updated_at: string
 }
-
 interface DocumentChecklist {
   id: string
   document_type: string
@@ -115,7 +108,6 @@ interface DocumentChecklist {
   due_date?: string
   completed_at?: string
 }
-
 interface OnboardingSession {
   id: string
   current_step: number
@@ -124,7 +116,6 @@ interface OnboardingSession {
   started_at: string
   completed_at?: string
 }
-
 interface Document {
   id: string
   name: string
@@ -134,7 +125,6 @@ interface Document {
   ai_analysis_status: string
   created_at: string
 }
-
 interface Task {
   id: string
   title: string
@@ -146,7 +136,6 @@ interface Task {
   due_date: string
   created_at: string
 }
-
 interface ActivityItem {
   id: string
   type: 'document' | 'task' | 'communication' | 'status_change'
@@ -155,13 +144,13 @@ interface ActivityItem {
   timestamp: string
   metadata?: any
 }
-
 export default function ClientDetailPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   const params = useParams()
   const router = useRouter()
   const clientId = params.id as string
-
   const [client, setClient] = useState<Client | null>(null)
   const [clientIntakeData, setClientIntakeData] = useState<ClientIntakeData | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
@@ -171,18 +160,15 @@ export default function ClientDetailPage() {
   const [activityTimeline, setActivityTimeline] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     if (!user || !clientId) return
-
     const fetchClientData = async () => {
       console.log('🔥 CLIENT DETAIL PAGE (LEGACY) - FETCHING DATA')
-
       // Check cache first
       const cacheKey = `client-detail-legacy-${clientId}`
-      const cached = getFromCache(cacheKey)
+      const cached = null // Removed complex caching
       if (cached) {
-        console.log('🚀 CLIENT DETAIL (LEGACY) - USING CACHE')
+        - USING CACHE`)
         setClient(cached.client)
         setClientIntakeData(cached.intakeData)
         setOnboardingSession(cached.onboardingData)
@@ -193,10 +179,8 @@ export default function ClientDetailPage() {
         setLoading(false)
         return
       }
-
       try {
         setLoading(true)
-
         // Fetch client details
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
@@ -204,10 +188,8 @@ export default function ClientDetailPage() {
           .eq('id', clientId)
           .eq('user_id', user.id)
           .single()
-
         if (clientError) throw clientError
         setClient(clientData)
-
         // Fetch client intake data
         const { data: intakeData, error: intakeError } = await supabase
           .from('client_intake_data')
@@ -215,11 +197,9 @@ export default function ClientDetailPage() {
           .eq('client_id', clientId)
           .eq('user_id', user.id)
           .single()
-
         if (!intakeError && intakeData) {
           setClientIntakeData(intakeData)
         }
-
         // Fetch onboarding session
         const { data: onboardingData, error: onboardingError } = await supabase
           .from('onboarding_sessions')
@@ -227,11 +207,9 @@ export default function ClientDetailPage() {
           .eq('client_id', clientId)
           .eq('user_id', user.id)
           .single()
-
         if (!onboardingError && onboardingData) {
           setOnboardingSession(onboardingData)
         }
-
         // Fetch document checklist
         const { data: checklistData, error: checklistError } = await supabase
           .from('document_checklists')
@@ -239,11 +217,9 @@ export default function ClientDetailPage() {
           .eq('client_id', clientId)
           .eq('user_id', user.id)
           .order('priority', { ascending: false })
-
         if (!checklistError) {
           setDocumentChecklist(checklistData || [])
         }
-
         // Fetch client documents
         const { data: documentsData, error: documentsError } = await supabase
           .from('documents')
@@ -251,10 +227,8 @@ export default function ClientDetailPage() {
           .eq('client_id', clientId)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-
         if (documentsError) throw documentsError
         setDocuments(documentsData || [])
-
         // Fetch client tasks
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -262,13 +236,10 @@ export default function ClientDetailPage() {
           .eq('client_id', clientId)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-
         if (tasksError) throw tasksError
         setTasks(tasksData || [])
-
         // Generate activity timeline
         const timeline: ActivityItem[] = []
-
         // Add document activities
         documentsData?.forEach(doc => {
           timeline.push({
@@ -280,7 +251,6 @@ export default function ClientDetailPage() {
             metadata: { document: doc }
           })
         })
-
         // Add task activities
         tasksData?.forEach(task => {
           timeline.push({
@@ -292,21 +262,17 @@ export default function ClientDetailPage() {
             metadata: { task }
           })
         })
-
         // Sort timeline by timestamp (most recent first)
         timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         setActivityTimeline(timeline.slice(0, 10)) // Show last 10 activities
-
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setLoading(false)
       }
     }
-
     fetchClientData()
   }, [user, clientId])
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'complete': return 'bg-green-100 text-green-800'
@@ -316,7 +282,6 @@ export default function ClientDetailPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800'
@@ -325,11 +290,9 @@ export default function ClientDetailPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getClientInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -337,7 +300,6 @@ export default function ClientDetailPage() {
       day: 'numeric'
     })
   }
-
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -347,13 +309,11 @@ export default function ClientDetailPage() {
       minute: '2-digit'
     })
   }
-
   const getCompletionRate = () => {
     if (documentChecklist.length === 0) return 0
     const completed = documentChecklist.filter(item => item.is_completed).length
     return Math.round((completed / documentChecklist.length) * 100)
   }
-
   const getTaskStats = () => {
     const completed = tasks.filter(task => task.status === 'completed').length
     const inProgress = tasks.filter(task => task.status === 'in_progress').length
@@ -361,20 +321,16 @@ export default function ClientDetailPage() {
     const overdue = tasks.filter(task =>
       task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed'
     ).length
-
     return { completed, inProgress, pending, overdue, total: tasks.length }
   }
-
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  // Show loading during auth
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading client details..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view client details" />
   }
-
   // Show loading for client data
   if (loading) {
     return (
@@ -386,7 +342,6 @@ export default function ClientDetailPage() {
       </div>
     )
   }
-
   if (error || !client) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -402,7 +357,6 @@ export default function ClientDetailPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
@@ -470,7 +424,6 @@ export default function ClientDetailPage() {
           </Button>
         </div>
       </div>
-
       {/* Enhanced Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
@@ -488,7 +441,6 @@ export default function ClientDetailPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Task Status</CardTitle>
@@ -517,7 +469,6 @@ export default function ClientDetailPage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Onboarding Status</CardTitle>
@@ -544,7 +495,6 @@ export default function ClientDetailPage() {
             )}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Service Level</CardTitle>
@@ -565,7 +515,6 @@ export default function ClientDetailPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Enhanced Detailed Information Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
@@ -576,7 +525,6 @@ export default function ClientDetailPage() {
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
-
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Client Summary */}
@@ -623,9 +571,7 @@ export default function ClientDetailPage() {
                     <p className="text-sm mt-1">{clientIntakeData?.service_level || 'Standard'}</p>
                   </div>
                 </div>
-
                 <Separator />
-
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Documents Collected</span>
@@ -642,7 +588,6 @@ export default function ClientDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Recent Activity Timeline */}
             <Card>
               <CardHeader>
@@ -696,7 +641,6 @@ export default function ClientDetailPage() {
             </Card>
           </div>
         </TabsContent>
-
         <TabsContent value="details" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Basic Information */}
@@ -754,7 +698,6 @@ export default function ClientDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Address Information */}
             {clientIntakeData?.current_address && (
               <Card>
@@ -799,7 +742,6 @@ export default function ClientDetailPage() {
             )}
           </div>
         </TabsContent>
-
         <TabsContent value="documents" className="space-y-4">
           <Card>
             <CardHeader>
@@ -832,7 +774,6 @@ export default function ClientDetailPage() {
                     </Link>
                   </Button>
                 </div>
-
                 {documents.length > 0 && (
                   <div className="mt-6 p-4 border rounded-lg bg-muted/50">
                     <div className="grid grid-cols-3 gap-4 text-center">
@@ -859,11 +800,9 @@ export default function ClientDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="tasks" className="space-y-4">
           <TaskManager clientId={clientId} />
         </TabsContent>
-
         <TabsContent value="activity" className="space-y-4">
           <Card>
             <CardHeader>
@@ -936,7 +875,6 @@ export default function ClientDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="billing" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -972,9 +910,7 @@ export default function ClientDetailPage() {
                     <p className="text-sm mt-1 text-muted-foreground">TBD</p>
                   </div>
                 </div>
-
                 <Separator />
-
                 <div className="space-y-2">
                   <Button variant="outline" className="w-full">
                     <DollarSign className="w-4 h-4 mr-2" />
@@ -987,7 +923,6 @@ export default function ClientDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Service Preferences</CardTitle>

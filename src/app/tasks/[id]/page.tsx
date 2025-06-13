@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,14 +56,13 @@ import {
   ExternalLink,
   Plus
 } from 'lucide-react'
-import { useSessionSync } from '@/hooks/useSessionSync'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
-import { useRealtimeTasks } from '@/hooks/useRealtimeData'
+import { useTasks } from '@/hooks/useSimpleData'
 import { supabase } from '@/lib/supabase'
 import { TaskActivityService } from '@/services/TaskActivityService'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
 interface Task {
   id: string
   user_id: string
@@ -93,7 +91,6 @@ interface Task {
     status: string
   }
 }
-
 interface TaskComment {
   id: string
   task_id: string
@@ -106,7 +103,6 @@ interface TaskComment {
     email: string
   }
 }
-
 interface TaskActivity {
   id: string
   task_id: string
@@ -119,7 +115,6 @@ interface TaskActivity {
     email: string
   }
 }
-
 interface RelatedDocument {
   id: string
   name: string
@@ -128,13 +123,13 @@ interface RelatedDocument {
   status: string
   created_at: string
 }
-
 export default function TaskDetailPage() {
-  const { user, loading: sessionLoading, isSessionReady, isAuthenticated } = useSessionSync()
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user
+  const isReady = !authLoading
   const params = useParams()
   const router = useRouter()
   const taskId = params.id as string
-
   const [task, setTask] = useState<Task | null>(null)
   const [comments, setComments] = useState<TaskComment[]>([])
   const [activities, setActivities] = useState<TaskActivity[]>([])
@@ -151,7 +146,6 @@ export default function TaskDetailPage() {
     startTime: null as Date | null,
     elapsedTime: 0
   })
-
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
@@ -162,22 +156,18 @@ export default function TaskDetailPage() {
     assignee: '',
     progress: 0
   })
-
   const taskCategories = [
     'general', 'document_collection', 'review', 'client_communication',
     'form_preparation', 'filing', 'follow_up', 'compliance'
   ]
-
   useEffect(() => {
     if (!user || !taskId) return
     fetchTaskDetails()
   }, [user, taskId])
-
   const fetchTaskDetails = async () => {
     try {
       setLoading(true)
       setError(null)
-
       // Fetch main task details
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
@@ -193,10 +183,8 @@ export default function TaskDetailPage() {
         .eq('id', taskId)
         .eq('user_id', user?.id)
         .single()
-
       if (taskError) throw taskError
       if (!taskData) throw new Error('Task not found')
-
       setTask(taskData)
       setEditForm({
         title: taskData.title,
@@ -208,7 +196,6 @@ export default function TaskDetailPage() {
         assignee: taskData.assignee || '',
         progress: taskData.progress || 0
       })
-
       // Fetch related documents if client_id exists
       if (taskData.client_id) {
         const { data: documentsData } = await supabase
@@ -218,19 +205,15 @@ export default function TaskDetailPage() {
           .eq('user_id', user?.id)
           .order('created_at', { ascending: false })
           .limit(10)
-
         setRelatedDocuments(documentsData || [])
       }
-
       // Fetch dependent tasks (tasks that depend on this task)
       const { data: dependentTasksData } = await supabase
         .from('tasks')
         .select('*')
         .contains('dependencies', [taskId])
         .eq('user_id', user?.id)
-
       setDependentTasks(dependentTasksData || [])
-
       // Fetch dependency tasks (tasks this task depends on)
       if (taskData.dependencies && taskData.dependencies.length > 0) {
         const { data: dependencyTasksData } = await supabase
@@ -238,27 +221,21 @@ export default function TaskDetailPage() {
           .select('*')
           .in('id', taskData.dependencies)
           .eq('user_id', user?.id)
-
         setDependencyTasks(dependencyTasksData || [])
       }
-
       // Fetch comments and activities
       const { data: commentsData } = await TaskActivityService.getTaskComments(taskId)
       setComments(commentsData || [])
-
       const { data: activitiesData } = await TaskActivityService.getTaskActivities(taskId)
       setActivities(activitiesData || [])
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
   }
-
   const handleSaveTask = async () => {
     if (!task || !user) return
-
     try {
       const updateData = {
         title: editForm.title,
@@ -271,79 +248,62 @@ export default function TaskDetailPage() {
         progress: editForm.progress,
         updated_at: new Date().toISOString()
       }
-
       const { error } = await supabase
         .from('tasks')
         .update(updateData)
         .eq('id', taskId)
         .eq('user_id', user.id)
-
       if (error) throw error
-
       // Log changes
       if (task.priority !== editForm.priority) {
         await TaskActivityService.logPriorityChange(taskId, user.id, task.priority, editForm.priority)
       }
-
       if (task.due_date !== updateData.due_date) {
         await TaskActivityService.logDueDateChange(taskId, user.id, task.due_date, updateData.due_date)
       }
-
       if (task.progress !== editForm.progress) {
         await TaskActivityService.logProgressUpdate(taskId, user.id, task.progress, editForm.progress)
       }
-
       if (task.assignee !== editForm.assignee) {
         await TaskActivityService.logTaskAssignment(taskId, user.id, editForm.assignee || '', task.assignee)
       }
-
       setTask({ ...task, ...updateData })
       setIsEditing(false)
       toast.success('Task updated successfully!')
-
       // Refresh activities
       const { data: activitiesData } = await TaskActivityService.getTaskActivities(taskId)
       setActivities(activitiesData || [])
-
     } catch (err) {
       toast.error('Failed to update task')
     }
   }
-
   const handleStatusUpdate = async (newStatus: string, newProgress?: number) => {
     if (!task || !user) return
-
     try {
       const oldStatus = task.status
       const updateData: any = {
         status: newStatus,
         updated_at: new Date().toISOString()
       }
-
       if (newProgress !== undefined) {
         updateData.progress = newProgress
       }
-
       if (newStatus === 'completed') {
         updateData.completed_at = new Date().toISOString()
         updateData.progress = 100
         updateData.actual_duration = timeTracking.elapsedTime
       }
-
       const { error } = await supabase
         .from('tasks')
         .update(updateData)
         .eq('id', taskId)
         .eq('user_id', user.id)
-
       if (error) throw error
-
       // Log the status change activity
       await TaskActivityService.logStatusChange(taskId, user.id, oldStatus, newStatus, {
         progress: updateData.progress,
         actual_duration: updateData.actual_duration
       })
-
       // Log completion if applicable
       if (newStatus === 'completed') {
         await TaskActivityService.logTaskCompletion(taskId, user.id, {
@@ -351,99 +311,78 @@ export default function TaskDetailPage() {
           estimated_duration: task.estimated_duration
         })
       }
-
       setTask({ ...task, ...updateData })
       toast.success(`Task ${newStatus === 'completed' ? 'completed' : 'updated'}!`)
-
       // Refresh activities
       const { data: activitiesData } = await TaskActivityService.getTaskActivities(taskId)
       setActivities(activitiesData || [])
-
     } catch (err) {
       toast.error('Failed to update task status')
     }
   }
-
   const handleDeleteTask = async () => {
     if (!task || !user) return
-
     try {
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId)
         .eq('user_id', user.id)
-
       if (error) throw error
-
       toast.success('Task deleted successfully!')
       router.push('/tasks')
-
     } catch (err) {
       toast.error('Failed to delete task')
     }
   }
-
   const handleAddComment = async () => {
     if (!newComment.trim() || !user) return
-
     try {
       const { data, error } = await TaskActivityService.addComment(taskId, user.id, newComment)
       if (error) throw error
-
       setComments(prev => [...prev, data!])
       setNewComment('')
       toast.success('Comment added!')
-
     } catch (err) {
       toast.error('Failed to add comment')
     }
   }
-
   const startTimeTracking = async () => {
     setTimeTracking({
       isRunning: true,
       startTime: new Date(),
       elapsedTime: timeTracking.elapsedTime
     })
-
     if (user) {
       await TaskActivityService.logTimeTracking(taskId, user.id, 'started')
     }
   }
-
   const stopTimeTracking = async () => {
     if (timeTracking.startTime) {
       const elapsed = Date.now() - timeTracking.startTime.getTime()
       const newElapsedTime = timeTracking.elapsedTime + elapsed
-
       setTimeTracking({
         isRunning: false,
         startTime: null,
         elapsedTime: newElapsedTime
       })
-
       if (user) {
         await TaskActivityService.logTimeTracking(taskId, user.id, 'stopped', elapsed)
-
         // Refresh activities
         const { data: activitiesData } = await TaskActivityService.getTaskActivities(taskId)
         setActivities(activitiesData || [])
       }
     }
   }
-
   const formatDuration = (milliseconds: number) => {
     const minutes = Math.floor(milliseconds / 60000)
     const hours = Math.floor(minutes / 60)
     const remainingMinutes = minutes % 60
-
     if (hours > 0) {
       return `${hours}h ${remainingMinutes}m`
     }
     return `${minutes}m`
   }
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-red-100 text-red-800'
@@ -453,7 +392,6 @@ export default function TaskDetailPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800'
@@ -463,7 +401,6 @@ export default function TaskDetailPage() {
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-5 h-5 text-green-600" />
@@ -473,17 +410,14 @@ export default function TaskDetailPage() {
       default: return <Clock className="w-5 h-5 text-gray-600" />
     }
   }
-
-  // Show loading during session sync
-  if (sessionLoading || !isSessionReady) {
+  // Show loading during auth
+  if (authLoading || !isReady) {
     return <LoadingScreen text="Loading task details..." />
   }
-
   // Handle unauthenticated state
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view task details" />
   }
-
   // Show loading for task data
   if (loading) {
     return (
@@ -495,7 +429,6 @@ export default function TaskDetailPage() {
       </div>
     )
   }
-
   if (error || !task) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -511,7 +444,6 @@ export default function TaskDetailPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -586,7 +518,6 @@ export default function TaskDetailPage() {
               </Button>
             )}
           </div>
-
           {/* Quick Actions */}
           {task.status === 'pending' && (
             <Button onClick={() => handleStatusUpdate('in_progress', 10)}>
@@ -600,7 +531,6 @@ export default function TaskDetailPage() {
               Complete Task
             </Button>
           )}
-
           {/* More Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -640,7 +570,6 @@ export default function TaskDetailPage() {
           </DropdownMenu>
         </div>
       </div>
-
       {/* Progress Bar */}
       {task.status !== 'completed' && task.progress > 0 && (
         <Card>
@@ -653,7 +582,6 @@ export default function TaskDetailPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
@@ -664,7 +592,6 @@ export default function TaskDetailPage() {
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
-
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -681,7 +608,6 @@ export default function TaskDetailPage() {
                     <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
                   </div>
                 )}
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Status</Label>
@@ -697,7 +623,6 @@ export default function TaskDetailPage() {
                     </Badge>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Category</Label>
@@ -720,7 +645,6 @@ export default function TaskDetailPage() {
                     </div>
                   )}
                 </div>
-
                 {task.estimated_duration && (
                   <div>
                     <Label className="text-sm font-medium">Estimated Duration</Label>
@@ -729,14 +653,12 @@ export default function TaskDetailPage() {
                     </p>
                   </div>
                 )}
-
                 {task.trigger_event && (
                   <div>
                     <Label className="text-sm font-medium">Trigger Event</Label>
                     <p className="text-sm text-muted-foreground mt-1">{task.trigger_event}</p>
                   </div>
                 )}
-
                 {task.completion_triggers && task.completion_triggers.length > 0 && (
                   <div>
                     <Label className="text-sm font-medium">Completion Triggers</Label>
@@ -751,7 +673,6 @@ export default function TaskDetailPage() {
                 )}
               </CardContent>
             </Card>
-
             {/* Quick Stats */}
             <div className="space-y-4">
               <Card>
@@ -785,7 +706,6 @@ export default function TaskDetailPage() {
                   )}
                 </CardContent>
               </Card>
-
               {task.clients && (
                 <Card>
                   <CardHeader className="pb-3">
@@ -823,7 +743,6 @@ export default function TaskDetailPage() {
             </div>
           </div>
         </TabsContent>
-
         {/* Details Tab */}
         <TabsContent value="details" className="space-y-6">
           <Card>
@@ -851,7 +770,6 @@ export default function TaskDetailPage() {
                       placeholder="Enter task title"
                     />
                   </div>
-
                   <div>
                     <Label htmlFor="edit-description">Description</Label>
                     <Textarea
@@ -862,7 +780,6 @@ export default function TaskDetailPage() {
                       rows={4}
                     />
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="edit-priority">Priority</Label>
@@ -878,7 +795,6 @@ export default function TaskDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div>
                       <Label htmlFor="edit-category">Category</Label>
                       <Select value={editForm.category} onValueChange={(value) => setEditForm({ ...editForm, category: value })}>
@@ -895,7 +811,6 @@ export default function TaskDetailPage() {
                       </Select>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="edit-due-date">Due Date</Label>
@@ -906,7 +821,6 @@ export default function TaskDetailPage() {
                         onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="edit-duration">Estimated Duration (minutes)</Label>
                       <Input
@@ -917,7 +831,6 @@ export default function TaskDetailPage() {
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="edit-assignee">Assignee</Label>
@@ -928,7 +841,6 @@ export default function TaskDetailPage() {
                         placeholder="Assign to team member"
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="edit-progress">Progress (%)</Label>
                       <Input
@@ -941,7 +853,6 @@ export default function TaskDetailPage() {
                       />
                     </div>
                   </div>
-
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setIsEditing(false)}>
                       Cancel
@@ -966,14 +877,12 @@ export default function TaskDetailPage() {
                       </p>
                     </div>
                   </div>
-
                   {task.description && (
                     <div>
                       <Label className="text-sm font-medium">Description</Label>
                       <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
                     </div>
                   )}
-
                   <div className="grid grid-cols-3 gap-6">
                     <div>
                       <Label className="text-sm font-medium">Priority</Label>
@@ -996,7 +905,6 @@ export default function TaskDetailPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-6">
                     {task.due_date && (
                       <div>
@@ -1019,7 +927,6 @@ export default function TaskDetailPage() {
                       </div>
                     )}
                   </div>
-
                   <div className="grid grid-cols-3 gap-6">
                     <div>
                       <Label className="text-sm font-medium">Created</Label>
@@ -1065,7 +972,6 @@ export default function TaskDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         {/* Dependencies Tab */}
         <TabsContent value="dependencies" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1114,7 +1020,6 @@ export default function TaskDetailPage() {
                 )}
               </CardContent>
             </Card>
-
             {/* Tasks that depend on this task */}
             <Card>
               <CardHeader>
@@ -1162,7 +1067,6 @@ export default function TaskDetailPage() {
             </Card>
           </div>
         </TabsContent>
-
         {/* Documents Tab */}
         <TabsContent value="documents" className="space-y-6">
           <Card>
@@ -1207,7 +1111,6 @@ export default function TaskDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1242,7 +1145,6 @@ export default function TaskDetailPage() {
                     </Button>
                   </div>
                 </div>
-
                 {/* Comments List */}
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {comments.length > 0 ? (
@@ -1278,7 +1180,6 @@ export default function TaskDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Activity History */}
             <Card>
               <CardHeader>
@@ -1343,7 +1244,6 @@ export default function TaskDetailPage() {
             </Card>
           </div>
         </TabsContent>
-
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1373,7 +1273,6 @@ export default function TaskDetailPage() {
                     <p className="text-sm text-muted-foreground">Actual</p>
                   </div>
                 </div>
-
                 {task.estimated_duration && (task.actual_duration || timeTracking.elapsedTime > 0) && (
                   <div>
                     <div className="flex justify-between text-sm mb-2">
@@ -1393,7 +1292,6 @@ export default function TaskDetailPage() {
                     </p>
                   </div>
                 )}
-
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Progress Rate</span>
@@ -1403,7 +1301,6 @@ export default function TaskDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Task Metrics */}
             <Card>
               <CardHeader>
@@ -1423,21 +1320,18 @@ export default function TaskDetailPage() {
                       {task.priority}
                     </Badge>
                   </div>
-
                   <div className="flex justify-between items-center p-3 border rounded-lg">
                     <span className="text-sm font-medium">Category</span>
                     <span className="text-sm text-muted-foreground capitalize">
                       {task.category.replace('_', ' ')}
                     </span>
                   </div>
-
                   <div className="flex justify-between items-center p-3 border rounded-lg">
                     <span className="text-sm font-medium">Auto-Generated</span>
                     <Badge variant={task.auto_generated ? "default" : "outline"}>
                       {task.auto_generated ? 'Yes' : 'No'}
                     </Badge>
                   </div>
-
                   {task.due_date && (
                     <div className="flex justify-between items-center p-3 border rounded-lg">
                       <span className="text-sm font-medium">Due Date Status</span>
@@ -1446,7 +1340,6 @@ export default function TaskDetailPage() {
                       </Badge>
                     </div>
                   )}
-
                   <div className="flex justify-between items-center p-3 border rounded-lg">
                     <span className="text-sm font-medium">Dependencies</span>
                     <span className="text-sm text-muted-foreground">
@@ -1457,7 +1350,6 @@ export default function TaskDetailPage() {
               </CardContent>
             </Card>
           </div>
-
           {/* Workflow Impact */}
           <Card>
             <CardHeader>
@@ -1478,7 +1370,6 @@ export default function TaskDetailPage() {
                     Tasks that depend on this completion
                   </p>
                 </div>
-
                 <div className="text-center p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-orange-600">{dependencyTasks.length}</div>
                   <p className="text-sm text-muted-foreground">Dependencies</p>
@@ -1486,7 +1377,6 @@ export default function TaskDetailPage() {
                     Tasks that must complete first
                   </p>
                 </div>
-
                 <div className="text-center p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
                     {task.completion_triggers ? task.completion_triggers.length : 0}
@@ -1497,7 +1387,6 @@ export default function TaskDetailPage() {
                   </p>
                 </div>
               </div>
-
               {task.completion_triggers && task.completion_triggers.length > 0 && (
                 <div className="mt-6">
                   <Label className="text-sm font-medium">Completion Triggers</Label>
@@ -1514,7 +1403,6 @@ export default function TaskDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

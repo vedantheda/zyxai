@@ -1,29 +1,30 @@
-# 🏢 Neuronize - Professional Tax Practice Management
+# 🎙️ ZyxAI - AI Voice-Powered Business Automation Platform
 
 ## 🎯 Overview
-Enterprise-grade tax practice management system with AI-powered document processing, client management, and automated workflows.
+Enterprise-grade business automation platform powered by advanced AI voice technology. Streamline operations, automate workflows, and enhance customer interactions through intelligent voice assistants.
 
 ## ✨ Key Features
-- 🤖 **AI Document Processing** - Automated OCR and data extraction
+- 🎙️ **AI Voice Integration** - Vapi and Eleven Labs voice automation
+- 🤖 **Smart Automation** - Intelligent business workflow automation
 - 👥 **Client Management** - Complete client lifecycle management
 - 📄 **Document Management** - Secure document storage and processing
-- 💬 **Communication Hub** - Integrated messaging system
-- 📊 **Pipeline Management** - Visual workflow tracking
-- 💰 **Bookkeeping Integration** - Financial data management
-- 📈 **Analytics & Reporting** - Business intelligence dashboard
+- 💬 **Voice Communication** - AI-powered voice interactions
+- 📊 **Workflow Automation** - Visual automation pipeline management
+- 📈 **Analytics & Insights** - Voice interaction analytics and reporting
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL (via Supabase)
-- Google Vision API key (for AI processing)
+- Vapi API key (for AI voice automation)
+- Eleven Labs API key (for voice synthesis)
 
 ### Installation
 ```bash
 # Clone repository
 git clone <repository-url>
-cd neuronize
+cd zyxai
 
 # Install dependencies
 npm install
@@ -41,7 +42,8 @@ npm run dev
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GOOGLE_VISION_API_KEY=your_google_vision_api_key
+VAPI_API_KEY=your_vapi_api_key
+ELEVEN_LABS_API_KEY=your_eleven_labs_api_key
 OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
@@ -58,7 +60,8 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - **Backend**: Next.js API Routes
 - **Database**: PostgreSQL (Supabase)
 - **Authentication**: Supabase Auth
-- **AI Processing**: Google Vision API + OpenRouter
+- **AI Voice**: Vapi + Eleven Labs Integration
+- **AI Processing**: OpenRouter + Custom AI Models
 - **Styling**: Tailwind CSS + shadcn/ui
 
 ## 🧪 Testing

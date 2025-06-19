@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
-import { ClientBody } from "./ClientBody";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -13,35 +12,37 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 export const metadata: Metadata = {
-  title: "Neuronize - AI-Powered Tax Practice Management",
+  title: "ZyxAI - AI Voice-Powered Business Automation Platform",
   description:
-    "Enterprise-grade tax practice management platform with AI-powered document processing, automated client onboarding, and intelligent tax form auto-fill capabilities.",
+    "Enterprise-grade business automation platform powered by advanced AI voice technology. Streamline operations, automate workflows, and enhance customer interactions through intelligent voice assistants.",
   keywords: [
-    "tax practice management",
-    "AI tax software",
-    "automated tax preparation",
-    "document processing",
-    "tax practice automation",
-    "enterprise tax software",
+    "AI voice automation",
+    "business automation",
+    "voice AI platform",
+    "workflow automation",
+    "AI voice assistants",
+    "enterprise automation",
+    "Vapi integration",
+    "Eleven Labs",
   ],
-  authors: [{ name: "Neuronize" }],
-  creator: "Neuronize",
-  publisher: "Neuronize",
+  authors: [{ name: "ZyxAI" }],
+  creator: "ZyxAI",
+  publisher: "ZyxAI",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://neuronize.app",
-    title: "Neuronize - AI-Powered Tax Practice Management",
+    url: "https://zyxai.app",
+    title: "ZyxAI - AI Voice-Powered Business Automation Platform",
     description:
-      "Enterprise-grade tax practice management platform with AI-powered document processing and automated workflows.",
-    siteName: "Neuronize",
+      "Enterprise-grade business automation platform powered by advanced AI voice technology. Streamline operations and enhance customer interactions.",
+    siteName: "ZyxAI",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Neuronize - AI-Powered Tax Practice Management",
+    title: "ZyxAI - AI Voice-Powered Business Automation Platform",
     description:
-      "Enterprise-grade tax practice management platform with AI-powered document processing and automated workflows.",
-    creator: "@neuronize",
+      "Enterprise-grade business automation platform powered by advanced AI voice technology. Streamline operations and enhance customer interactions.",
+    creator: "@zyxai",
   },
   robots: {
     index: true,
@@ -67,11 +68,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script src="/disable-krisp.js" />
+      </head>
       <body className={`${dmSans.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthProvider>
             <ToastProvider>
-              <ClientBody>{children}</ClientBody>
+              {children}
             </ToastProvider>
           </AuthProvider>
         </ThemeProvider>

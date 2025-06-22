@@ -66,6 +66,20 @@ export const adminNavigation: NavigationItem[] = [
     description: 'Document management'
   },
   {
+    name: 'Document Processing',
+    href: '/documents/processing',
+    icon: FileText,
+    description: 'AI-powered document processing',
+    isNew: true
+  },
+  {
+    name: 'Auto-Fill Forms',
+    href: '/documents/auto-fill',
+    icon: Zap,
+    description: 'Auto-populate tax forms from processed documents',
+    isNew: true
+  },
+  {
     name: 'Tasks',
     href: '/tasks',
     icon: CheckSquare,
@@ -197,6 +211,13 @@ export const extendedAdminNavigation: NavigationItem[] = [
     href: '/documents',
     icon: FileText,
     description: 'Document management'
+  },
+  {
+    name: 'Document Processing',
+    href: '/documents/processing',
+    icon: FileText,
+    description: 'AI-powered document processing',
+    isNew: true
   },
   {
     name: 'Tasks',
@@ -360,8 +381,8 @@ export const findNavigationItem = (href: string, role: 'admin' | 'client' = 'adm
 export const isActiveRoute = (currentPath: string, itemHref: string): boolean => {
   if (currentPath === itemHref) return true
 
-  // Special case for dashboard as home page
-  if (itemHref === '/dashboard' && currentPath === '/') return true
+  // Special case for signin as home page
+  if (itemHref === '/signin' && currentPath === '/') return true
 
   // Check if current path starts with item href (for nested routes)
   if (itemHref !== '/' && currentPath.startsWith(itemHref)) return true

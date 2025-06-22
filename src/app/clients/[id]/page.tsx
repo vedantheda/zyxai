@@ -50,6 +50,8 @@ import { supabase } from '@/lib/supabase'
 import DocumentManager from '@/components/documents/DocumentManager'
 import TaskManager from '@/components/tasks/TaskManager'
 import Link from 'next/link'
+import { PIPELINE_STAGES } from '@/constants/pipeline'
+import { getStageById } from '@/utils/pipeline'
 // SIMPLE cache - no over-engineering
 const cache = new Map<string, { data: any; time: number }>()
 const CACHE_TIME = 2 * 60 * 1000 // 2 minutes only
@@ -73,6 +75,7 @@ interface Client {
   status: 'active' | 'pending' | 'complete' | 'inactive'
   priority: 'high' | 'medium' | 'low'
   progress: number
+  pipeline_stage?: string
   documents_count: number
   last_activity: string
   created_at: string
@@ -168,7 +171,7 @@ export default function ClientDetailPage() {
       const cacheKey = `client-detail-legacy-${clientId}`
       const cached = null // Removed complex caching
       if (cached) {
-        - USING CACHE`)
+        // Using cached data
         setClient(cached.client)
         setClientIntakeData(cached.intakeData)
         setOnboardingSession(cached.onboardingData)
@@ -294,20 +297,36 @@ export default function ClientDetailPage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date'
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch {
+      return 'Invalid Date'
+    }
   }
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date'
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch {
+      return 'Invalid Date'
+    }
   }
   const getCompletionRate = () => {
     if (documentChecklist.length === 0) return 0
@@ -322,6 +341,11 @@ export default function ClientDetailPage() {
       task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed'
     ).length
     return { completed, inProgress, pending, overdue, total: tasks.length }
+  }
+
+  const getPipelineStageInfo = () => {
+    if (!client?.pipeline_stage) return null
+    return getStageById(client.pipeline_stage)
   }
   // Show loading during auth
   if (authLoading || !isReady) {
@@ -383,6 +407,11 @@ export default function ClientDetailPage() {
                 <Badge className={getPriorityColor(client.priority)}>
                   {client.priority} priority
                 </Badge>
+                {getPipelineStageInfo() && (
+                  <Badge className={getPipelineStageInfo()!.color}>
+                    {getPipelineStageInfo()!.title}
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 <div className="flex items-center space-x-1">
@@ -418,9 +447,11 @@ export default function ClientDetailPage() {
             <MessageSquare className="w-4 h-4 mr-2" />
             Contact
           </Button>
-          <Button>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Client
+          <Button asChild>
+            <Link href={`/clients/${clientId}/edit`}>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Client
+            </Link>
           </Button>
         </div>
       </div>

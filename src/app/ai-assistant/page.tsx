@@ -49,8 +49,8 @@ import {
   CheckCircle2,
   Loader2
 } from 'lucide-react'
-import { useAIAssistant } from '@/hooks/useAIAssistant'
-import { useFileStorage } from '@/hooks/useFileStorage'
+import { useAIAssistant } from '@/hooks/features/useAIAssistant'
+import { useFileStorage } from '@/hooks/features/useFileStorage'
 import { useClients, useDocuments } from '@/hooks/useSimpleData'
 import { toast } from 'sonner'
 const quickActions = [
@@ -90,6 +90,8 @@ export default function AIAssistantPage() {
   const [renamingConversation, setRenamingConversation] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [showTypingAnimation, setShowTypingAnimation] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -107,42 +109,13 @@ export default function AIAssistantPage() {
     updateConversationTitle,
     setCurrentConversation,
     quickActions: aiQuickActions,
-    clearError
+    clearError,
+    refreshAIService
   } = useAIAssistant()
   const { uploadFile } = useFileStorage({ autoRefresh: true })
   const { data: clients } = useClients()
   const { data: documents } = useDocuments()
-  // Memoize stats calculation for performance
-  const stats = useMemo(() => [
-    {
-      title: 'Conversations',
-      value: conversations.length.toString(),
-      icon: MessageSquare,
-      change: conversations.length > 0 ? `+${conversations.length}` : '0',
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Messages Today',
-      value: currentConversation?.messages.length.toString() || '0',
-      icon: MessageSquare,
-      change: currentConversation?.messages.length ? `+${currentConversation.messages.length}` : '0',
-      color: 'text-green-600'
-    },
-    {
-      title: 'Documents',
-      value: documents.length.toString(),
-      icon: FileText,
-      change: documents.length > 0 ? `+${documents.length}` : '0',
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Clients',
-      value: clients.length.toString(),
-      icon: Users,
-      change: clients.length > 0 ? `+${clients.length}` : '0',
-      color: 'text-orange-600'
-    },
-  ], [conversations.length, currentConversation?.messages.length, documents.length, clients.length])
+
   const handleSendMessage = useCallback(async () => {
     if (!message.trim() || isLoading) return
     const messageToSend = message.trim()
@@ -313,38 +286,45 @@ export default function AIAssistantPage() {
       })
     }
   }, [])
-  // Format message content with basic markdown-like formatting
+  // Format message content with enhanced markdown-like formatting
   const formatMessageContent = useCallback((content: string) => {
     // Split by lines to preserve line breaks
     const lines = content.split('\n')
     return lines.map((line, lineIndex) => {
-      // Handle bullet points
-      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+      const trimmedLine = line.trim()
+
+      // Handle bullet points (including indented ones)
+      if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
+        const indent = line.length - line.trimStart().length
+        const bulletText = trimmedLine.replace(/^[•\-*]\s*/, '')
+        const formattedText = bulletText.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+
         return (
-          <div key={lineIndex} className="flex items-start space-x-2 my-1">
-            <span className="text-primary mt-1">•</span>
-            <span>{line.replace(/^[•\-*]\s*/, '')}</span>
+          <div key={lineIndex} className="flex items-start space-x-2 my-1" style={{ marginLeft: `${indent * 8}px` }}>
+            <span className="text-primary mt-1 flex-shrink-0">•</span>
+            <span dangerouslySetInnerHTML={{ __html: formattedText }} />
           </div>
         )
       }
+
       // Handle numbered lists
-      if (/^\d+\.\s/.test(line.trim())) {
-        const match = line.match(/^(\d+)\.\s(.*)/)
+      if (/^\d+\.\s/.test(trimmedLine)) {
+        const match = trimmedLine.match(/^(\d+)\.\s(.*)/)
         if (match) {
+          const formattedText = match[2].replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
           return (
             <div key={lineIndex} className="flex items-start space-x-2 my-1">
-              <span className="text-primary font-medium">{match[1]}.</span>
-              <span>{match[2]}</span>
+              <span className="text-primary font-medium flex-shrink-0">{match[1]}.</span>
+              <span dangerouslySetInnerHTML={{ __html: formattedText }} />
             </div>
           )
         }
       }
-      // Handle bold text **text**
-      const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
       // Handle headers (lines starting with #)
-      if (line.trim().startsWith('#')) {
-        const headerLevel = (line.match(/^#+/) || [''])[0].length
-        const headerText = line.replace(/^#+\s*/, '')
+      if (trimmedLine.startsWith('#')) {
+        const headerLevel = (trimmedLine.match(/^#+/) || [''])[0].length
+        const headerText = trimmedLine.replace(/^#+\s*/, '')
         const headerClass = headerLevel === 1 ? 'text-lg font-bold' :
                            headerLevel === 2 ? 'text-base font-semibold' :
                            'text-sm font-medium'
@@ -354,11 +334,16 @@ export default function AIAssistantPage() {
           </div>
         )
       }
+
       // Handle empty lines
-      if (line.trim() === '') {
+      if (trimmedLine === '') {
         return <div key={lineIndex} className="h-2" />
       }
-      // Regular line with bold formatting
+
+      // Handle bold text **text** in regular lines
+      const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+
+      // Regular line with formatting
       return (
         <div
           key={lineIndex}
@@ -428,9 +413,9 @@ export default function AIAssistantPage() {
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center">
             <Brain className="w-8 h-8 mr-3 text-primary" />
-            Neuronize AI Assistant
+            ZyxAI Assistant
           </h1>
-          <p className="text-muted-foreground">Your intelligent tax practice assistant powered by advanced AI</p>
+          <p className="text-muted-foreground">Your intelligent business automation assistant powered by advanced AI</p>
         </div>
         <div className="flex items-center space-x-2">
           <Badge variant="outline" className="text-green-600 border-green-600">
@@ -455,28 +440,61 @@ export default function AIAssistantPage() {
               Error
             </Badge>
           )}
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+            title="Configure AI API Key"
+          >
             <Settings className="w-4 h-4" />
           </Button>
         </div>
       </div>
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                <span className={stat.color}>{stat.change}</span> total
+
+      {/* API Key Configuration */}
+      {showApiKeyInput && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <Settings className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-3">
+              <p className="font-medium">Configure OpenRouter API Key for Real AI Responses</p>
+              <p className="text-sm text-muted-foreground">
+                Get a free API key from <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">openrouter.ai</a> to enable real AI responses with DeepSeek V3 (completely free model).
               </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div className="flex space-x-2">
+                <Input
+                  type="password"
+                  placeholder="sk-or-v1-your-api-key-here"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => {
+                    if (apiKey.trim()) {
+                      localStorage.setItem('openrouter_api_key', apiKey.trim())
+                      refreshAIService()
+                      setShowApiKeyInput(false)
+                      toast.success('API key saved! Real AI responses are now enabled.', {
+                        description: 'Using DeepSeek V3 - the most powerful free AI model',
+                        duration: 4000,
+                      })
+                    }
+                  }}
+                  disabled={!apiKey.trim()}
+                >
+                  Save & Enable AI
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ⚠️ For testing only. In production, use environment variables.
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+
       {/* Upload Progress */}
       {uploadProgress > 0 && uploadProgress < 100 && (
         <Alert>
@@ -574,15 +592,16 @@ export default function AIAssistantPage() {
                     key={action.title}
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start h-auto p-3"
+                    className="w-full justify-start h-auto p-3 text-left"
                     onClick={() => handleQuickAction(action.action)}
                     disabled={isLoading}
+                    title={action.description}
                   >
-                    <div className="flex items-start space-x-2">
-                      <action.icon className={`w-4 h-4 ${action.color} mt-0.5`} />
-                      <div className="text-left">
-                        <div className="font-medium text-xs">{action.title}</div>
-                        <div className="text-xs text-muted-foreground">{action.description}</div>
+                    <div className="flex items-start space-x-3 min-w-0">
+                      <action.icon className={`w-4 h-4 ${action.color} flex-shrink-0 mt-0.5`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm mb-1">{action.title}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{action.description}</div>
                       </div>
                     </div>
                   </Button>
@@ -663,9 +682,9 @@ export default function AIAssistantPage() {
                 {!currentConversation && (
                   <div className="text-center py-8">
                     <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Welcome to Neuronize AI</h3>
+                    <h3 className="text-lg font-medium mb-2">Welcome to ZyxAI</h3>
                     <p className="text-muted-foreground mb-6">
-                      Start a new conversation to begin chatting with your AI tax assistant
+                      Start a new conversation to begin chatting with your AI business automation assistant
                     </p>
                     <Button
                       onClick={() => {
@@ -843,7 +862,7 @@ export default function AIAssistantPage() {
                 <Zap className="w-5 h-5 mr-2 text-primary" />
                 AI Capabilities
               </CardTitle>
-              <CardDescription>What your Neuronize AI assistant can help you with</CardDescription>
+              <CardDescription>What your ZyxAI assistant can help you with</CardDescription>
             </div>
             <Button variant="ghost" size="sm">
               <HelpCircle className="w-4 h-4" />
@@ -887,8 +906,8 @@ export default function AIAssistantPage() {
               <span className="font-medium text-sm">Powered by Advanced AI</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Neuronize AI uses state-of-the-art language models and specialized tax knowledge to provide accurate,
-              professional assistance for your tax practice. All data is processed securely and confidentially.
+              ZyxAI uses state-of-the-art language models and specialized business automation knowledge to provide accurate,
+              professional assistance for your business operations. All data is processed securely and confidentially.
             </p>
           </div>
         </CardContent>

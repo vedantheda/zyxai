@@ -174,13 +174,10 @@ export function ConversationList({
                             )}
                           </div>
                         </div>
-                        <p className={`text-sm text-muted-foreground truncate mb-1 ${
-                          hasUnread ? 'font-medium' : ''
-                        }`}>
-                          {conversation.subject}
-                        </p>
                         {conversation.lastMessage && (
-                          <p className="text-xs text-muted-foreground truncate mb-1">
+                          <p className={`text-sm text-muted-foreground truncate mb-1 ${
+                            hasUnread ? 'font-medium' : ''
+                          }`}>
                             {typeof conversation.lastMessage === 'string'
                               ? conversation.lastMessage
                               : conversation.lastMessage.content}

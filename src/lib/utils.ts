@@ -11,14 +11,21 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 export function formatDate(date: string | Date): string {
-  const d = new Date(date)
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  try {
+    const d = new Date(date)
+    if (isNaN(d.getTime())) {
+      return 'Invalid Date'
+    }
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return 'Invalid Date'
+  }
 }
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -29,10 +36,17 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 export function formatDateOnly(date: string | Date): string {
-  const d = new Date(date)
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+  try {
+    const d = new Date(date)
+    if (isNaN(d.getTime())) {
+      return 'Invalid Date'
+    }
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch {
+    return 'Invalid Date'
+  }
 }

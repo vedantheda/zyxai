@@ -90,17 +90,22 @@ export default function NewClientPage() {
         notes: formData.notes.trim() || null
       }
 
+      console.log('🔍 NewClient: Calling addClient with data:', clientData)
       const result = await addClient(clientData)
+      console.log('🔍 NewClient: addClient result:', result)
 
       if (result.error) {
+        console.error('🔍 NewClient: addClient returned error:', result.error)
         throw new Error(result.error)
       }
 
+      console.log('🔍 NewClient: Client created successfully, redirecting to:', `/clients/${result.data.id}`)
       toast.success('Client created successfully!')
       router.push(`/clients/${result.data.id}`)
     } catch (error) {
-      console.error('Error creating client:', error)
-      toast.error('Failed to create client. Please try again.')
+      console.error('🔍 NewClient: Exception in handleSubmit:', error)
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred'
+      toast.error(`Failed to create client: ${errorMessage}`)
     } finally {
       setLoading(false)
     }

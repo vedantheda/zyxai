@@ -84,10 +84,10 @@ export default function SignInPage() {
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <Brain className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Neuronize</h1>
+            <h1 className="text-2xl font-bold text-foreground">ZyxAI</h1>
           </div>
           <h2 className="text-xl font-semibold text-foreground">Welcome back</h2>
-          <p className="text-muted-foreground">Sign in to your tax practice management platform</p>
+          <p className="text-muted-foreground">Sign in to your AI voice automation platform</p>
         </div>
 
         {/* Sign In Form */}

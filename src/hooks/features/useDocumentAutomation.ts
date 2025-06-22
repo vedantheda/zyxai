@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useDocuments } from './useSupabaseData'
+import { useDocuments } from '../useSupabaseData'
 export interface DocumentRequirement {
   id: string
   category: string

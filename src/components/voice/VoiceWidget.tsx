@@ -486,26 +486,90 @@ export function VoiceWidget({
         setError(null)
         setTranscript([])
 
-        // Create assistant configuration with disabled problematic features
+        // Create advanced assistant configuration with optimized settings
         const assistantOverrides = {
           // Disable audio processing features that cause worklet errors
           backgroundDenoisingEnabled: false,
           backgroundSound: 'off',
 
-          // Use basic transcriber without advanced features
+          // Advanced transcriber configuration
           transcriber: {
             provider: 'deepgram',
             model: 'nova-2',
             language: 'en-US',
-            // Disable advanced features that might use worklets
-            enableUniversalStreamingApi: false
+            enableUniversalStreamingApi: true,
+            fallbackPlan: {
+              transcribers: [
+                { provider: 'assembly-ai', model: 'best' },
+                { provider: 'azure', enableUniversalStreamingApi: false }
+              ]
+            }
           },
 
-          // Basic voice settings without advanced processing
+          // Enhanced voice settings with fallback
           voice: {
-            provider: 'openai',
-            voiceId: 'nova'
-          }
+            provider: 'azure',
+            voiceId: 'en-US-AndrewNeural',
+            speed: 1.0,
+            fallbackPlan: {
+              voices: [
+                { provider: 'openai', voiceId: 'onyx' },
+                { provider: 'playht', voiceId: 'matthew' }
+              ]
+            }
+          },
+
+          // Advanced analysis and recording
+          analysisPlan: {
+            summaryPlan: {
+              enabled: true,
+              prompt: "Summarize this conversation, focusing on key points and outcomes."
+            },
+            successEvaluationPlan: {
+              enabled: true,
+              prompt: "Evaluate if this conversation achieved its intended goals.",
+              rubric: "NumericScale"
+            },
+            structuredDataPlan: {
+              enabled: true,
+              prompt: "Extract key information: customer name, contact details, main request, resolution status."
+            }
+          },
+
+          artifactPlan: {
+            recordingEnabled: true,
+            recordingFormat: "mp3"
+          },
+
+          // Optimized speaking settings
+          stopSpeakingPlan: {
+            numWords: 0,
+            voiceSeconds: 0.3,
+            backoffSeconds: 1
+          },
+
+          startSpeakingPlan: {
+            waitSeconds: 0.5,
+            smartEndpointingEnabled: true
+          },
+
+          // Advanced hooks for better conversation flow
+          hooks: [
+            {
+              on: "assistant.speech.interrupted",
+              do: [{
+                type: "say",
+                exact: ["Sorry, go ahead", "Please continue", "I'm listening"]
+              }]
+            },
+            {
+              on: "pipeline-error",
+              do: [{
+                type: "say",
+                exact: ["I'm having a technical issue. Let me try again.", "One moment please, reconnecting..."]
+              }]
+            }
+          ]
         }
 
         console.log('🔧 Using assistant overrides to disable problematic features:', assistantOverrides)

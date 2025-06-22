@@ -22,7 +22,17 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const aiService = user ? new AIService(user.id) : null
+  const [aiService, setAiService] = useState<AIService | null>(null)
+
+  // Initialize AI service when user changes or API key changes
+  useEffect(() => {
+    if (user) {
+      const service = new AIService(user.id)
+      setAiService(service)
+    } else {
+      setAiService(null)
+    }
+  }, [user])
   const loadConversations = useCallback(async () => {
     if (!user) return
     try {
@@ -325,6 +335,13 @@ What would you like help with today?`,
   const clearError = useCallback(() => {
     setError(null)
   }, [])
+
+  const refreshAIService = useCallback(() => {
+    if (user) {
+      const service = new AIService(user.id)
+      setAiService(service)
+    }
+  }, [user])
   // Quick action helpers
   const quickActions = {
     analyzeLatestDocuments: useCallback(async () => {
@@ -367,6 +384,7 @@ What would you like help with today?`,
     quickActions,
     // Utilities
     refreshConversations: loadConversations,
+    refreshAIService,
     hasActiveConversation: !!currentConversation,
     messageCount: currentConversation?.messages.length || 0,
     // Service access

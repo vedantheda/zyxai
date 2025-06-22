@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Brain, FileText, Zap } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { Loader2, Bot, Phone, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -18,19 +17,10 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const { user, loading } = useAuth()
   const searchParams = useSearchParams()
 
   // Get redirect URL from query params
-  const redirectTo = searchParams.get('redirectTo') || '/pipeline'
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!loading && user) {
-      console.log('🔐 Login: User already authenticated, redirecting to:', redirectTo)
-      router.replace(redirectTo)
-    }
-  }, [user, loading, router, redirectTo])
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,30 +28,21 @@ export default function LoginPage() {
     setError('')
 
     try {
-      console.log('🔐 Login: Attempting sign in for:', email)
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
-        console.error('🔐 Login: Error:', error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
       if (data.user) {
-        console.log('🔐 Login: Success, redirecting to:', redirectTo)
-        // Use window.location.href for reliable redirect (avoids hydration issues)
-        setTimeout(() => {
-          console.log('🔐 Login: Performing redirect with full page reload')
-          window.location.href = redirectTo
-        }, 800)
+        router.push(redirectTo)
       }
     } catch (err) {
-      console.error('🔐 Login: Exception:', err)
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
@@ -73,13 +54,13 @@ export default function LoginPage() {
         {/* Logo and Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Brain className="w-6 h-6 text-primary-foreground" />
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Zap className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Neuronize</h1>
+            <h1 className="text-2xl font-bold text-gray-900">ZyxAI</h1>
           </div>
-          <h2 className="text-xl font-semibold text-foreground">Welcome back</h2>
-          <p className="text-muted-foreground">Sign in to your tax practice management platform</p>
+          <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
+          <p className="text-gray-600">Sign in to your AI voice automation platform</p>
         </div>
 
         {/* Login Form */}
@@ -128,13 +109,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading || loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Initializing auth...
-                  </>
-                ) : isLoading ? (
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Signing in...
@@ -151,10 +127,10 @@ export default function LoginPage() {
                   Forgot your password?
                 </Link>
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link href="/register" className="text-primary hover:underline">
-                  Sign up
+                <Link href="/signup/organization" className="text-blue-600 hover:underline">
+                  Create your organization
                 </Link>
               </p>
             </div>
@@ -166,22 +142,22 @@ export default function LoginPage() {
         {/* Features Preview */}
         <div className="grid grid-cols-3 gap-4 pt-4">
           <div className="text-center space-y-2">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-              <Brain className="w-4 h-4 text-primary" />
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto">
+              <Bot className="w-4 h-4 text-blue-600" />
             </div>
-            <p className="text-xs text-muted-foreground">AI Processing</p>
+            <p className="text-xs text-gray-500">AI Agents</p>
           </div>
           <div className="text-center space-y-2">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-              <FileText className="w-4 h-4 text-primary" />
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto">
+              <Phone className="w-4 h-4 text-blue-600" />
             </div>
-            <p className="text-xs text-muted-foreground">Document Management</p>
+            <p className="text-xs text-gray-500">Voice Calls</p>
           </div>
           <div className="text-center space-y-2">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-              <Zap className="w-4 h-4 text-primary" />
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto">
+              <Zap className="w-4 h-4 text-blue-600" />
             </div>
-            <p className="text-xs text-muted-foreground">Automation</p>
+            <p className="text-xs text-gray-500">Automation</p>
           </div>
         </div>
       </div>

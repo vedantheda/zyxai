@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { CreateAgentDialog } from '@/components/agents/CreateAgentDialog'
 
 export default function AgentsPage() {
   const router = useRouter()
@@ -34,6 +35,7 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(true)
   const [agents, setAgents] = useState<AIAgent[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   useEffect(() => {
     if (organization && !orgLoading) {
@@ -75,6 +77,12 @@ export default function AgentsPage() {
     } catch (err) {
       setError('Failed to toggle agent status')
     }
+  }
+
+  const handleAgentCreated = (newAgent: any) => {
+    // Add the new agent to the list
+    setAgents(prev => [newAgent, ...prev])
+    setError(null)
   }
 
   const getAgentTypeIcon = (type: string) => {
@@ -135,9 +143,13 @@ export default function AgentsPage() {
             <Phone className="mr-2 h-4 w-4" />
             Demo Center
           </Button>
-          <Button onClick={() => router.push('/onboarding/niche')}>
+          <Button variant="outline" onClick={() => router.push('/setup')}>
+            <Bot className="mr-2 h-4 w-4" />
+            Deploy Template
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Add New Agent
+            Create Custom Agent
           </Button>
         </div>
       </div>
@@ -157,10 +169,16 @@ export default function AgentsPage() {
             <p className="text-gray-600 mb-6">
               Create your first AI agent to start automating your business calls
             </p>
-            <Button onClick={() => router.push('/onboarding/niche')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Agent
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => router.push('/setup')}>
+                <Bot className="mr-2 h-4 w-4" />
+                Deploy Template
+              </Button>
+              <Button variant="outline" onClick={() => setShowCreateDialog(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Custom Agent
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -345,6 +363,13 @@ export default function AgentsPage() {
           </Card>
         </div>
       )}
+
+      {/* Create Agent Dialog */}
+      <CreateAgentDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onAgentCreated={handleAgentCreated}
+      />
     </div>
   )
 }

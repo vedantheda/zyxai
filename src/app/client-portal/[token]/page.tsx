@@ -1,6 +1,6 @@
 'use client'
 import { useParams } from 'next/navigation'
-import ClientPortal from '@/components/storage/ClientPortal'
+import ClientPortal from '@/components/features/documents/storage/ClientPortal'
 export default function ClientPortalPage() {
   const params = useParams()
   const token = params.token as string

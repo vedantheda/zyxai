@@ -2,6 +2,7 @@
 export * from './useAIAssistant'
 export * from './useAdminDashboard'
 export * from './useBookkeeping'
+export * from './useCalendarData'
 export * from './useCompliance'
 export * from './useDeadlineAlerts'
 export * from './useDocumentAutomation'

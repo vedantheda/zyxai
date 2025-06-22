@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
     }
     const body: CreateConversationRequest = await request.json()
     // Validate required fields
-    if (!body.clientId || !body.subject) {
+    if (!body.clientId) {
       return NextResponse.json(
-        { error: 'Missing required fields: clientId, subject' },
+        { error: 'Missing required field: clientId' },
         { status: 400, headers: corsHeaders }
       )
     }

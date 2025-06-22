@@ -89,7 +89,7 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
           <Brain className="w-5 h-5 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">Neuronize</h1>
+          <h1 className="text-xl font-bold text-foreground">ZyxAI</h1>
           {userRole === 'client' && (
             <p className="text-xs text-muted-foreground">Client Portal</p>
           )}

@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createClient } from '@supabase/supabase-js'
+
+// Create admin client for server-side operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,13 +57,13 @@ export async function POST(request: NextRequest) {
     // Mark all unread messages as read for conversations where user is a participant
     const { error: updateError } = await supabaseAdmin
       .from('messages')
-      .update({ 
-        is_read: true, 
-        read_at: new Date().toISOString() 
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString()
       })
       .eq('is_read', false)
       .neq('sender_id', user.id) // Don't mark own messages as read
-      .in('conversation_id', 
+      .in('conversation_id',
         supabaseAdmin
           .from('conversations')
           .select('id')

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useMessages } from '@/hooks/features/useMessages'
+import { useUserPresence } from '@/hooks/features/useUserPresence'
 import { ConversationList } from '@/components/features/messages/ConversationList'
 import { MessageChat } from '@/components/features/messages/MessageChat'
 import { CreateConversationDialog } from '@/components/features/messages/CreateConversationDialog'
@@ -29,6 +30,9 @@ export default function MessagesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [sending, setSending] = useState(false)
 
+  // Initialize user presence tracking
+  useUserPresence()
+
 
 
   // Use the real messages hook
@@ -39,10 +43,16 @@ export default function MessagesPage() {
     loading: messagesLoading,
     error,
     typingUsers,
+    hasMoreMessages,
     loadConversation,
     loadMessages,
+    loadMoreMessages,
     createConversation,
     sendMessage,
+    editMessage,
+    deleteMessage,
+    addReaction,
+    removeReaction,
     markAsRead,
     sendTypingIndicator,
     setCurrentConversation,
@@ -100,11 +110,10 @@ export default function MessagesPage() {
   }
 
   // Handle creating new conversation
-  const handleCreateConversation = async (clientId: string, subject: string, initialMessage?: string) => {
+  const handleCreateConversation = async (clientId: string, initialMessage?: string) => {
     try {
       const conversation = await createConversation({
         clientId,
-        subject,
         priority: 'normal',
         initialMessage
       })
@@ -172,7 +181,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
           <div>
@@ -204,36 +213,44 @@ export default function MessagesPage() {
           </div>
       </div>
 
-
-
       {/* Main Chat Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-250px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Conversation List */}
-          <div className="lg:col-span-1 h-full">
-            <ConversationList
-              conversations={conversations}
-              currentConversation={currentConversation}
-              onSelectConversation={handleSelectConversation}
-              onCreateConversation={!isClient ? () => setShowCreateDialog(true) : undefined}
-              loading={messagesLoading}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-            />
+          <div className="lg:col-span-1">
+            <div className="h-[500px] lg:h-[600px]">
+              <ConversationList
+                conversations={conversations}
+                currentConversation={currentConversation}
+                onSelectConversation={handleSelectConversation}
+                onCreateConversation={!isClient ? () => setShowCreateDialog(true) : undefined}
+                loading={messagesLoading}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+              />
+            </div>
           </div>
 
           {/* Chat Area */}
-          <div className="lg:col-span-2 h-full">
+          <div className="lg:col-span-2">
+            <div className="h-[500px] lg:h-[600px]">
             <MessageChat
               conversation={currentConversation}
               messages={messages}
               currentUserId={user?.id || ''}
               onSendMessage={handleSendMessage}
               onMarkAsRead={handleMarkAsRead}
+              onLoadMoreMessages={loadMoreMessages}
+              onAddReaction={addReaction}
+              onRemoveReaction={removeReaction}
+              onEditMessage={editMessage}
+              onDeleteMessage={deleteMessage}
               loading={messagesLoading}
               sending={sending}
+              hasMoreMessages={hasMoreMessages}
               typingUsers={typingUsers}
               onTypingIndicator={sendTypingIndicator}
             />
+            </div>
           </div>
       </div>
 

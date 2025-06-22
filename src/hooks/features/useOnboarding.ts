@@ -153,7 +153,7 @@ export function useOnboarding() {
       addToast({
         type: 'success',
         title: 'Onboarding completed!',
-        description: 'Welcome to Neuronize! Your client profile has been created.',
+        description: 'Welcome to ZyxAI! Your client profile has been created.',
       })
       return result
     } catch (err) {

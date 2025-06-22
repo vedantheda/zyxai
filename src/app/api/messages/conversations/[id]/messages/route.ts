@@ -67,20 +67,59 @@ export async function POST(
         { status: 401, headers: corsHeaders }
       )
     }
-    const body = await request.json()
-    // Validate required fields
-    if (!body.content || body.content.trim() === '') {
-      return NextResponse.json(
-        { error: 'Message content is required' },
-        { status: 400, headers: corsHeaders }
-      )
-    }
     const { id } = await params
-    const messageRequest: SendMessageRequest = {
-      conversationId: id,
-      content: body.content,
-      messageType: body.messageType || 'text',
-      metadata: body.metadata || {}
+    const contentType = request.headers.get('content-type')
+
+    let messageRequest: SendMessageRequest
+
+    if (contentType?.includes('multipart/form-data')) {
+      // Handle FormData (with file attachments)
+      const formData = await request.formData()
+      const content = formData.get('content') as string
+      const messageType = formData.get('messageType') as string || 'text'
+      const metadata = formData.get('metadata') as string
+
+      // Validate required fields
+      if (!content || content.trim() === '') {
+        return NextResponse.json(
+          { error: 'Message content is required' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+
+      // Extract file attachments
+      const attachments: File[] = []
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith('attachment_') && value instanceof File) {
+          attachments.push(value)
+        }
+      }
+
+      messageRequest = {
+        conversationId: id,
+        content: content.trim(),
+        messageType: messageType as any,
+        attachments,
+        metadata: metadata ? JSON.parse(metadata) : {}
+      }
+    } else {
+      // Handle JSON (text only)
+      const body = await request.json()
+
+      // Validate required fields
+      if (!body.content || body.content.trim() === '') {
+        return NextResponse.json(
+          { error: 'Message content is required' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+
+      messageRequest = {
+        conversationId: id,
+        content: body.content,
+        messageType: body.messageType || 'text',
+        metadata: body.metadata || {}
+      }
     }
     const messageService = new MessageService(user.id)
     const message = await messageService.sendMessage(messageRequest)

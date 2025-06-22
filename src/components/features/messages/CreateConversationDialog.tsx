@@ -18,7 +18,7 @@ interface Client {
 interface CreateConversationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreateConversation: (clientId: string, subject: string, initialMessage?: string) => Promise<void>
+  onCreateConversation: (clientId: string, initialMessage?: string) => Promise<void>
 }
 export function CreateConversationDialog({
   open,
@@ -28,7 +28,6 @@ export function CreateConversationDialog({
   const { session } = useAuth()
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [subject, setSubject] = useState('')
   const [initialMessage, setInitialMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,36 +41,62 @@ export function CreateConversationDialog({
   const loadClients = async () => {
     try {
       setLoading(true)
+      console.log('🔄 Loading clients...', {
+        sessionExists: !!session,
+        accessToken: !!session?.access_token,
+        sessionKeys: session ? Object.keys(session) : [],
+        sessionStructure: session ? {
+          access_token: !!session.access_token,
+          refresh_token: !!session.refresh_token,
+          user: !!session.user
+        } : null
+      })
+
       const response = await fetch('/api/clients', {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
         }
       })
-      console.log('📡 Clients API response:', { status: response.status, ok: response.ok })
+
+      console.log('📡 Clients API response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      })
+
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Clients data received:', {
+          clientsCount: data.clients?.length || 0,
+          clients: data.clients
+        })
         setClients(data.clients || [])
       } else {
         const errorData = await response.json().catch(() => ({}))
+        console.error('❌ Clients API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        })
         setClients([]) // Set empty array on error
       }
     } catch (error) {
-      } finally {
+      console.error('❌ Clients fetch error:', error)
+      setClients([])
+    } finally {
       setLoading(false)
     }
   }
   const handleCreate = async () => {
-    if (!selectedClient || !subject.trim()) return
+    if (!selectedClient) return
     try {
       setCreating(true)
       await onCreateConversation(
         selectedClient.id,
-        subject.trim(),
         initialMessage.trim() || undefined
       )
       // Reset form
       setSelectedClient(null)
-      setSubject('')
       setInitialMessage('')
       setSearchQuery('')
     } catch (error) {
@@ -81,7 +106,6 @@ export function CreateConversationDialog({
   }
   const handleClose = () => {
     setSelectedClient(null)
-    setSubject('')
     setInitialMessage('')
     setSearchQuery('')
     onOpenChange(false)
@@ -170,8 +194,27 @@ export function CreateConversationDialog({
                     Loading clients...
                   </div>
                 ) : filteredClients.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
-                    {searchQuery ? 'No clients found' : 'No clients available'}
+                  <div className="p-6 text-center space-y-3">
+                    <div className="text-muted-foreground">
+                      {searchQuery ? 'No clients found matching your search' : 'No clients available'}
+                    </div>
+                    {!searchQuery && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          You need to add clients before starting conversations.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            window.open('/clients/new', '_blank')
+                          }}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Add New Client
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-2 space-y-1">
@@ -211,15 +254,6 @@ export function CreateConversationDialog({
           {selectedClient && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
-                <Input
-                  id="subject"
-                  placeholder="e.g., 2024 Tax Return Questions"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="message">Initial Message (Optional)</Label>
                 <Textarea
                   id="message"
@@ -239,7 +273,7 @@ export function CreateConversationDialog({
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={!selectedClient || !subject.trim() || creating}
+            disabled={!selectedClient || creating}
           >
             {creating ? (
               <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />

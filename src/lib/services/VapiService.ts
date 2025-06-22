@@ -1,6 +1,15 @@
 import { VapiClient } from '@vapi-ai/server-sdk'
 import VapiToolsService from './VapiToolsService'
-import { VapiAdvancedAssistantConfig, VapiCallConfig, VapiPhoneNumberConfig, VapiPresetConfigs } from '@/lib/types/VapiAdvancedConfig'
+import {
+  VapiAdvancedAssistantConfig,
+  VapiCallConfig,
+  VapiPhoneNumberConfig,
+  VapiPresetConfigs,
+  VapiSquadConfig,
+  VapiWorkflowConfig,
+  VapiWorkflowNode,
+  VapiTool
+} from '@/lib/types/VapiAdvancedConfig'
 
 // Initialize Vapi client with proper token
 const vapi = new VapiClient({
@@ -301,16 +310,42 @@ export class VapiService {
   static async createAssistant(assistantData: {
     name: string
     firstMessage: string
-    systemPrompt: string
+    systemPrompt?: string
     voiceId?: string
     model?: string
     temperature?: number
     agentType?: string
-  }): Promise<{ assistant: VapiAssistant | null; error: string | null }> {
+    voice?: any
+    transcriber?: any
+  }): Promise<{ id: string; error?: string } | { assistant: VapiAssistant | null; error: string | null }> {
     try {
       console.log(`🤖 Creating Vapi assistant: ${assistantData.name}`)
 
-      // Get tools for this agent type
+      // Handle both old and new API formats
+      if (assistantData.voice && assistantData.transcriber) {
+        // New API format - direct config
+        const assistantConfig: any = {
+          name: assistantData.name,
+          firstMessage: assistantData.firstMessage,
+          model: assistantData.model || {
+            provider: 'openai',
+            model: 'gpt-4o',
+            temperature: 0.7,
+            messages: assistantData.systemPrompt ? [{
+              role: 'system',
+              content: assistantData.systemPrompt
+            }] : []
+          },
+          voice: assistantData.voice,
+          transcriber: assistantData.transcriber
+        }
+
+        const assistant = await vapi.assistants.create(assistantConfig)
+        console.log(`✅ Vapi assistant created: ${assistant.id}`)
+        return { id: assistant.id }
+      }
+
+      // Legacy API format
       const tools = VapiToolsService.getToolsForAgentType(assistantData.agentType || 'general')
       console.log(`🔧 Adding ${tools.length} tools for agent type: ${assistantData.agentType}`)
 
@@ -321,12 +356,12 @@ export class VapiService {
           provider: 'openai',
           model: assistantData.model || 'gpt-4o',
           temperature: assistantData.temperature || 0.7,
-          messages: [
+          messages: assistantData.systemPrompt ? [
             {
               role: 'system',
               content: assistantData.systemPrompt
             }
-          ]
+          ] : []
           // Note: Tools are disabled in development due to HTTPS requirement
           // tools: tools.length > 0 ? tools : undefined
         },
@@ -360,6 +395,81 @@ export class VapiService {
       console.error('❌ Error creating Vapi assistant:', error)
       const errorMessage = error?.message || error?.body?.message || 'Failed to create assistant'
       return { assistant: null, error: errorMessage }
+    }
+  }
+
+  /**
+   * Delete a Vapi assistant
+   */
+  static async deleteAssistant(assistantId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log(`🗑️ Deleting Vapi assistant: ${assistantId}`)
+      await vapi.assistants.delete(assistantId)
+      console.log(`✅ Vapi assistant deleted: ${assistantId}`)
+      return { success: true }
+    } catch (error: any) {
+      console.error('❌ Error deleting Vapi assistant:', error)
+      const errorMessage = error?.message || error?.body?.message || 'Failed to delete assistant'
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  /**
+   * Create a phone call using VAPI
+   */
+  static async createCall(callData: {
+    assistantId: string
+    phoneNumber: string
+    name?: string
+  }): Promise<{ success: boolean; call?: any; error?: string }> {
+    try {
+      console.log(`📞 Creating VAPI call to ${callData.phoneNumber} with assistant ${callData.assistantId}`)
+
+      const callConfig = {
+        assistantId: callData.assistantId,
+        phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID, // Your VAPI phone number
+        customer: {
+          number: callData.phoneNumber,
+          name: callData.name || 'Contact'
+        }
+      }
+
+      const call = await vapi.calls.create(callConfig)
+
+      console.log(`✅ VAPI call created: ${call.id}`)
+      return { success: true, call }
+    } catch (error: any) {
+      console.error('❌ Error creating VAPI call:', error)
+      const errorMessage = error?.message || error?.body?.message || 'Failed to create call'
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  /**
+   * Get call details from VAPI
+   */
+  static async getCall(callId: string): Promise<{ success: boolean; call?: any; error?: string }> {
+    try {
+      const call = await vapi.calls.get(callId)
+      return { success: true, call }
+    } catch (error: any) {
+      console.error('❌ Error fetching VAPI call:', error)
+      const errorMessage = error?.message || error?.body?.message || 'Failed to fetch call'
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  /**
+   * List calls from VAPI
+   */
+  static async listCalls(limit: number = 100): Promise<{ success: boolean; calls?: any[]; error?: string }> {
+    try {
+      const calls = await vapi.calls.list({ limit })
+      return { success: true, calls: calls || [] }
+    } catch (error: any) {
+      console.error('❌ Error listing VAPI calls:', error)
+      const errorMessage = error?.message || error?.body?.message || 'Failed to list calls'
+      return { success: false, error: errorMessage }
     }
   }
 
@@ -710,14 +820,38 @@ export class VapiService {
   static async createPhoneNumber(data: {
     provider: 'vapi' | 'twilio' | 'byo-phone-number'
     assistantId?: string
+    squadId?: string
+    workflowId?: string
     credentialId?: string
     number?: string
+    name?: string
+    inboundSettings?: {
+      maxCallDurationMinutes?: number
+      recordingEnabled?: boolean
+      voicemailDetectionEnabled?: boolean
+      emergencyTransferEnabled?: boolean
+      priorityRouting?: boolean
+    }
+    hooks?: Array<{
+      on: 'call.ringing' | 'call.ending'
+      do: Array<{
+        type: 'transfer'
+        destination: {
+          type: 'number' | 'sip'
+          number?: string
+          sipUri?: string
+          callerId?: string
+        }
+      }>
+    }>
+    serverUrl?: string
   }): Promise<{ phoneNumber: VapiPhoneNumber | null; error: string | null }> {
     try {
       console.log(`📞 Creating phone number with provider: ${data.provider}`)
 
       const phoneNumberConfig: any = {
-        provider: data.provider
+        provider: data.provider,
+        name: data.name
       }
 
       // Add required fields based on provider
@@ -725,12 +859,31 @@ export class VapiService {
         phoneNumberConfig.credentialId = data.credentialId
       }
 
+      // Configuration options (only one should be set)
       if (data.assistantId) {
         phoneNumberConfig.assistantId = data.assistantId
+      } else if (data.squadId) {
+        phoneNumberConfig.squadId = data.squadId
+      } else if (data.workflowId) {
+        phoneNumberConfig.workflowId = data.workflowId
+      } else if (data.serverUrl) {
+        phoneNumberConfig.server = { url: data.serverUrl }
+        phoneNumberConfig.assistantId = null
+        phoneNumberConfig.squadId = null
       }
 
       if (data.number) {
         phoneNumberConfig.number = data.number
+      }
+
+      // Advanced inbound settings
+      if (data.inboundSettings) {
+        phoneNumberConfig.inboundSettings = data.inboundSettings
+      }
+
+      // Phone number hooks
+      if (data.hooks) {
+        phoneNumberConfig.hooks = data.hooks
       }
 
       const phoneNumber = await vapi.phoneNumbers.create(phoneNumberConfig)
@@ -741,6 +894,288 @@ export class VapiService {
       console.error('❌ Error creating phone number:', error)
       const errorMessage = error?.message || error?.body?.message || 'Failed to create phone number'
       return { phoneNumber: null, error: errorMessage }
+    }
+  }
+
+  /**
+   * Update phone number configuration
+   */
+  static async updatePhoneNumber(
+    phoneNumberId: string,
+    updates: {
+      assistantId?: string | null
+      squadId?: string | null
+      workflowId?: string | null
+      serverUrl?: string
+      hooks?: Array<{
+        on: 'call.ringing' | 'call.ending'
+        do: Array<{
+          type: 'transfer'
+          destination: {
+            type: 'number' | 'sip'
+            number?: string
+            sipUri?: string
+            callerId?: string
+          }
+        }>
+      }>
+    }
+  ): Promise<{ success: boolean; error: string | null }> {
+    try {
+      console.log(`📞 Updating phone number: ${phoneNumberId}`)
+
+      const updateData: any = {}
+
+      // Configuration options (only one should be set)
+      if (updates.assistantId !== undefined) {
+        updateData.assistantId = updates.assistantId
+        updateData.squadId = null
+        updateData.workflowId = null
+        updateData.server = null
+      } else if (updates.squadId !== undefined) {
+        updateData.squadId = updates.squadId
+        updateData.assistantId = null
+        updateData.workflowId = null
+        updateData.server = null
+      } else if (updates.workflowId !== undefined) {
+        updateData.workflowId = updates.workflowId
+        updateData.assistantId = null
+        updateData.squadId = null
+        updateData.server = null
+      } else if (updates.serverUrl) {
+        updateData.server = { url: updates.serverUrl }
+        updateData.assistantId = null
+        updateData.squadId = null
+        updateData.workflowId = null
+      }
+
+      if (updates.hooks) {
+        updateData.hooks = updates.hooks
+      }
+
+      await vapi.phoneNumbers.update(phoneNumberId, updateData)
+
+      console.log(`✅ Phone number updated: ${phoneNumberId}`)
+      return { success: true, error: null }
+    } catch (error: any) {
+      console.error('❌ Error updating phone number:', error)
+      return { success: false, error: error.message || 'Failed to update phone number' }
+    }
+  }
+
+  // ===== SQUADS =====
+
+  /**
+   * Create a Squad for multi-assistant conversations
+   */
+  static async createSquad(squadConfig: VapiSquadConfig): Promise<{ squad: any | null; error: string | null }> {
+    try {
+      console.log('🤝 Creating Vapi Squad with multiple assistants')
+
+      const squad = await vapi.squads.create({
+        members: squadConfig.members.map(member => ({
+          assistant: member.assistant,
+          assistantId: member.assistantId,
+          assistantDestinations: member.assistantDestinations
+        }))
+      })
+
+      console.log(`✅ Squad created: ${squad.id}`)
+      return { squad, error: null }
+    } catch (error: any) {
+      console.error('❌ Error creating squad:', error)
+      return { squad: null, error: error.message || 'Failed to create squad' }
+    }
+  }
+
+  /**
+   * Get all squads
+   */
+  static async getSquads(): Promise<{ squads: any[]; error: string | null }> {
+    try {
+      const squads = await vapi.squads.list()
+      return { squads, error: null }
+    } catch (error: any) {
+      console.error('Error fetching squads:', error)
+      return { squads: [], error: 'Failed to fetch squads' }
+    }
+  }
+
+  // ===== WORKFLOWS =====
+
+  /**
+   * Create a Workflow for complex conversation flows
+   */
+  static async createWorkflow(workflowConfig: VapiWorkflowConfig & { name: string }): Promise<{ workflow: any | null; error: string | null }> {
+    try {
+      console.log('🔄 Creating Vapi Workflow')
+
+      const workflow = await vapi.workflows.create({
+        name: workflowConfig.name,
+        nodes: workflowConfig.nodes,
+        edges: workflowConfig.edges
+      })
+
+      console.log(`✅ Workflow created: ${workflow.id}`)
+      return { workflow, error: null }
+    } catch (error: any) {
+      console.error('❌ Error creating workflow:', error)
+      return { workflow: null, error: error.message || 'Failed to create workflow' }
+    }
+  }
+
+  /**
+   * Get all workflows
+   */
+  static async getWorkflows(): Promise<{ workflows: any[]; error: string | null }> {
+    try {
+      const workflows = await vapi.workflows.list()
+      return { workflows, error: null }
+    } catch (error: any) {
+      console.error('Error fetching workflows:', error)
+      return { workflows: [], error: 'Failed to fetch workflows' }
+    }
+  }
+
+  /**
+   * Update a workflow
+   */
+  static async updateWorkflow(workflowId: string, updates: any): Promise<{ success: boolean; error: string | null }> {
+    try {
+      await vapi.workflows.update(workflowId, updates)
+      return { success: true, error: null }
+    } catch (error: any) {
+      console.error('Error updating workflow:', error)
+      return { success: false, error: error.message || 'Failed to update workflow' }
+    }
+  }
+
+  /**
+   * Delete a workflow
+   */
+  static async deleteWorkflow(workflowId: string): Promise<{ success: boolean; error: string | null }> {
+    try {
+      await vapi.workflows.delete(workflowId)
+      return { success: true, error: null }
+    } catch (error: any) {
+      console.error('Error deleting workflow:', error)
+      return { success: false, error: error.message || 'Failed to delete workflow' }
+    }
+  }
+
+  /**
+   * Update a squad
+   */
+  static async updateSquad(squadId: string, updates: any): Promise<{ success: boolean; error: string | null }> {
+    try {
+      await vapi.squads.update(squadId, updates)
+      return { success: true, error: null }
+    } catch (error: any) {
+      console.error('Error updating squad:', error)
+      return { success: false, error: error.message || 'Failed to update squad' }
+    }
+  }
+
+  /**
+   * Delete a squad
+   */
+  static async deleteSquad(squadId: string): Promise<{ success: boolean; error: string | null }> {
+    try {
+      await vapi.squads.delete(squadId)
+      return { success: true, error: null }
+    } catch (error: any) {
+      console.error('Error deleting squad:', error)
+      return { success: false, error: error.message || 'Failed to delete squad' }
+    }
+  }
+
+  // ===== ADVANCED CALL OPERATIONS =====
+
+  /**
+   * Create call with Squad configuration
+   */
+  static async createSquadCall(callData: {
+    squadId: string
+    phoneNumberId: string
+    customerNumber: string
+    customerName?: string
+    metadata?: Record<string, any>
+  }): Promise<{ call: VapiCall | null; error: string | null }> {
+    try {
+      const call = await vapi.calls.create({
+        squadId: callData.squadId,
+        phoneNumberId: callData.phoneNumberId,
+        customer: {
+          number: callData.customerNumber,
+          name: callData.customerName
+        },
+        metadata: callData.metadata
+      })
+
+      return { call: call as VapiCall, error: null }
+    } catch (error: any) {
+      console.error('Error creating squad call:', error)
+      return { call: null, error: error.message || 'Failed to create squad call' }
+    }
+  }
+
+  /**
+   * Create call with Workflow configuration
+   */
+  static async createWorkflowCall(callData: {
+    workflowId: string
+    phoneNumberId?: string
+    customerNumber: string
+    customerName?: string
+    metadata?: Record<string, any>
+    variableValues?: Record<string, string | number | boolean>
+  }): Promise<{ call: VapiCall | null; error: string | null }> {
+    try {
+      const call = await vapi.calls.create({
+        workflowId: callData.workflowId,
+        phoneNumberId: callData.phoneNumberId,
+        customer: {
+          number: callData.customerNumber,
+          name: callData.customerName
+        },
+        metadata: callData.metadata,
+        assistantOverrides: callData.variableValues ? {
+          variableValues: callData.variableValues
+        } : undefined
+      })
+
+      return { call: call as VapiCall, error: null }
+    } catch (error: any) {
+      console.error('Error creating workflow call:', error)
+      return { call: null, error: error.message || 'Failed to create workflow call' }
+    }
+  }
+
+  /**
+   * Create call with dynamic assistant configuration
+   */
+  static async createDynamicCall(callData: {
+    assistant: VapiAdvancedAssistantConfig
+    phoneNumberId?: string
+    customerNumber: string
+    customerName?: string
+    metadata?: Record<string, any>
+  }): Promise<{ call: VapiCall | null; error: string | null }> {
+    try {
+      const call = await vapi.calls.create({
+        assistant: callData.assistant,
+        phoneNumberId: callData.phoneNumberId,
+        customer: {
+          number: callData.customerNumber,
+          name: callData.customerName
+        },
+        metadata: callData.metadata
+      })
+
+      return { call: call as VapiCall, error: null }
+    } catch (error: any) {
+      console.error('Error creating dynamic call:', error)
+      return { call: null, error: error.message || 'Failed to create dynamic call' }
     }
   }
 

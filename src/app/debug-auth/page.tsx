@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthProvider'
 
 export default function DebugAuthPage() {
-  const { user, session, loading } = useAuth()
+  const { user, session, loading, isAuthenticated, profile } = useAuth()
 
   return (
     <div className="p-8 space-y-6">

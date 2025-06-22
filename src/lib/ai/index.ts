@@ -140,9 +140,11 @@ export const AIUtils = {
 export const AI_CONSTANTS = {
   // Model configurations
   MODELS: {
-    CLAUDE_SONNET: 'anthropic/claude-3-sonnet',
-    GPT_4: 'openai/gpt-4-turbo',
-    LLAMA_3: 'meta-llama/llama-3-70b-instruct'
+    DEEPSEEK_V3: 'deepseek/deepseek-chat:free', // Best free model - 671B parameters
+    QWEN_72B: 'qwen/qwen-2.5-72b-instruct:free', // Alternative free model - 72B parameters
+    CLAUDE_SONNET: 'anthropic/claude-3-sonnet', // Paid model
+    GPT_4: 'openai/gpt-4-turbo', // Paid model
+    LLAMA_3: 'meta-llama/llama-3-70b-instruct' // Paid model
   },
   // Processing limits
   MAX_TOKENS: 4000,

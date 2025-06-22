@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useMessages } from '@/hooks/useMessages'
+import { useMessages } from '@/hooks/features/useMessages'
 import { GlobalSidebar } from '@/components/layout/GlobalSidebar'
 import {
   LogOut,

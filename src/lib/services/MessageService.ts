@@ -153,7 +153,6 @@ export class MessageService {
         .insert({
           client_id: request.clientId,
           admin_id: this.userId,
-          subject: request.subject,
           priority: request.priority || 'normal'
         })
         .select()
@@ -285,9 +284,32 @@ export class MessageService {
 
       // Handle file attachments if any
       if (request.attachments && request.attachments.length > 0) {
-        // File attachments will be implemented in future version
-        if (process.env.NODE_ENV === 'development') {
-          console.log('File attachments not yet implemented')
+        try {
+          const { fileUploadService } = await import('@/lib/services/fileUpload')
+
+          // Upload files and create attachment records
+          for (const file of request.attachments) {
+            const uploadResult = await fileUploadService.uploadFile(file, 'message-attachments', 'messages')
+
+            // Create attachment record
+            await supabaseAdmin
+              .from('message_attachments')
+              .insert({
+                message_id: message.id,
+                filename: uploadResult.name,
+                original_filename: uploadResult.name,
+                file_size: uploadResult.size,
+                content_type: uploadResult.type,
+                storage_path: uploadResult.path,
+                file_url: uploadResult.url,
+                is_image: uploadResult.type.startsWith('image/'),
+                uploaded_by: this.userId,
+                created_at: new Date().toISOString()
+              })
+          }
+        } catch (error) {
+          console.error('Error uploading attachments:', error)
+          // Continue without attachments rather than failing the entire message
         }
       }
 
@@ -337,6 +359,133 @@ export class MessageService {
     } catch (error) {
       console.error('Error getting unread count:', error)
       return 0
+    }
+  }
+
+  async editMessage(messageId: string, content: string): Promise<Message> {
+    try {
+      // Verify the user owns this message
+      const { data: existingMessage, error: fetchError } = await supabaseAdmin
+        .from('messages')
+        .select('*')
+        .eq('id', messageId)
+        .eq('sender_id', this.userId)
+        .single()
+
+      if (fetchError || !existingMessage) {
+        throw new Error('Message not found or you do not have permission to edit it')
+      }
+
+      // Update the message
+      const { data: message, error: updateError } = await supabaseAdmin
+        .from('messages')
+        .update({
+          content: content.trim(),
+          is_edited: true,
+          edited_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      return this.mapMessage(message)
+    } catch (error) {
+      console.error('Error editing message:', error)
+      throw error
+    }
+  }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    try {
+      // Verify the user owns this message
+      const { data: existingMessage, error: fetchError } = await supabaseAdmin
+        .from('messages')
+        .select('*')
+        .eq('id', messageId)
+        .eq('sender_id', this.userId)
+        .single()
+
+      if (fetchError || !existingMessage) {
+        throw new Error('Message not found or you do not have permission to delete it')
+      }
+
+      // Delete message attachments first
+      await supabaseAdmin
+        .from('message_attachments')
+        .delete()
+        .eq('message_id', messageId)
+
+      // Delete message reactions
+      await supabaseAdmin
+        .from('message_reactions')
+        .delete()
+        .eq('message_id', messageId)
+
+      // Delete the message
+      const { error: deleteError } = await supabaseAdmin
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+
+      if (deleteError) throw deleteError
+    } catch (error) {
+      console.error('Error deleting message:', error)
+      throw error
+    }
+  }
+
+  async addReaction(messageId: string, emoji: string): Promise<any> {
+    try {
+      // Check if reaction already exists
+      const { data: existingReaction } = await supabaseAdmin
+        .from('message_reactions')
+        .select('*')
+        .eq('message_id', messageId)
+        .eq('user_id', this.userId)
+        .eq('emoji', emoji)
+        .single()
+
+      if (existingReaction) {
+        return existingReaction // Already reacted with this emoji
+      }
+
+      // Add new reaction
+      const { data: reaction, error } = await supabaseAdmin
+        .from('message_reactions')
+        .insert({
+          message_id: messageId,
+          user_id: this.userId,
+          emoji: emoji,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return reaction
+    } catch (error) {
+      console.error('Error adding reaction:', error)
+      throw error
+    }
+  }
+
+  async removeReaction(messageId: string, emoji: string): Promise<void> {
+    try {
+      const { error } = await supabaseAdmin
+        .from('message_reactions')
+        .delete()
+        .eq('message_id', messageId)
+        .eq('user_id', this.userId)
+        .eq('emoji', emoji)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error removing reaction:', error)
+      throw error
     }
   }
 
@@ -419,7 +568,6 @@ export class MessageService {
       id: data.id,
       clientId: data.client_id,
       adminId: data.admin_id,
-      subject: data.subject,
       status: data.status,
       priority: data.priority,
       lastMessageAt: new Date(data.last_message_at),

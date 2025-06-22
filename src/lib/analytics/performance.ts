@@ -3,6 +3,7 @@
  * Tracks Core Web Vitals and custom metrics
  */
 
+import React from 'react'
 import { getCLS, getFID, getFCP, getLCP, getTTFB, Metric } from 'web-vitals'
 
 interface PerformanceMetric {
@@ -36,9 +37,9 @@ class PerformanceMonitor {
 
   private initialize() {
     if (this.isInitialized) return
-    
+
     this.isInitialized = true
-    
+
     // Track Core Web Vitals
     getCLS(this.handleMetric.bind(this))
     getFID(this.handleMetric.bind(this))
@@ -48,10 +49,10 @@ class PerformanceMonitor {
 
     // Track navigation timing
     this.trackNavigationTiming()
-    
+
     // Track resource timing
     this.trackResourceTiming()
-    
+
     // Track custom performance marks
     this.trackCustomMarks()
   }
@@ -77,7 +78,7 @@ class PerformanceMonitor {
 
     window.addEventListener('load', () => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
-      
+
       if (navigation) {
         const metrics = {
           dns: navigation.domainLookupEnd - navigation.domainLookupStart,
@@ -107,7 +108,7 @@ class PerformanceMonitor {
       list.getEntries().forEach((entry) => {
         if (entry.entryType === 'resource') {
           const resource = entry as PerformanceResourceTiming
-          
+
           // Track slow resources
           if (resource.duration > 1000) {
             this.trackCustomMetric('resource.slow', resource.duration, {
@@ -168,7 +169,7 @@ class PerformanceMonitor {
     if ('performance' in window && performance.mark && performance.measure) {
       performance.mark(`${name}-end`)
       performance.measure(name, `${name}-start`, `${name}-end`)
-      
+
       const measure = performance.getEntriesByName(name, 'measure')[0]
       if (measure) {
         this.trackCustomMetric(`timing.${name}`, measure.duration)
@@ -251,7 +252,7 @@ class PerformanceMonitor {
         session: this.getSessionId(),
         user: this.getUserId(),
       })
-      
+
       navigator.sendBeacon('/api/analytics/performance', data)
     }
   }

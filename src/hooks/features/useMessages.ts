@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { useBrowserNotifications } from './useBrowserNotifications'
 import {
   Conversation,
   Message,
@@ -21,6 +22,7 @@ interface UseMessagesOptions {
 }
 export function useMessages(options: UseMessagesOptions = {}) {
   const { session } = useAuth()
+  const { showMessageNotification, shouldShowNotification } = useBrowserNotifications()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -74,6 +76,23 @@ export function useMessages(options: UseMessagesOptions = {}) {
           }
         }
       })
+
+      // Show browser notification if page is not visible
+      if (shouldShowNotification()) {
+        showMessageNotification(
+          message.sender?.name || 'Unknown',
+          message.content,
+          () => {
+            // Focus the conversation when notification is clicked
+            if (currentConversation?.id !== message.conversationId) {
+              const conversation = conversations.find(c => c.id === message.conversationId)
+              if (conversation) {
+                setCurrentConversation(conversation)
+              }
+            }
+          }
+        )
+      }
     }
   }, [session?.user?.id, currentConversation?.id, conversations])
   const handleMessageUpdate = useCallback((message: Message) => {
@@ -400,29 +419,173 @@ export function useMessages(options: UseMessagesOptions = {}) {
       setLoading(false)
     }
   }, [apiCall, currentConversation?.id])
-  // Mark conversation as read
+  // Mark conversation as read (throttled to prevent spam)
+  const markAsReadTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map())
+
   const markAsRead = useCallback(async (conversationId: string) => {
+    // Clear existing timeout for this conversation
+    const existingTimeout = markAsReadTimeouts.current.get(conversationId)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+
+    // Set new timeout to throttle API calls
+    const timeoutId = setTimeout(async () => {
+      try {
+        await apiCall(`/conversations/${conversationId}/mark-read`, {
+          method: 'POST',
+        })
+        // Update unread count in conversation
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === conversationId ? { ...c, unreadCount: 0 } : c
+          )
+        )
+        // Mark messages as read
+        setMessages(prev =>
+          prev.map(m =>
+            m.conversationId === conversationId && !m.isRead
+              ? { ...m, isRead: true, readAt: new Date() }
+              : m
+          )
+        )
+
+        // Remove timeout from map
+        markAsReadTimeouts.current.delete(conversationId)
+      } catch (err) {
+        markAsReadTimeouts.current.delete(conversationId)
+      }
+    }, 1000) // Throttle to max 1 call per second per conversation
+
+    markAsReadTimeouts.current.set(conversationId, timeoutId)
+  }, [apiCall])
+  // Edit message
+  const editMessage = useCallback(async (messageId: string, content: string) => {
     try {
-      await apiCall(`/conversations/${conversationId}/mark-read`, {
-        method: 'POST',
+      const updatedMessage: Message = await apiCall(`/messages/${messageId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ content }),
       })
-      // Update unread count in conversation
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === conversationId ? { ...c, unreadCount: 0 } : c
-        )
-      )
-      // Mark messages as read
+
+      // Update message in local state
       setMessages(prev =>
-        prev.map(m =>
-          m.conversationId === conversationId && !m.isRead
-            ? { ...m, isRead: true, readAt: new Date() }
-            : m
-        )
+        prev.map(m => m.id === messageId ? updatedMessage : m)
+      )
+
+      return updatedMessage
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to edit message')
+      throw err
+    }
+  }, [apiCall])
+
+  // Delete message
+  const deleteMessage = useCallback(async (messageId: string) => {
+    try {
+      await apiCall(`/messages/${messageId}`, {
+        method: 'DELETE',
+      })
+
+      // Remove message from local state
+      setMessages(prev => prev.filter(m => m.id !== messageId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete message')
+      throw err
+    }
+  }, [apiCall])
+
+  // Add reaction
+  const addReaction = useCallback(async (messageId: string, emoji: string) => {
+    try {
+      await apiCall(`/messages/${messageId}/reactions`, {
+        method: 'POST',
+        body: JSON.stringify({ emoji }),
+      })
+
+      // Update message reactions in local state
+      setMessages(prev =>
+        prev.map(m => {
+          if (m.id === messageId) {
+            const reactions = m.reactions || []
+            const existingReaction = reactions.find(r => r.emoji === emoji)
+
+            if (existingReaction) {
+              // Update existing reaction
+              return {
+                ...m,
+                reactions: reactions.map(r =>
+                  r.emoji === emoji
+                    ? { ...r, count: r.count + 1, hasReacted: true }
+                    : r
+                )
+              }
+            } else {
+              // Add new reaction
+              return {
+                ...m,
+                reactions: [...reactions, {
+                  emoji,
+                  count: 1,
+                  users: [session?.user?.id || ''],
+                  hasReacted: true
+                }]
+              }
+            }
+          }
+          return m
+        })
       )
     } catch (err) {
-      }
+      setError(err instanceof Error ? err.message : 'Failed to add reaction')
+      throw err
+    }
+  }, [apiCall, session?.user?.id])
+
+  // Remove reaction
+  const removeReaction = useCallback(async (messageId: string, emoji: string) => {
+    try {
+      await apiCall(`/messages/${messageId}/reactions?emoji=${encodeURIComponent(emoji)}`, {
+        method: 'DELETE',
+      })
+
+      // Update message reactions in local state
+      setMessages(prev =>
+        prev.map(m => {
+          if (m.id === messageId) {
+            const reactions = m.reactions || []
+            return {
+              ...m,
+              reactions: reactions.map(r =>
+                r.emoji === emoji
+                  ? { ...r, count: Math.max(0, r.count - 1), hasReacted: false }
+                  : r
+              ).filter(r => r.count > 0)
+            }
+          }
+          return m
+        })
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove reaction')
+      throw err
+    }
   }, [apiCall])
+
+  // Load more messages
+  const loadMoreMessages = useCallback(async (conversationId: string, before?: string) => {
+    try {
+      setLoading(true)
+      const result: PaginatedMessages = await loadMessages(conversationId, 50, before)
+      setHasMoreMessages(result.hasMore)
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more messages')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [loadMessages])
+
   // Load message stats
   const loadStats = useCallback(async () => {
     try {
@@ -435,8 +598,15 @@ export function useMessages(options: UseMessagesOptions = {}) {
   useEffect(() => {
     if (!session?.user?.id) return
 
-    // Create real-time channel for messages
-    const channel = supabase.channel('messages-realtime')
+    // Clean up existing channel first
+    if (realtimeChannelRef.current) {
+      supabase.removeChannel(realtimeChannelRef.current)
+      realtimeChannelRef.current = null
+    }
+
+    // Create unique channel name to avoid conflicts
+    const channelName = `messages-${session.user.id}-${Date.now()}`
+    const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -513,7 +683,6 @@ export function useMessages(options: UseMessagesOptions = {}) {
             id: updatedConversation.id,
             clientId: updatedConversation.client_id,
             adminId: updatedConversation.admin_id,
-            subject: updatedConversation.subject,
             status: updatedConversation.status,
             priority: updatedConversation.priority,
             lastMessageAt: new Date(updatedConversation.last_message_at),
@@ -539,7 +708,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
         realtimeChannelRef.current = null
       }
     }
-  }, [session?.user?.id, conversations, currentConversation?.id, handleNewMessage, handleMessageUpdate, handleConversationUpdate, handleTypingUpdate])
+  }, [session?.user?.id])
 
   // Auto-refresh functionality
   useEffect(() => {
@@ -565,7 +734,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
     }
   }, [session?.access_token, loadConversations, loadStats])
 
-  // Cleanup
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (refreshIntervalRef.current) {
@@ -575,11 +744,16 @@ export function useMessages(options: UseMessagesOptions = {}) {
       // Clear all typing timeouts
       typingTimeouts.forEach(timeout => clearTimeout(timeout))
 
+      // Clear all mark-as-read timeouts
+      markAsReadTimeouts.current.forEach(timeout => clearTimeout(timeout))
+      markAsReadTimeouts.current.clear()
+
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current)
+        realtimeChannelRef.current = null
       }
     }
-  }, [typingTimeouts])
+  }, [])
   return {
     // State
     conversations,
@@ -595,8 +769,13 @@ export function useMessages(options: UseMessagesOptions = {}) {
     loadConversations,
     loadConversation,
     loadMessages,
+    loadMoreMessages,
     createConversation,
     sendMessage,
+    editMessage,
+    deleteMessage,
+    addReaction,
+    removeReaction,
     updateConversation,
     markAsRead,
     loadStats,

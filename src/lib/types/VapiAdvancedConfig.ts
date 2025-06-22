@@ -9,7 +9,7 @@ export interface VapiAdvancedAssistantConfig {
   firstMessage: string
   endCallMessage?: string
   firstMessageMode?: 'assistant-speaks-first' | 'assistant-speaks-first-with-model-generated-message' | 'assistant-waits-for-user'
-  
+
   // Model Configuration
   model: {
     provider: 'openai' | 'anthropic' | 'google' | 'deep-seek' | 'custom-llm'
@@ -78,7 +78,7 @@ export interface VapiAdvancedAssistantConfig {
     waitSeconds?: number
     smartEndpointingEnabled?: boolean
   }
-  
+
   stopSpeakingPlan?: {
     numWords?: number
     voiceSeconds?: number
@@ -127,20 +127,47 @@ export interface VapiAdvancedAssistantConfig {
     tags?: string[]
   }
 
-  // Assistant Hooks
+  // Keypad Input Configuration
+  keypadInputPlan?: {
+    enabled?: boolean
+    delimiters?: '#' | '*' | ''
+    timeoutSeconds?: number // 0.5-10 seconds
+  }
+
+  // Assistant Hooks for advanced automation
   hooks?: Array<{
-    on: 'assistant.speech.interrupted' | 'call.ending' | 'call.started' | string
+    on: 'call.ending' | 'call.ringing' | 'assistant.speech.interrupted' | 'pipeline-error'
+    filters?: Array<{
+      type: 'oneOf'
+      key: string
+      oneOf: string[]
+    }>
     do: Array<{
-      type: 'say' | 'transfer' | 'hangup' | string
+      type: 'transfer' | 'say' | 'function'
+      destination?: {
+        type: 'number' | 'sip' | 'assistant'
+        number?: string
+        sipUri?: string
+        assistantName?: string
+        callerId?: string
+        extension?: string
+        message?: string
+      }
       exact?: string[]
-      [key: string]: any
+      function?: {
+        name: string
+        parameters?: Record<string, any>
+      }
     }>
   }>
+
+  // Variable support for dynamic content
+  variableValues?: Record<string, string | number | boolean>
 
   // Security & Compliance
   hipaaEnabled?: boolean
   recordingEnabled?: boolean
-  
+
   // Server Configuration
   serverUrl?: string
   credentials?: Array<{
@@ -158,9 +185,12 @@ export interface VapiAdvancedAssistantConfig {
 }
 
 export interface VapiTool {
-  type: 'function' | 'dtmf' | 'endCall' | 'transferCall' | 'query'
+  type: 'function' | 'dtmf' | 'endCall' | 'transferCall' | 'query' | 'sms' | 'mcp' |
+        'google.sheets.row.append' | 'slack.message.send' | 'apiRequest'
   async?: boolean
-  
+  name?: string
+  description?: string
+
   // Function tool
   function?: {
     name: string
@@ -171,13 +201,13 @@ export interface VapiTool {
       required?: string[]
     }
   }
-  
+
   // Server configuration
   server?: {
     url: string
     secret?: string
   }
-  
+
   // Transfer tool destinations
   destinations?: Array<{
     type: 'number' | 'assistant'
@@ -186,8 +216,9 @@ export interface VapiTool {
     description?: string
     numberE164CheckEnabled?: boolean
     message?: string
+    extension?: string
   }>
-  
+
   // Query tool knowledge bases
   knowledgeBases?: Array<{
     name: string
@@ -196,32 +227,120 @@ export interface VapiTool {
     description: string
     fileIds: string[]
   }>
+
+  // SMS tool metadata
+  metadata?: {
+    from?: string // Phone number for SMS
+    [key: string]: any
+  }
+
+  // API Request tool configuration
+  url?: string
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  headers?: Record<string, string>
+  body?: Record<string, any>
+
+  // OAuth2 authentication for tools
+  credentials?: Array<{
+    provider: 'webhook' | string
+    authenticationPlan?: {
+      type: 'oauth2' | 'bearer' | 'api-key'
+      url?: string
+      clientId?: string
+      clientSecret?: string
+      scope?: string
+      token?: string
+      apiKey?: string
+    }
+  }>
 }
 
 export interface VapiCallConfig {
   // Basic call configuration
   phoneNumberId?: string
   assistantId?: string
+  workflowId?: string
+  squadId?: string
   customer?: {
     number: string
     name?: string
     email?: string
   }
-  
+
   // Assistant overrides for this specific call
-  assistantOverrides?: Partial<VapiAdvancedAssistantConfig>
-  
+  assistantOverrides?: Partial<VapiAdvancedAssistantConfig> & {
+    variableValues?: Record<string, string | number | boolean>
+  }
+
   // Call metadata
   name?: string
   metadata?: Record<string, any>
-  
+
   // Squad configuration for multi-assistant calls
-  squad?: {
-    members: Array<{
-      assistant: VapiAdvancedAssistantConfig
-      conditions?: string[]
+  squad?: VapiSquadConfig
+
+  // Workflow configuration
+  workflow?: VapiWorkflowConfig
+}
+
+export interface VapiSquadConfig {
+  members: Array<{
+    assistant?: VapiAdvancedAssistantConfig
+    assistantId?: string
+    assistantDestinations?: Array<{
+      type: 'assistant'
+      assistantName: string
+      message?: string
+      description?: string
     }>
+  }>
+}
+
+export interface VapiWorkflowConfig {
+  nodes: Array<VapiWorkflowNode>
+  edges?: Array<{
+    from: string
+    to: string
+    condition?: string
+  }>
+}
+
+export interface VapiWorkflowNode {
+  id: string
+  type: 'conversation' | 'transfer' | 'endCall' | 'condition'
+
+  // Conversation node properties
+  firstMessage?: string
+  systemPrompt?: string
+  model?: VapiAdvancedAssistantConfig['model']
+  voice?: VapiAdvancedAssistantConfig['voice']
+  transcriber?: VapiAdvancedAssistantConfig['transcriber']
+
+  // Extract variables from conversation
+  extractVariables?: Array<{
+    variableName: string
+    dataType: 'String' | 'Number' | 'Boolean' | 'Integer'
+    extractionPrompt: string
+    enums?: string[] // For String type variables
+  }>
+
+  // Transfer node properties
+  phoneNumber?: string
+  transferPlan?: {
+    message?: string
+    summary?: string
   }
+
+  // End call node properties
+  endMessage?: string
+
+  // Condition node properties
+  conditions?: Array<{
+    variable: string
+    operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan'
+    value: string | number | boolean
+    nextNode: string
+  }>
 }
 
 export interface VapiPhoneNumberConfig {
@@ -230,14 +349,14 @@ export interface VapiPhoneNumberConfig {
   credentialId?: string
   number?: string
   name?: string
-  
+
   // Inbound configuration
   inboundConfig?: {
     assistantId: string
     squadId?: string
   }
-  
-  // Outbound configuration  
+
+  // Outbound configuration
   outboundConfig?: {
     assistantId: string
     maxConcurrentCalls?: number
@@ -260,7 +379,7 @@ export const VapiPresetConfigs = {
       backoffSeconds: 1
     }
   },
-  
+
   salesOutbound: {
     analysisPlan: {
       summaryPlan: { enabled: true, prompt: 'Summarize this sales call, focusing on lead qualification and next steps.' },
@@ -276,13 +395,13 @@ export const VapiPresetConfigs = {
       metadata: { department: 'sales' }
     }
   },
-  
+
   appointmentScheduler: {
     analysisPlan: {
       summaryPlan: { enabled: true, prompt: 'Summarize this appointment scheduling call.' },
-      structuredDataPlan: { 
-        enabled: true, 
-        prompt: 'Extract appointment details: date, time, service type, customer preferences.' 
+      structuredDataPlan: {
+        enabled: true,
+        prompt: 'Extract appointment details: date, time, service type, customer preferences.'
       }
     },
     hooks: [{

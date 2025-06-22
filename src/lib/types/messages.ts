@@ -12,6 +12,13 @@ export interface MessageAttachment {
   uploadedBy: string
   createdAt: Date
 }
+export interface MessageReaction {
+  emoji: string
+  count: number
+  users: string[]
+  hasReacted: boolean
+}
+
 export interface Message {
   id: string
   conversationId: string
@@ -20,6 +27,7 @@ export interface Message {
   content: string
   messageType: 'text' | 'file' | 'system' | 'mixed'
   attachments: MessageAttachment[]
+  reactions?: MessageReaction[]
   isRead: boolean
   readAt?: Date
   isEdited: boolean
@@ -40,7 +48,6 @@ export interface Conversation {
   id: string
   clientId: string
   adminId: string
-  subject: string
   status: 'active' | 'closed' | 'archived'
   priority: 'low' | 'normal' | 'high' | 'urgent'
   lastMessageAt: Date
@@ -85,7 +92,6 @@ export interface MessageParticipant {
 }
 export interface CreateConversationRequest {
   clientId: string
-  subject: string
   priority?: 'low' | 'normal' | 'high' | 'urgent'
   initialMessage?: string
 }
@@ -93,11 +99,10 @@ export interface SendMessageRequest {
   conversationId: string
   content: string
   messageType?: 'text' | 'file' | 'system' | 'mixed'
-  attachments?: any[]
+  attachments?: File[]
   metadata?: Record<string, any>
 }
 export interface UpdateConversationRequest {
-  subject?: string
   status?: 'active' | 'closed' | 'archived'
   priority?: 'low' | 'normal' | 'high' | 'urgent'
 }

@@ -31,7 +31,7 @@ export default function SignUpPage() {
   useEffect(() => {
     if (!loading && user) {
       console.log('🔐 SignUp: User already authenticated, redirecting')
-      router.replace('/pipeline')
+      router.replace('/dashboard')
     }
   }, [user, loading, router])
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +70,7 @@ export default function SignUpPage() {
         }
       })
       if (error) {
+        console.error('🔐 SignUp: Supabase error:', error)
         // Provide more specific error messages
         if (error.message.includes('already registered')) {
           setError('An account with this email already exists. Please sign in instead.')
@@ -77,8 +78,10 @@ export default function SignUpPage() {
           setError('Please enter a valid email address.')
         } else if (error.message.includes('password')) {
           setError('Password must be at least 6 characters long.')
+        } else if (error.message.includes('Database error')) {
+          setError('Database error occurred. Please contact support if this persists.')
         } else {
-          setError(error.message || 'Failed to create account. Please try again.')
+          setError(`Signup failed: ${error.message}`)
         }
         setIsLoading(false)
         return
@@ -87,7 +90,7 @@ export default function SignUpPage() {
         console.log('🔐 SignUp: Success, redirecting based on role:', formData.role)
         // Use window.location.href for reliable redirect (avoids hydration issues)
         setTimeout(() => {
-          const destination = formData.role === 'client' ? '/onboarding' : '/pipeline'
+          const destination = formData.role === 'client' ? '/onboarding' : '/dashboard'
           console.log('🔐 SignUp: Performing redirect with full page reload to:', destination)
           window.location.href = destination
         }, 800)
@@ -130,17 +133,17 @@ export default function SignUpPage() {
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <Brain className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Neuronize</h1>
+            <h1 className="text-2xl font-bold text-foreground">ZyxAI</h1>
           </div>
           <h2 className="text-xl font-semibold text-foreground">Create your account</h2>
-          <p className="text-muted-foreground">Start automating your tax practice today</p>
+          <p className="text-muted-foreground">Start automating your business with AI voice technology</p>
         </div>
         {/* Registration Form */}
         <Card>
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
             <CardDescription>
-              Create your Neuronize account to get started
+              Create your E.P account to get started
             </CardDescription>
           </CardHeader>
           <CardContent>

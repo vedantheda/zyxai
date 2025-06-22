@@ -3,6 +3,8 @@
  * Supports multiple log levels, structured data, and external services
  */
 
+import React from 'react'
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -53,10 +55,10 @@ class ConsoleTransport implements LogTransport {
 
   log(entry: LogEntry): void {
     const { timestamp, levelName, message, context, data, error } = entry
-    
+
     const logMethod = this.getConsoleMethod(entry.level)
     const prefix = `[${timestamp}] ${levelName.toUpperCase()}`
-    
+
     if (process.env.NODE_ENV === 'development') {
       // Pretty formatting for development
       logMethod(
@@ -124,7 +126,7 @@ class RemoteTransport implements LogTransport {
 
   log(entry: LogEntry): void {
     this.buffer.push(entry)
-    
+
     if (this.buffer.length >= this.bufferSize) {
       this.flush()
     }
@@ -184,15 +186,15 @@ class Logger {
   constructor() {
     // Add default console transport
     this.addTransport(new ConsoleTransport())
-    
+
     // Add remote transport in production
     if (process.env.NODE_ENV === 'production') {
       this.addTransport(new RemoteTransport())
     }
 
     // Set log level based on environment
-    this.minLevel = process.env.NODE_ENV === 'development' 
-      ? LogLevel.DEBUG 
+    this.minLevel = process.env.NODE_ENV === 'development'
+      ? LogLevel.DEBUG
       : LogLevel.INFO
   }
 
@@ -264,7 +266,7 @@ class Logger {
   ): Promise<T> {
     const startTime = Date.now()
     const childLogger = context ? this.child(context) : this
-    
+
     try {
       childLogger.debug(`Starting ${name}`)
       const result = await fn()
@@ -359,7 +361,7 @@ export function withErrorLogging<T extends object>(
       }
 
       const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-        componentLogger.error('Unhandled promise rejection in component', 
+        componentLogger.error('Unhandled promise rejection in component',
           event.reason instanceof Error ? event.reason : new Error(String(event.reason))
         )
       }
@@ -382,8 +384,8 @@ export function loggedFunction(target: any, propertyName: string, descriptor: Pr
   const method = descriptor.value
 
   descriptor.value = async function (...args: any[]) {
-    const functionLogger = logger.child({ 
-      function: `${target.constructor.name}.${propertyName}` 
+    const functionLogger = logger.child({
+      function: `${target.constructor.name}.${propertyName}`
     })
 
     return functionLogger.time(propertyName, () => method.apply(this, args))

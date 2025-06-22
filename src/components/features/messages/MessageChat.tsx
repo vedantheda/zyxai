@@ -1,11 +1,11 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Message, Conversation } from '@/lib/types/messages'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ScrollArea } from '@/components/ui/scroll-area'
+
 import { Badge } from '@/components/ui/badge'
 import {
   Send,
@@ -16,7 +16,11 @@ import {
   CheckCheck,
   User,
   Settings,
-  X
+  X,
+  Edit3,
+  Trash2,
+  Save,
+  ChevronDown
 } from 'lucide-react'
 // import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -33,16 +37,24 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { FileAttachmentInput, AttachmentDisplay } from './FileAttachment'
+import { MessageReactions, type MessageReaction } from './MessageReactions'
 import { fileUploadService } from '@/lib/services/fileUpload'
 import { useToast } from '@/components/ui/toast'
+import { useUserPresence } from '@/hooks/features/useUserPresence'
 interface MessageChatProps {
   conversation: Conversation | null
   messages: Message[]
   currentUserId: string
   onSendMessage: (content: string, attachments?: File[]) => Promise<void>
   onMarkAsRead?: () => void
+  onLoadMoreMessages?: (conversationId: string, before?: string) => Promise<void>
+  onAddReaction?: (messageId: string, emoji: string) => Promise<void>
+  onRemoveReaction?: (messageId: string, emoji: string) => Promise<void>
+  onEditMessage?: (messageId: string, newContent: string) => Promise<void>
+  onDeleteMessage?: (messageId: string) => Promise<void>
   loading?: boolean
   sending?: boolean
+  hasMoreMessages?: boolean
   typingUsers?: Set<string>
   onTypingIndicator?: (conversationId: string, isTyping: boolean) => void
 }
@@ -52,8 +64,14 @@ export function MessageChat({
   currentUserId,
   onSendMessage,
   onMarkAsRead,
+  onLoadMoreMessages,
+  onAddReaction,
+  onRemoveReaction,
+  onEditMessage,
+  onDeleteMessage,
   loading = false,
   sending = false,
+  hasMoreMessages = false,
   typingUsers = new Set(),
   onTypingIndicator
 }: MessageChatProps) {
@@ -61,26 +79,106 @@ export function MessageChat({
   const [attachments, setAttachments] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [showAttachmentDialog, setShowAttachmentDialog] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingContent, setEditingContent] = useState('')
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesTopRef = useRef<HTMLDivElement>(null)
+  const scrollViewportRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout>()
   const { addToast } = useToast()
-  // Auto-scroll to bottom when new messages arrive
+  const { isUserOnline } = useUserPresence()
+  // Check if user is at bottom
+  const isAtBottom = useCallback(() => {
+    const scrollElement = scrollViewportRef.current
+    if (!scrollElement) return true
+
+    const { scrollTop, scrollHeight, clientHeight } = scrollElement
+    return Math.abs(scrollHeight - scrollTop - clientHeight) < 10 // 10px tolerance
+  }, [])
+
+  // Track scroll position to show/hide scroll button
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight
+    const scrollElement = scrollViewportRef.current
+    if (!scrollElement) return
+
+    const handleScroll = () => {
+      setShowScrollButton(!isAtBottom())
+    }
+
+    scrollElement.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollElement.removeEventListener('scroll', handleScroll)
+  }, [isAtBottom])
+  // Mark as read when conversation changes (debounced to prevent spam)
+  useEffect(() => {
+    if (conversation?.id && onMarkAsRead) {
+      const timeoutId = setTimeout(() => {
+        onMarkAsRead()
+      }, 500) // Debounce for 500ms
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [conversation?.id]) // Remove onMarkAsRead from dependencies to prevent infinite loop
+
+  // Load draft when conversation changes
+  useEffect(() => {
+    if (conversation?.id) {
+      const draftKey = `draft_${conversation.id}`
+      const savedDraft = localStorage.getItem(draftKey)
+      if (savedDraft) {
+        setMessageContent(savedDraft)
+      } else {
+        setMessageContent('')
       }
     }
-  }, [messages])
-  // Mark as read when conversation changes
+  }, [conversation?.id])
+
+  // Save draft when content changes
   useEffect(() => {
-    if (conversation && onMarkAsRead) {
-      onMarkAsRead()
+    if (conversation?.id && messageContent.trim()) {
+      const draftKey = `draft_${conversation.id}`
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem(draftKey, messageContent)
+      }, 1000) // Debounce for 1 second
+
+      return () => clearTimeout(timeoutId)
     }
-  }, [conversation?.id, onMarkAsRead])
+  }, [conversation?.id, messageContent])
+
+  // Clear draft when message is sent
+  const clearDraft = () => {
+    if (conversation?.id) {
+      const draftKey = `draft_${conversation.id}`
+      localStorage.removeItem(draftKey)
+    }
+  }
+
+  // Infinite scroll for loading more messages
+  useEffect(() => {
+    const scrollElement = scrollViewportRef.current
+    if (!scrollElement || !onLoadMoreMessages || !conversation) return
+
+    const handleScroll = async () => {
+      if (scrollElement.scrollTop === 0 && hasMoreMessages && !loadingMore && !loading) {
+        setLoadingMore(true)
+        const oldestMessage = messages[0]
+        try {
+          await onLoadMoreMessages(conversation.id, oldestMessage?.id)
+        } catch (error) {
+          console.error('Failed to load more messages:', error)
+        } finally {
+          setLoadingMore(false)
+        }
+      }
+    }
+
+    scrollElement.addEventListener('scroll', handleScroll)
+    return () => scrollElement.removeEventListener('scroll', handleScroll)
+  }, [conversation?.id, hasMoreMessages, loadingMore, loading, messages, onLoadMoreMessages])
   const handleSendMessage = async () => {
     if ((!messageContent.trim() && attachments.length === 0) || sending || !conversation) return
     const content = messageContent.trim()
@@ -89,6 +187,7 @@ export function MessageChat({
     // Clear immediately for better UX
     setMessageContent('')
     setAttachments([])
+    clearDraft() // Clear the saved draft
     try {
       // Stop typing indicator
       if (onTypingIndicator && conversation) {
@@ -137,6 +236,62 @@ export function MessageChat({
   const handleRemoveAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index))
   }
+
+  // Message editing handlers
+  const handleStartEdit = (message: Message) => {
+    setEditingMessageId(message.id)
+    setEditingContent(message.content)
+    setTimeout(() => {
+      editTextareaRef.current?.focus()
+    }, 100)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null)
+    setEditingContent('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !onEditMessage || !editingContent.trim()) return
+
+    try {
+      await onEditMessage(editingMessageId, editingContent.trim())
+      setEditingMessageId(null)
+      setEditingContent('')
+      addToast({
+        type: 'success',
+        title: 'Message updated',
+        description: 'Your message has been updated successfully'
+      })
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Failed to update message',
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!onDeleteMessage) return
+
+    if (confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+      try {
+        await onDeleteMessage(messageId)
+        addToast({
+          type: 'success',
+          title: 'Message deleted',
+          description: 'The message has been deleted successfully'
+        })
+      } catch (error) {
+        addToast({
+          type: 'error',
+          title: 'Failed to delete message',
+          description: error instanceof Error ? error.message : 'Unknown error occurred'
+        })
+      }
+    }
+  }
   // Download attachment
   const handleDownloadAttachment = async (attachment: any) => {
     try {
@@ -157,6 +312,18 @@ export function MessageChat({
       })
     }
   }
+
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    const scrollElement = scrollViewportRef.current
+    if (scrollElement) {
+      scrollElement.scrollTo({
+        top: scrollElement.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -223,18 +390,35 @@ export function MessageChat({
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={participant?.avatarUrl} />
-              <AvatarFallback>
-                {participant ? getInitials(participant.name) : '?'}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={participant?.avatarUrl} />
+                <AvatarFallback>
+                  {participant ? getInitials(participant.name) : '?'}
+                </AvatarFallback>
+              </Avatar>
+              {/* Online status indicator */}
+              {participant && (
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
+                  isUserOnline(participant.id || '') ? 'bg-green-500' : 'bg-gray-400'
+                }`} />
+              )}
+            </div>
             <div>
-              <CardTitle className="text-lg">
-                {participant?.name || 'Unknown User'}
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <span>{participant?.name || 'Unknown User'}</span>
+                {participant && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    isUserOnline(participant.id || '')
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {isUserOnline(participant.id || '') ? 'Online' : 'Offline'}
+                  </span>
+                )}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                {conversation.subject}
+                {conversation.client ? 'Client Conversation' : 'Admin Conversation'}
               </p>
             </div>
           </div>
@@ -259,8 +443,23 @@ export function MessageChat({
         </div>
       </CardHeader>
       {/* Messages */}
-      <CardContent className="flex-1 p-0 overflow-hidden">
-        <ScrollArea ref={scrollAreaRef} className="h-full p-4">
+      <CardContent className="flex-1 p-0 overflow-hidden relative">
+        <div
+          ref={scrollViewportRef}
+          className="h-full p-4 overflow-y-auto overflow-x-hidden"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {/* Load more messages indicator */}
+          {loadingMore && (
+            <div className="flex justify-center py-4">
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Loading more messages...</span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesTopRef} />
+
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
@@ -336,6 +535,19 @@ export function MessageChat({
                                 </div>
                               )}
                             </div>
+                            {/* Message reactions */}
+                            {(message.reactions && message.reactions.length > 0) || onAddReaction ? (
+                              <div className={`${isOwnMessage ? 'flex justify-end' : ''}`}>
+                                <MessageReactions
+                                  messageId={message.id}
+                                  reactions={message.reactions || []}
+                                  currentUserId={currentUserId}
+                                  onAddReaction={onAddReaction || (() => Promise.resolve())}
+                                  onRemoveReaction={onRemoveReaction || (() => Promise.resolve())}
+                                  disabled={!onAddReaction || !onRemoveReaction}
+                                />
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       )
@@ -363,7 +575,21 @@ export function MessageChat({
             </div>
           )}
           <div ref={messagesEndRef} />
-        </ScrollArea>
+        </div>
+
+        {/* Scroll to bottom button */}
+        {showScrollButton && (
+          <div className="absolute bottom-4 right-4">
+            <Button
+              onClick={scrollToBottom}
+              size="sm"
+              className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
+              title="Scroll to bottom"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </CardContent>
       {/* Message input */}
       <div className="p-6 border-t bg-background/50">

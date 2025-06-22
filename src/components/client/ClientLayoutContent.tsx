@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useMessages } from '@/hooks/useMessages'
+import { useMessages } from '@/hooks/features/useMessages'
 import { GlobalSidebar } from '@/components/layout/GlobalSidebar'
 import {
   LogOut,
@@ -85,7 +85,7 @@ export function ClientLayoutContent({ children, user }: ClientLayoutContentProps
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">Neuronize</h1>
+              <h1 className="text-xl font-bold text-foreground">ZyxAI</h1>
             </div>
           </div>
           <div className="flex items-center space-x-2">

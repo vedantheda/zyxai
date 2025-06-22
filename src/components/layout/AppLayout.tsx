@@ -11,6 +11,7 @@ import GlobalSearch from '@/components/search/GlobalSearch'
 import { MobileSearchTrigger } from '@/components/search/MobileSearch'
 import { ClientLayoutContent } from '@/components/client/ClientLayoutContent'
 import { GlobalSidebar } from '@/components/layout/GlobalSidebar'
+import { VoiceWidget } from '@/components/voice/VoiceWidget'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -143,6 +144,15 @@ export function AppLayout({
           {children}
         </main>
       </div>
+
+      {/* Floating Voice Widget */}
+      <VoiceWidget
+        assistantId="demo-assistant"
+        variant="floating"
+        onCallStart={() => console.log('Voice call started')}
+        onCallEnd={() => console.log('Voice call ended')}
+        onMessage={(message) => console.log('Voice message:', message)}
+      />
     </div>
   )
 }

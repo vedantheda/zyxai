@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation'
 export default function AuthRedirectPage() {
   const searchParams = useSearchParams()
   useEffect(() => {
-    const redirectTo = searchParams.get('to') || '/pipeline'
+    const redirectTo = searchParams.get('to') || '/dashboard'
     console.log('🔐 AuthRedirect: Performing immediate redirect to:', redirectTo)
     // Immediate redirect without any delays
     window.location.href = redirectTo

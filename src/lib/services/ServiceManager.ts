@@ -276,7 +276,7 @@ export function createServiceManager(overrides: Partial<{
       ...overrides.ocr
     },
     ai: {
-      model: 'anthropic/claude-3-sonnet',
+      model: 'deepseek/deepseek-chat:free', // Best free model available
       temperature: 0.1,
       maxTokens: 4000,
       timeout: 30000,

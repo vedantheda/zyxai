@@ -64,35 +64,73 @@ export function useClients() {
     if (!user) return { error: 'User not authenticated' }
 
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .insert({
-          ...clientData,
-          user_id: user.id,
-        })
-        .select()
-        .single()
+      console.log('🔍 AddClient: Starting client creation', { clientData, userId: user.id })
 
-      if (error) throw error
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        console.error('🔍 AddClient: No valid session')
+        return { error: 'No valid session' }
+      }
+
+      console.log('🔍 AddClient: Making API call to /api/clients')
+
+      // Use API endpoint instead of direct database access
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(clientData)
+      })
+
+      console.log('🔍 AddClient: API response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('🔍 AddClient: API error:', errorData)
+        const errorMessage = errorData.error || errorData.details || `HTTP ${response.status}: ${response.statusText}`
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      console.log('🔍 AddClient: Success:', data)
       setClients(prev => [data, ...prev])
       return { data, error: null }
     } catch (err) {
+      console.error('🔍 AddClient: Exception:', err)
       const error = err instanceof Error ? err.message : 'An error occurred'
       return { data: null, error }
     }
   }
 
   const updateClient = async (id: string, updates: any) => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user?.id)
-        .select()
-        .single()
+    if (!user) return { error: 'User not authenticated' }
 
-      if (error) throw error
+    try {
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        return { error: 'No valid session' }
+      }
+
+      // Use API endpoint instead of direct database access
+      const response = await fetch(`/api/clients/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(updates)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update client')
+      }
+
+      const data = await response.json()
       setClients(prev => prev.map(client => client.id === id ? data : client))
       return { data, error: null }
     } catch (err) {

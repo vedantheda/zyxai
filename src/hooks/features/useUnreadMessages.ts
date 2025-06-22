@@ -13,7 +13,7 @@ export function useUnreadMessages() {
 
     try {
       setLoading(true)
-      
+
       const response = await fetch('/api/messages/stats', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -39,8 +39,9 @@ export function useUnreadMessages() {
     // Initial fetch
     fetchUnreadCount()
 
-    // Subscribe to message changes
-    const channel = supabase.channel('unread-messages')
+    // Subscribe to message changes with unique channel name
+    const channelName = `unread-messages-${session.user.id}-${Date.now()}`
+    const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -66,7 +67,7 @@ export function useUnreadMessages() {
         (payload) => {
           const updatedMessage = payload.new as any
           const oldMessage = payload.old as any
-          
+
           // If message was marked as read and it wasn't read before
           if (updatedMessage.is_read && !oldMessage.is_read && updatedMessage.sender_id !== session.user.id) {
             setUnreadCount(prev => Math.max(0, prev - 1))
@@ -91,7 +92,7 @@ export function useUnreadMessages() {
           'Content-Type': 'application/json'
         }
       })
-      
+
       setUnreadCount(0)
     } catch (error) {
       console.error('Failed to mark all as read:', error)

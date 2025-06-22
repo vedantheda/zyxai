@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withApiSecurity } from '@/lib/apiSecurity'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { createClient } from '@supabase/supabase-js'
+
+// Use service role client to bypass RLS
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -11,19 +23,31 @@ export async function OPTIONS() {
 }
 export async function GET(request: NextRequest) {
   try {
+    // Temporarily disable auth for debugging
+    console.log('🔍 Clients API: Request received')
+
+    // Get auth header for debugging
+    const authHeader = request.headers.get('authorization')
+    console.log('🔍 Auth header:', authHeader ? 'Present' : 'Missing')
+
     const { request: secureRequest } = await withApiSecurity(request, {
       requireCSRF: false // GET requests don't need CSRF protection
     })
     const user = secureRequest.user!
     // Get user profile to check role
+    console.log('🔍 Looking for user profile:', user.id)
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
+
+    console.log('🔍 Profile query result:', { profile, profileError })
+
     if (profileError || !profile) {
+      console.log('❌ Profile not found or error:', profileError)
       return NextResponse.json(
-        { error: 'User profile not found' },
+        { error: 'User profile not found', debug: { userId: user.id, profileError } },
         { status: 404, headers: corsHeaders }
       )
     }
@@ -46,7 +70,13 @@ export async function GET(request: NextRequest) {
         name,
         email,
         phone,
+        type,
         status,
+        priority,
+        progress,
+        pipeline_stage,
+        documents_count,
+        last_activity,
         created_at,
         updated_at
       `)
@@ -73,7 +103,13 @@ export async function GET(request: NextRequest) {
       name: client.name || 'Unknown Client',
       email: client.email,
       phone: client.phone,
+      type: client.type || 'individual',
       status: client.status,
+      priority: client.priority || 'medium',
+      progress: client.progress || 0,
+      pipeline_stage: client.pipeline_stage || 'intake',
+      documents_count: client.documents_count || 0,
+      last_activity: client.last_activity || client.updated_at,
       created_at: client.created_at,
       updated_at: client.updated_at
     }))
@@ -99,15 +135,25 @@ export async function GET(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   try {
-    const { request: secureRequest } = await withApiSecurity(request)
+    console.log('🔍 Clients API POST: Starting request')
+
+    const { request: secureRequest } = await withApiSecurity(request, {
+      requireCSRF: false // Disable CSRF for now since we have Bearer token auth
+    })
     const user = secureRequest.user!
+    console.log('🔍 Clients API POST: User authenticated:', user.id)
+
     // Get user profile to check role
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
+
+    console.log('🔍 Clients API POST: Profile check:', { profile, profileError })
+
     if (profileError || !profile) {
+      console.log('🔍 Clients API POST: Profile not found')
       return NextResponse.json(
         { error: 'User profile not found' },
         { status: 404, headers: corsHeaders }
@@ -115,31 +161,42 @@ export async function POST(request: NextRequest) {
     }
     // Only admins can create clients
     if (profile.role !== 'admin') {
+      console.log('🔍 Clients API POST: User not admin, role:', profile.role)
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403, headers: corsHeaders }
       )
     }
+
+    console.log('🔍 Clients API POST: Reading request body')
     const body = await request.json()
+    console.log('🔍 Clients API POST: Request body:', body)
     // Validate required fields
     if (!body.name || !body.email) {
+      console.log('🔍 Clients API POST: Missing required fields')
       return NextResponse.json(
         { error: 'Name and email are required' },
         { status: 400, headers: corsHeaders }
       )
     }
+
+    console.log('🔍 Clients API POST: Checking for existing client')
     // Check if client already exists
     const { data: existingClient } = await supabaseAdmin
       .from('clients')
       .select('id')
       .eq('email', body.email)
       .single()
+
     if (existingClient) {
+      console.log('🔍 Clients API POST: Client already exists')
       return NextResponse.json(
         { error: 'Client with this email already exists' },
         { status: 409, headers: corsHeaders }
       )
     }
+
+    console.log('🔍 Clients API POST: Creating client')
     // Create client
     const { data: client, error } = await supabaseAdmin
       .from('clients')
@@ -147,14 +204,26 @@ export async function POST(request: NextRequest) {
         name: body.name,
         email: body.email,
         phone: body.phone || null,
+        type: body.type || 'individual',
         status: body.status || 'active',
+        priority: body.priority || 'medium',
+        progress: 0,
+        pipeline_stage: 'intake',
         user_id: user.id  // Set the user_id for the client
       })
       .select()
       .single()
+
+    console.log('🔍 Clients API POST: Insert result:', { client, error })
+
     if (error) {
+      console.log('🔍 Clients API POST: Database error:', error)
       return NextResponse.json(
-        { error: 'Failed to create client' },
+        {
+          error: 'Failed to create client',
+          details: error.message,
+          code: error.code
+        },
         { status: 500, headers: corsHeaders }
       )
     }
@@ -164,7 +233,13 @@ export async function POST(request: NextRequest) {
       name: client.name,
       email: client.email,
       phone: client.phone,
+      type: client.type,
       status: client.status,
+      priority: client.priority,
+      progress: client.progress,
+      pipeline_stage: client.pipeline_stage,
+      documents_count: client.documents_count || 0,
+      last_activity: client.last_activity || client.updated_at,
       created_at: client.created_at,
       updated_at: client.updated_at
     }
@@ -173,8 +248,13 @@ export async function POST(request: NextRequest) {
       headers: corsHeaders
     })
   } catch (error) {
+    console.error('🔍 Clients API POST: Exception caught:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500, headers: corsHeaders }
     )
   }

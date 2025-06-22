@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthProvider";
+import { GlobalErrorBoundary } from "@/components/providers/ErrorBoundaryProvider";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { ToastProvider } from "@/components/ui/toast";
 
 const dmSans = DM_Sans({
@@ -72,13 +74,17 @@ export default function RootLayout({
         <script src="/disable-krisp.js" />
       </head>
       <body className={`${dmSans.variable} font-sans`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AuthProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <GlobalErrorBoundary>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <AuthProvider>
+              <NotificationProvider>
+                <ToastProvider>
+                  {children}
+                </ToastProvider>
+              </NotificationProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );

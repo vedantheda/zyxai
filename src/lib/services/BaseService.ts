@@ -130,15 +130,17 @@ class Logger {
   }
   warn(message: string, ...args: any[]): void {
     if (this.enabled && process.env.NODE_ENV === 'development') {
-      .toISOString()}] [${this.serviceName}] WARN:`, message, ...args);
+      console.warn(`[${new Date().toISOString()}] [${this.serviceName}] WARN:`, message, ...args);
     }
   }
   error(message: string, ...args: any[]): void {
     // Always log errors, but only with details in development
-    ] [${this.serviceName}] ERROR:`, message, ...args);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[${new Date().toISOString()}] [${this.serviceName}] ERROR:`, message, ...args);
     } else {
       // In production, log errors without sensitive details
-      }
+      console.error(`[${new Date().toISOString()}] [${this.serviceName}] ERROR:`, message);
+    }
   }
   debug(message: string, ...args: any[]): void {
     if (this.enabled && process.env.NODE_ENV === 'development') {

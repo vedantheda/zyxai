@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   client_id UUID REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL,
   admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  subject TEXT NOT NULL DEFAULT 'General Discussion',
   status TEXT CHECK (status IN ('active', 'closed', 'archived')) DEFAULT 'active',
   priority TEXT CHECK (priority IN ('low', 'normal', 'high', 'urgent')) DEFAULT 'normal',
   last_message_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -63,6 +62,16 @@ CREATE TABLE IF NOT EXISTS public.message_attachments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create message_reactions table for emoji reactions
+CREATE TABLE IF NOT EXISTS public.message_reactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  emoji TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(message_id, user_id, emoji)
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_conversations_client_id ON public.conversations(client_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_admin_id ON public.conversations(admin_id);
@@ -78,12 +87,15 @@ CREATE INDEX IF NOT EXISTS idx_message_participants_conversation_id ON public.me
 CREATE INDEX IF NOT EXISTS idx_message_participants_user_id ON public.message_participants(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_message_attachments_message_id ON public.message_attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_message_reactions_message_id ON public.message_reactions(message_id);
+CREATE INDEX IF NOT EXISTS idx_message_reactions_user_id ON public.message_reactions(user_id);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.message_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.message_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for conversations
 CREATE POLICY "Users can view conversations they participate in" ON public.conversations
@@ -156,11 +168,42 @@ CREATE POLICY "Users can view attachments in their conversations" ON public.mess
 CREATE POLICY "Users can upload attachments to their messages" ON public.message_attachments
   FOR INSERT WITH CHECK (uploaded_by = auth.uid());
 
+-- RLS Policies for message_reactions
+CREATE POLICY "Users can view reactions in their conversations" ON public.message_reactions
+  FOR SELECT USING (
+    message_id IN (
+      SELECT id FROM public.messages WHERE
+        conversation_id IN (
+          SELECT id FROM public.conversations WHERE
+            client_id IN (SELECT id FROM public.clients WHERE user_id = auth.uid()) OR
+            admin_id = auth.uid() OR
+            id IN (SELECT conversation_id FROM public.message_participants WHERE user_id = auth.uid())
+        )
+    )
+  );
+
+CREATE POLICY "Users can add reactions to messages in their conversations" ON public.message_reactions
+  FOR INSERT WITH CHECK (
+    user_id = auth.uid() AND
+    message_id IN (
+      SELECT id FROM public.messages WHERE
+        conversation_id IN (
+          SELECT id FROM public.conversations WHERE
+            client_id IN (SELECT id FROM public.clients WHERE user_id = auth.uid()) OR
+            admin_id = auth.uid() OR
+            id IN (SELECT conversation_id FROM public.message_participants WHERE user_id = auth.uid())
+        )
+    )
+  );
+
+CREATE POLICY "Users can remove their own reactions" ON public.message_reactions
+  FOR DELETE USING (user_id = auth.uid());
+
 -- Functions for updating timestamps
 CREATE OR REPLACE FUNCTION update_conversation_last_message()
 RETURNS TRIGGER AS $$
 BEGIN
-  UPDATE public.conversations 
+  UPDATE public.conversations
   SET last_message_at = NEW.created_at, updated_at = NOW()
   WHERE id = NEW.conversation_id;
   RETURN NEW;
@@ -179,19 +222,19 @@ RETURNS INTEGER AS $$
 DECLARE
   updated_count INTEGER;
 BEGIN
-  UPDATE public.messages 
+  UPDATE public.messages
   SET is_read = TRUE, read_at = NOW()
-  WHERE conversation_id = conversation_id_param 
-    AND sender_id != user_id_param 
+  WHERE conversation_id = conversation_id_param
+    AND sender_id != user_id_param
     AND is_read = FALSE;
-  
+
   GET DIAGNOSTICS updated_count = ROW_COUNT;
-  
+
   -- Update participant's last_read_at
   UPDATE public.message_participants
   SET last_read_at = NOW()
   WHERE conversation_id = conversation_id_param AND user_id = user_id_param;
-  
+
   RETURN updated_count;
 END;
 $$ LANGUAGE plpgsql;
@@ -206,14 +249,14 @@ BEGIN
   INTO unread_count
   FROM public.messages m
   JOIN public.conversations c ON m.conversation_id = c.id
-  WHERE m.sender_id != user_id_param 
+  WHERE m.sender_id != user_id_param
     AND m.is_read = FALSE
     AND (
       c.client_id IN (SELECT id FROM public.clients WHERE user_id = user_id_param) OR
       c.admin_id = user_id_param OR
       c.id IN (SELECT conversation_id FROM public.message_participants WHERE user_id = user_id_param)
     );
-  
+
   RETURN unread_count;
 END;
 $$ LANGUAGE plpgsql;

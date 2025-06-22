@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         user: data.user,
-        redirectTo: redirectTo || '/pipeline'
+        redirectTo: redirectTo || '/dashboard'
       })
     }
     return NextResponse.json({ error: 'Sign in failed' }, { status: 400 })

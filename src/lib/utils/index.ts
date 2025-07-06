@@ -1,2 +1,2 @@
 // Utilities barrel exports
-export * from './pipeline'
+export * from '../../utils/pipeline'

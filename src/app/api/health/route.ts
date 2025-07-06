@@ -114,7 +114,10 @@ async function checkDatabase(): Promise<HealthCheck> {
   const startTime = Date.now()
   
   try {
-    const supabase = createClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     
     // Simple query to test connectivity
     const { data, error } = await supabase

@@ -25,3 +25,15 @@ export function checkBrowserCompatibility() {
     warnings: []
   }
 }
+
+// Create VAPI instance (placeholder implementation)
+export function createVapi(config?: any) {
+  return {
+    start: () => Promise.resolve(),
+    stop: () => Promise.resolve(),
+    isActive: () => false,
+    on: (event: string, callback: Function) => {},
+    off: (event: string, callback: Function) => {},
+    config
+  }
+}

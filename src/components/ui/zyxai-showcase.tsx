@@ -4,16 +4,16 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Mic, 
-  Bot, 
-  Zap, 
-  Play, 
-  Pause, 
-  Volume2, 
+import {
+  Mic,
+  Bot,
+  Zap,
+  Play,
+  Pause,
+  Volume2,
   Brain,
   Sparkles,
-  Waveform,
+  Radio,
   Activity
 } from 'lucide-react'
 
@@ -167,7 +167,7 @@ export function ZyxAIShowcase() {
               Active
             </div>
             <div className="status-indicator status-processing">
-              <Waveform className="w-4 h-4" />
+              <Radio className="w-4 h-4" />
               Processing
             </div>
             <div className="status-indicator status-inactive">

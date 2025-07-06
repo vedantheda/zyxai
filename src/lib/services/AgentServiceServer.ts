@@ -201,8 +201,30 @@ export class AgentServiceServer {
       vapiConfig.name = updatedAgent.name
     }
 
-    if (updatedAgent.script_config?.greeting !== currentAgent.script_config?.greeting) {
-      vapiConfig.firstMessage = updatedAgent.script_config?.greeting
+    // Check for both firstMessage and greeting fields for backward compatibility
+    const newFirstMessage = updatedAgent.script_config?.firstMessage || updatedAgent.script_config?.greeting
+    const currentFirstMessage = currentAgent.script_config?.firstMessage || currentAgent.script_config?.greeting
+
+    if (newFirstMessage !== currentFirstMessage) {
+      vapiConfig.firstMessage = newFirstMessage
+    }
+
+    // System prompt synchronization
+    const newSystemPrompt = updatedAgent.script_config?.systemPrompt
+    const currentSystemPrompt = currentAgent.script_config?.systemPrompt
+
+    if (newSystemPrompt !== currentSystemPrompt) {
+      vapiConfig.model = {
+        provider: 'openai',
+        model: 'gpt-4o',
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content: newSystemPrompt || `You are ${updatedAgent.name}, a professional ${updatedAgent.agent_type.replace(/_/g, ' ')} agent.`
+          }
+        ]
+      }
     }
 
     // Voice configuration

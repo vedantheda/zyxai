@@ -198,7 +198,7 @@ export default function AgentConfigPage() {
         return
       }
 
-      // Call API route that handles both database and Vapi sync
+      // Call API route that handles both database and voice platform sync
       const response = await fetch('/api/agents', {
         method: 'PATCH',
         headers: {
@@ -218,7 +218,7 @@ export default function AgentConfigPage() {
 
       if (result.agent) {
         setAgent(result.agent)
-        setSuccess('Agent configuration saved successfully! Changes synced to Vapi.')
+        setSuccess('Agent configuration saved successfully! Changes synced to voice platform.')
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1578,7 +1578,7 @@ export default function AgentConfigPage() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Phone className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                     <p className="text-sm">Voice demo not available</p>
-                    <p className="text-xs mb-4">Agent needs to be synced with Vapi first</p>
+                    <p className="text-xs mb-4">Agent needs to be synced with voice platform first</p>
                     <Button
                       onClick={async () => {
                         try {
@@ -1595,7 +1595,7 @@ export default function AgentConfigPage() {
                           })
                           const result = await response.json()
                           if (result.success) {
-                            // Update agent with Vapi assistant ID
+                            // Update agent with voice assistant ID
                             const updateResponse = await fetch('/api/agents', {
                               method: 'PATCH',
                               headers: { 'Content-Type': 'application/json' },
@@ -1620,7 +1620,7 @@ export default function AgentConfigPage() {
                       size="sm"
                     >
                       <Settings className="mr-2 h-4 w-4" />
-                      Sync with Vapi
+                      Sync with Voice Platform
                     </Button>
                   </div>
                 )}

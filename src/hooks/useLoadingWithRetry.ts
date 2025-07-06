@@ -56,7 +56,7 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
     cleanup()
     return new Promise<T>((resolve, reject) => {
       const attemptExecution = async (attemptNumber: number) => {
-        console.log(`🔄 Loading attempt ${attemptNumber}/${maxRetries + 1}`)
+        console.log('Loading attempt ' + attemptNumber + '/' + (maxRetries + 1))
         setState(prev => ({
           ...prev,
           isLoading: true,
@@ -70,7 +70,7 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
         const signal = abortControllerRef.current.signal
         // Set timeout for this attempt
         timeoutRef.current = setTimeout(() => {
-          `)
+          console.log('Timeout reached for attempt ' + attemptNumber)
           setState(prev => ({
             ...prev,
             hasTimedOut: true,
@@ -80,12 +80,12 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
             abortControllerRef.current.abort()
           }
           if (attemptNumber <= maxRetries) {
-            console.log(`🔄 Retrying due to timeout... (${attemptNumber}/${maxRetries})`)
+            console.log('Retrying due to timeout... (' + attemptNumber + '/' + maxRetries + ')')
             retryTimeoutRef.current = setTimeout(() => {
               attemptExecution(attemptNumber + 1)
             }, retryDelay * attemptNumber) // Exponential backoff
           } else {
-            const timeoutError = new Error(`Operation timed out after ${maxRetries + 1} attempts`)
+            const timeoutError = new Error('Operation timed out after ' + (maxRetries + 1) + ' attempts')
             onTimeout?.()
             onError?.(timeoutError, attemptNumber)
             reject(timeoutError)
@@ -120,7 +120,7 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
           onError?.(err, attemptNumber)
           // Retry if we haven't exceeded max attempts
           if (attemptNumber <= maxRetries) {
-            console.log(`🔄 Retrying due to error... (${attemptNumber}/${maxRetries})`)
+            console.log('Retrying due to error... (' + attemptNumber + '/' + maxRetries + ')')
             setState(prev => ({
               ...prev,
               isRetrying: true
@@ -129,7 +129,7 @@ export function useLoadingWithRetry(options: UseLoadingWithRetryOptions = {}) {
               attemptExecution(attemptNumber + 1)
             }, retryDelay * attemptNumber) // Exponential backoff
           } else {
-            `)
+            console.error('Max retries exceeded')
             reject(err)
           }
         }

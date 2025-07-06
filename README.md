@@ -50,10 +50,12 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 ## 📚 Documentation
 Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
-- 🚀 [Features Documentation](./docs/features/)
-- 🏢 [Development Guide](./docs/development/)
-- 🔒 [Security Documentation](./docs/security/)
-- 🚀 [Deployment Guide](./docs/deployment/)
+- 🚀 [Setup Guide](./docs/setup/) - Complete setup and configuration
+- 🏗️ [Architecture](./docs/architecture/) - System architecture and design
+- 🚀 [Features Documentation](./docs/features/) - Feature specifications
+- 🏢 [Development Guide](./docs/development/) - Development guidelines
+- 🔒 [Security Documentation](./docs/security/) - Security implementation
+- 🚀 [Deployment Guide](./docs/deployment/) - Production deployment
 
 ## 🏗️ Architecture
 - **Frontend**: Next.js 14 with TypeScript

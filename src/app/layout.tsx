@@ -4,8 +4,10 @@ import { DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { GlobalErrorBoundary } from "@/components/providers/ErrorBoundaryProvider";
+import { AuthErrorProvider } from "@/components/ui/AuthErrorBoundary";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { ToastProvider } from "@/components/ui/toast";
+
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -71,18 +73,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script src="/disable-krisp.js" />
       </head>
       <body className={`${dmSans.variable} font-sans`}>
         <GlobalErrorBoundary>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <AuthProvider>
-              <NotificationProvider>
-                <ToastProvider>
-                  {children}
-                </ToastProvider>
-              </NotificationProvider>
-            </AuthProvider>
+            <AuthErrorProvider>
+              <AuthProvider>
+                <NotificationProvider>
+                  <ToastProvider>
+
+                    {children}
+                  </ToastProvider>
+                </NotificationProvider>
+              </AuthProvider>
+            </AuthErrorProvider>
           </ThemeProvider>
         </GlobalErrorBoundary>
       </body>

@@ -7,30 +7,42 @@ export { createClient }
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    url: supabaseUrl
-  })
-  throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
+// Create a safe Supabase client that won't throw on connection errors
+function createSafeSupabaseClient() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Missing Supabase environment variables')
+    return null
+  }
+
+  try {
+    console.log('🔗 Creating Supabase client...')
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'zyxai-client'
+        }
+      }
+    })
+  } catch (error) {
+    console.warn('Failed to create Supabase client:', error)
+    return null
+  }
 }
 
 // Single Supabase client instance for the entire app
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false, // Disable to prevent URL-based auth conflicts
-    flowType: 'pkce'
-  }
-})
+export const supabase = createSafeSupabaseClient()
 
 // Admin client for server-side operations (only for server-side use)
-export const supabaseAdmin = typeof window === 'undefined'
+export const supabaseAdmin = typeof window === 'undefined' && supabaseUrl && process.env.SUPABASE_SERVICE_ROLE_KEY
   ? createClient<Database>(
       supabaseUrl,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
         auth: {
           autoRefreshToken: false,

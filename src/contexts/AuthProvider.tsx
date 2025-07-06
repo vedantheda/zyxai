@@ -17,6 +17,7 @@ interface AuthContextType {
   user: UserProfile | null
   session: Session | null
   loading: boolean
+  authError: string | null
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   refreshSession: () => Promise<{ error: AuthError | null }>
@@ -28,19 +29,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
 
-  // Create user profile from session (using auth metadata as single source of truth)
+  // Create user profile from session
   const createUserProfile = useCallback((session: Session | null): UserProfile | null => {
     if (!session?.user) return null
 
-    // Role comes from auth.users.raw_user_meta_data.role (single source of truth)
-    const role = session.user.user_metadata?.role as 'admin' | 'tax_professional' | 'client'
+    const role = session.user.user_metadata?.role as 'admin' | 'client'
 
     return {
       id: session.user.id,
       email: session.user.email || '',
-      role: role || 'client', // Default to client if no role set
+      role: role || 'client',
       full_name: session.user.user_metadata?.full_name ||
                 `${session.user.user_metadata?.first_name || ''} ${session.user.user_metadata?.last_name || ''}`.trim() ||
                 session.user.email?.split('@')[0],
@@ -54,11 +55,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        setAuthError(null)
+
+        if (!supabase) {
+          setAuthError('Database connection unavailable')
+          setLoading(false)
+          return
+        }
+
         // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
           console.error('Auth initialization error:', error)
+          setAuthError(error.message || 'Authentication failed')
         }
 
         if (mounted) {
@@ -66,9 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(createUserProfile(session))
           setLoading(false)
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth initialization failed:', error)
         if (mounted) {
+          setAuthError(error.message || 'Failed to initialize authentication')
           setLoading(false)
         }
       }
@@ -77,8 +88,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
 
     // Listen for auth changes
+    if (!supabase) {
+      return
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: any) => {
         console.log('Auth state change:', event)
 
         if (!mounted) return
@@ -105,6 +120,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true)
+      setAuthError(null)
+
+      if (!supabase) {
+        setLoading(false)
+        setAuthError('Database connection unavailable')
+        return { error: { message: 'Database connection unavailable' } as AuthError }
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -112,16 +135,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         setLoading(false)
+        setAuthError(error.message || 'Sign in failed')
         return { error }
       }
 
-      // Loading will be set to false by the auth state change listener
       return { error: null }
-    } catch (err) {
+    } catch (err: any) {
       setLoading(false)
+      const errorMessage = err.message || 'Sign in failed'
+      setAuthError(errorMessage)
       return {
         error: {
-          message: err instanceof Error ? err.message : 'Sign in failed'
+          message: errorMessage
         } as AuthError
       }
     }
@@ -129,12 +154,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      if (!supabase) {
+        return { error: { message: 'Database connection unavailable' } as AuthError }
+      }
+
       const { error } = await supabase.auth.signOut()
       return { error }
-    } catch (err) {
+    } catch (err: any) {
       return {
         error: {
-          message: err instanceof Error ? err.message : 'Sign out failed'
+          message: err.message || 'Sign out failed'
         } as AuthError
       }
     }
@@ -142,12 +171,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = async () => {
     try {
+      if (!supabase) {
+        return { error: { message: 'Database connection unavailable' } as AuthError }
+      }
+
       const { error } = await supabase.auth.refreshSession()
       return { error }
-    } catch (err) {
+    } catch (err: any) {
       return {
         error: {
-          message: err instanceof Error ? err.message : 'Session refresh failed'
+          message: err.message || 'Session refresh failed'
         } as AuthError
       }
     }
@@ -159,7 +192,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signIn,
     signOut,
-    refreshSession
+    refreshSession,
+    authError
   }
 
   return (

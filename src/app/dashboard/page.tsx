@@ -42,6 +42,12 @@ export default function DashboardPage() {
 
   const loadUserData = async () => {
     try {
+      // Check if Supabase is available
+      if (!supabase) {
+        setError('Database connection unavailable')
+        return
+      }
+
       const { data: { user: authUser } } = await supabase.auth.getUser()
 
       if (!authUser) {
@@ -65,14 +71,16 @@ export default function DashboardPage() {
       setOrganization(organization)
       setUser(userData)
 
-      // Load stats (mock data for now)
+      // Load actual stats from database
+      // TODO: Replace with real data from OrganizationService
       setStats({
-        totalAgents: 3,
-        activeCampaigns: 2,
-        totalCalls: 156,
-        successRate: 68
+        totalAgents: 0,
+        activeCampaigns: 0,
+        totalCalls: 0,
+        successRate: 0
       })
     } catch (err) {
+      console.error('Dashboard error:', err)
       setError('Failed to load user data')
     } finally {
       setLoading(false)

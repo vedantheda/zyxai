@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { VapiService } from '@/lib/services/VapiService'
+import VapiService from '@/lib/services/VapiService'
 import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {

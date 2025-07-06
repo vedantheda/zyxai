@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { VapiService } from '@/lib/services/VapiService'
+import VapiService from '@/lib/services/VapiService'
 
 // CORS headers
 const corsHeaders = {

@@ -15,7 +15,9 @@ import {
   Megaphone,
   TrendingUp,
   Zap,
-  Cog
+  Cog,
+  Palette,
+  TestTube
 } from 'lucide-react'
 
 const navigation = [
@@ -25,9 +27,12 @@ const navigation = [
   { name: 'Contacts', href: '/dashboard/contacts', icon: Users },
   { name: 'Voice Calls', href: '/dashboard/calls', icon: PhoneCall },
   { name: 'Campaigns', href: '/dashboard/campaigns', icon: Megaphone },
+  { name: 'Workflows', href: '/dashboard/workflows/builder', icon: Settings },
   { name: 'Phone Numbers', href: '/dashboard/phone-numbers', icon: Phone },
+  { name: 'White Label', href: '/dashboard/white-label', icon: Palette },
   { name: 'VAPI Config', href: '/dashboard/vapi-config', icon: Cog },
   { name: 'VAPI Status', href: '/dashboard/vapi-status', icon: TrendingUp },
+  { name: 'VAPI Demo Call', href: '/demo/vapi-call', icon: TestTube },
   { name: 'Optimization', href: '/dashboard/optimization', icon: BarChart3 },
   { name: 'Integrations', href: '/dashboard/integrations', icon: Building2 },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },

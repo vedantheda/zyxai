@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Vapi from '@vapi-ai/web'
+import { createVapi } from '@/lib/vapiConfig'
 
 export default function TestVapiPage() {
   const [logs, setLogs] = useState<string[]>([])
   const [isConnecting, setIsConnecting] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const vapiRef = useRef<Vapi | null>(null)
+  const vapiRef = useRef<any>(null)
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -18,19 +18,20 @@ export default function TestVapiPage() {
 
   useEffect(() => {
     // Initialize Vapi
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
+    const initVapi = async () => {
+      const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
 
-    if (!publicKey) {
-      addLog('❌ No public key found in environment')
-      return
-    }
+      if (!publicKey) {
+        addLog('❌ No public key found in environment')
+        return
+      }
 
-    addLog(`🔧 Initializing Vapi with key: ${publicKey.substring(0, 8)}...`)
+      addLog(`🔧 Initializing Vapi with key: ${publicKey.substring(0, 8)}...`)
 
-    try {
-      const vapi = new Vapi(publicKey)
-      vapiRef.current = vapi
-      addLog('✅ Vapi instance created successfully')
+      try {
+        const vapi = await createVapi(publicKey)
+        vapiRef.current = vapi
+        addLog('✅ Vapi instance created successfully')
 
       // Set up event listeners
       vapi.on('call-start', () => {
@@ -83,10 +84,13 @@ export default function TestVapiPage() {
 
       addLog('✅ Event listeners configured')
 
-    } catch (initError: any) {
-      addLog(`❌ Failed to initialize Vapi: ${initError.message}`)
-      setError(initError.message)
+      } catch (initError: any) {
+        addLog(`❌ Failed to initialize Vapi: ${initError.message}`)
+        setError(initError.message)
+      }
     }
+
+    initVapi()
   }, [])
 
   const testFrontendIntegration = async () => {

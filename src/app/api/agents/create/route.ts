@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { VapiService } from '@/lib/services/VapiService'
+import VapiService from '@/lib/services/VapiService'
 
 /**
  * Create Agent API - Direct agent creation (not template-based)

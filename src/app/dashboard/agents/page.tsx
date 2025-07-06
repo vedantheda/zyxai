@@ -120,8 +120,8 @@ export default function AgentsPage() {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <Bot className="mx-auto h-12 w-12 text-gray-400 animate-pulse" />
-            <p className="mt-4 text-gray-600">Loading your AI agents...</p>
+            <Bot className="mx-auto h-12 w-12 text-muted-foreground animate-pulse" />
+            <p className="mt-4 text-muted-foreground">Loading your AI agents...</p>
           </div>
         </div>
       </div>
@@ -143,8 +143,12 @@ export default function AgentsPage() {
             <Phone className="mr-2 h-4 w-4" />
             Demo Center
           </Button>
-          <Button variant="outline" onClick={() => router.push('/setup')}>
+          <Button variant="outline" onClick={() => router.push('/dashboard/agents/builder')}>
             <Bot className="mr-2 h-4 w-4" />
+            AI Employee Builder
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/setup')}>
+            <Settings className="mr-2 h-4 w-4" />
             Deploy Template
           </Button>
           <Button onClick={() => setShowCreateDialog(true)}>

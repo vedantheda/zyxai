@@ -76,6 +76,15 @@ export interface AIAgent {
   personality?: any
   voice_config?: any
   script_config?: any
+  audio_config?: any
+  transcribe_config?: any
+  speech_config?: any
+  analysis_config?: any
+  recording_config?: any
+  tools_config?: any
+  security_config?: any
+  hooks_config?: any
+  fallback_config?: any
   skills?: string[]
   is_active: boolean
   performance_metrics?: any

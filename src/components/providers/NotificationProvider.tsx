@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useNotifications, useNotificationToasts } from '@/hooks/useNotifications'
-import { NotificationToast } from '@/components/notifications/NotificationCenter'
 import { useAuth } from '@/contexts/AuthProvider'
 
 interface NotificationContextType {
@@ -41,7 +40,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     refreshNotifications
   } = useNotifications()
   
-  const { toasts, removeToast } = useNotificationToasts()
+  // const { toasts, removeToast } = useNotificationToasts()
 
   // Auto-refresh notifications every 30 seconds
   useEffect(() => {
@@ -74,16 +73,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   return (
     <NotificationContext.Provider value={contextValue}>
       {children}
-      
-      {/* Render notification toasts */}
+
+      {/* TODO: Render notification toasts */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
-        {toasts.map((notification) => (
-          <NotificationToast
-            key={notification.id}
-            notification={notification}
-            onDismiss={() => removeToast(notification.id)}
-          />
-        ))}
+        {/* Notification toasts will be rendered here */}
       </div>
     </NotificationContext.Provider>
   )

@@ -72,7 +72,7 @@ export function useUserPresence() {
 
   // Setup presence tracking
   useEffect(() => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id || !supabase) return
 
     // Clean up existing channel first
     if (presenceChannelRef.current) {
@@ -115,7 +115,7 @@ export function useUserPresence() {
 
     return () => {
       // Cleanup
-      if (presenceChannelRef.current) {
+      if (presenceChannelRef.current && supabase) {
         updatePresence(false)
         supabase.removeChannel(presenceChannelRef.current)
         presenceChannelRef.current = null

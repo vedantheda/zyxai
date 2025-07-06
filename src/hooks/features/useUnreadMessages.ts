@@ -34,7 +34,7 @@ export function useUnreadMessages() {
 
   // Real-time subscription for unread count updates
   useEffect(() => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id || !supabase) return
 
     // Initial fetch
     fetchUnreadCount()
@@ -77,7 +77,9 @@ export function useUnreadMessages() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (supabase) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [session?.user?.id, fetchUnreadCount])
 

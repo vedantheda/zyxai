@@ -17,6 +17,11 @@ const nextConfig = {
 
   // Security headers for production deployment
   async headers() {
+    // Disable strict headers in development to allow VAPI/Daily.co worklets
+    if (process.env.NODE_ENV === 'development') {
+      return []
+    }
+
     const securityHeaders = [
       {
         key: 'X-Frame-Options',
@@ -36,7 +41,7 @@ const nextConfig = {
       },
       {
         key: 'Permissions-Policy',
-        value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), magnetometer=(), gyroscope=(), accelerometer=()'
+        value: 'camera=(self), microphone=(self), geolocation=(), payment=(), usb=(), bluetooth=(), magnetometer=(), gyroscope=(), accelerometer=()'
       },
       {
         key: 'Strict-Transport-Security',
@@ -72,10 +77,34 @@ const nextConfig = {
       }
     ]
 
+    // Special headers for worklet files to prevent CORS issues
+    const workletHeaders = [
+      {
+        key: 'Cross-Origin-Embedder-Policy',
+        value: 'require-corp'
+      },
+      {
+        key: 'Cross-Origin-Opener-Policy',
+        value: 'same-origin'
+      },
+      {
+        key: 'Cross-Origin-Resource-Policy',
+        value: 'same-origin'
+      },
+      {
+        key: 'Cache-Control',
+        value: 'public, max-age=31536000, immutable'
+      }
+    ]
+
     return [
       {
         source: '/(.*)',
         headers: securityHeaders
+      },
+      {
+        source: '/worklets/:path*',
+        headers: workletHeaders
       }
     ]
   },

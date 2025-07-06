@@ -5,7 +5,6 @@
 
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { Database } from '@/types/database'
-import { clientNotificationService } from './ClientNotificationService'
 
 type NotificationType = 'call_completed' | 'campaign_finished' | 'agent_error' | 'integration_sync' | 'system_alert' | 'user_action'
 type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent'
@@ -76,9 +75,8 @@ export class NotificationService {
     try {
       // Check if we're in browser environment or if supabaseAdmin is not available
       if (typeof window !== 'undefined' || !supabaseAdmin) {
-        console.log('NotificationService: Using client service for notifications')
-        const notification = clientNotificationService.addNotification(userId, type, title, message, options)
-        return { success: true, notification: notification as any }
+        console.log('NotificationService: Browser environment - notifications not supported')
+        return { success: false, error: 'Notifications only supported on server-side' }
       }
 
       // Check user preferences
@@ -157,8 +155,8 @@ export class NotificationService {
     try {
       // Check if we're in browser environment or if supabaseAdmin is not available
       if (typeof window !== 'undefined' || !supabaseAdmin) {
-        console.log('NotificationService: Running in browser mode, using client service')
-        return clientNotificationService.getNotifications(userId, options)
+        console.log('NotificationService: Browser environment - using empty notifications')
+        return { notifications: [], totalCount: 0 }
       }
 
       let query = supabaseAdmin
@@ -277,8 +275,8 @@ export class NotificationService {
     try {
       // Check if we're in browser environment or if supabaseAdmin is not available
       if (typeof window !== 'undefined' || !supabaseAdmin) {
-        console.log('NotificationService: Running in browser mode, using client service')
-        return clientNotificationService.getUserPreferences(userId)
+        console.log('NotificationService: Browser environment - using default preferences')
+        return this.getDefaultPreferences(userId)
       }
 
       const { data, error } = await supabaseAdmin
@@ -359,6 +357,15 @@ export class NotificationService {
   subscribeToNotifications(userId: string, callback: (notification: Notification) => void): () => void {
     const subscriptionId = `${userId}-${Date.now()}`
     this.subscribers.set(subscriptionId, callback)
+
+    // Check if Supabase is available
+    if (!supabase) {
+      console.log('NotificationService: Supabase not available, no real-time notifications')
+      // Return empty unsubscribe function
+      return () => {
+        this.subscribers.delete(subscriptionId)
+      }
+    }
 
     // Set up Supabase real-time subscription
     const subscription = supabase

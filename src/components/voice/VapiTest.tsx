@@ -10,21 +10,21 @@ export default function VapiTest() {
 
   const testVapiImport = async () => {
     try {
-      setStatus('Creating VAPI instance...')
-      console.log('🔄 Testing VAPI creation...')
+      setStatus('Creating voice AI instance...')
+      console.log('🔄 Testing voice AI creation...')
 
       // Test creating instance
       const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
       if (publicKey) {
         const vapi = await createVapi(publicKey)
-        console.log('✅ VAPI instance created:', vapi)
-        setStatus('VAPI instance created successfully!')
+        console.log('✅ Voice AI instance created:', vapi)
+        setStatus('Voice AI instance created successfully!')
       } else {
-        setStatus('No VAPI public key found')
+        setStatus('No voice AI public key found')
       }
     } catch (error) {
-      console.error('❌ VAPI import error:', error)
-      setStatus(`VAPI import failed: ${error}`)
+      console.error('❌ Voice AI import error:', error)
+      setStatus(`Voice AI import failed: ${error}`)
     }
   }
 
@@ -104,14 +104,14 @@ export default function VapiTest() {
 
   return (
     <div className="p-6 max-w-md mx-auto bg-white rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold mb-4">VAPI & Microphone Test</h2>
-      
+      <h2 className="text-xl font-bold mb-4">Voice AI & Microphone Test</h2>
+
       <div className="space-y-4">
         <div>
-          <h3 className="font-semibold">VAPI Status:</h3>
+          <h3 className="font-semibold">Voice AI Status:</h3>
           <p className="text-sm text-gray-600">{status}</p>
           <Button onClick={testVapiImport} className="mt-2" size="sm">
-            Test VAPI Import
+            Test Voice AI Import
           </Button>
         </div>
         

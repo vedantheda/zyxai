@@ -190,9 +190,9 @@ export function VapiConfigurationExample() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>🚀 Advanced VAPI Configuration</CardTitle>
+          <CardTitle>🚀 Advanced Voice AI Configuration</CardTitle>
           <CardDescription>
-            Comprehensive VAPI configuration with all advanced features enabled
+            Comprehensive voice AI configuration with all advanced features enabled
           </CardDescription>
         </CardHeader>
         <CardContent>

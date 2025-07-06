@@ -215,9 +215,9 @@ export default function VapiDemoCall() {
     return true
   }
 
-  // Test VAPI configuration without starting a call
+  // Test voice AI configuration without starting a call
   const testVapiConfiguration = async () => {
-    console.log('🧪 Testing VAPI configuration...')
+    console.log('🧪 Testing voice AI configuration...')
     setError('')
     setSuccess('')
 
@@ -1237,7 +1237,7 @@ export default function VapiDemoCall() {
                       size="sm"
                       className="flex items-center gap-2"
                     >
-                      ⚙️ Test VAPI Config
+                      ⚙️ Test Voice AI Config
                     </Button>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">

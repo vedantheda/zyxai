@@ -38,11 +38,11 @@ import {
 import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useClients } from '@/hooks/useSupabaseData'
-import DocumentChecklistManager from '@/components/document-collection/DocumentChecklistManager'
-import ProgressTracker from '@/components/document-collection/ProgressTracker'
-import { PersonalizedChecklist } from '@/components/document-collection/PersonalizedChecklist'
-import { UploadTrackingDashboard } from '@/components/document-collection/UploadTrackingDashboard'
-import { DocumentAlerts } from '@/components/document-collection/DocumentAlerts'
+import DocumentChecklistManager from '@/components/features/documents/DocumentChecklistManager'
+import ProgressTracker from '@/components/features/documents/ProgressTracker'
+import { PersonalizedChecklist } from '@/components/features/documents/PersonalizedChecklist'
+import { UploadTrackingDashboard } from '@/components/features/documents/UploadTrackingDashboard'
+import { DocumentAlerts } from '@/components/features/documents/DocumentAlerts'
 
 export default function DocumentCollectionPage() {
   const { user, loading, isAuthenticated, isReady } = usePageAuth()

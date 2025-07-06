@@ -703,6 +703,80 @@ export class VapiService {
   }
 
   /**
+   * Update existing Vapi assistant with advanced configuration
+   */
+  static async updateAdvancedAssistant(
+    assistantId: string,
+    config: any
+  ): Promise<{ success: boolean; error: string | null }> {
+    try {
+      console.log(`🤖 VapiService: Updating assistant ${assistantId} with advanced config`)
+
+      // Build the update payload based on the provided configuration
+      const updateData: any = {}
+
+      // Basic fields
+      if (config.name) updateData.name = config.name
+      if (config.firstMessage) updateData.firstMessage = config.firstMessage
+
+      // Voice configuration
+      if (config.voice) {
+        updateData.voice = {
+          provider: config.voice.provider,
+          voiceId: config.voice.voiceId
+        }
+      }
+
+      // Transcriber configuration
+      if (config.transcriber) {
+        updateData.transcriber = {
+          provider: config.transcriber.provider,
+          model: config.transcriber.model,
+          language: config.transcriber.language
+        }
+      }
+
+      // Audio settings
+      if (config.backgroundSound !== undefined) {
+        updateData.backgroundSound = config.backgroundSound
+      }
+      if (config.backgroundDenoisingEnabled !== undefined) {
+        updateData.backgroundDenoisingEnabled = config.backgroundDenoisingEnabled
+      }
+      if (config.backchanneling !== undefined) {
+        updateData.backchanneling = config.backchanneling
+      }
+
+      // Analysis configuration
+      if (config.analysisPlan) {
+        updateData.analysisPlan = config.analysisPlan
+      }
+
+      // Recording configuration
+      if (config.recordingEnabled !== undefined) {
+        updateData.recordingEnabled = config.recordingEnabled
+      }
+
+      // Security configuration
+      if (config.hipaaEnabled !== undefined) {
+        updateData.hipaaEnabled = config.hipaaEnabled
+      }
+
+      console.log('🤖 Advanced update payload:', JSON.stringify(updateData, null, 2))
+
+      // Update the assistant using the Vapi SDK
+      const updatedAssistant = await vapi.assistants.update(assistantId, updateData)
+
+      console.log(`✅ Advanced Vapi assistant updated: ${updatedAssistant.id}`)
+      return { success: true, error: null }
+    } catch (error: any) {
+      console.error('❌ Error updating advanced Vapi assistant:', error)
+      const errorMessage = error?.message || error?.body?.message || 'Failed to update advanced assistant'
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  /**
    * Get all assistants
    */
   static async getAssistants(): Promise<{ assistants: VapiAssistant[]; error: string | null }> {

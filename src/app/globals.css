@@ -2,20 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Disable Krisp SDK to prevent worklet errors */
-.krisp-sdk,
-[class*="krisp"],
-[id*="krisp"] {
-  display: none !important;
-  visibility: hidden !important;
-}
 
-/* Hide Daily.co noise cancellation UI elements */
-[data-testid*="noise"],
-[class*="noise-cancellation"],
-[class*="background-blur"] {
-  display: none !important;
-}
 
 /* Font is now loaded via Next.js font optimization in layout.tsx */
 

@@ -24,9 +24,15 @@ export function useOrganization(): UseOrganizationReturn {
       setLoading(true)
       setError(null)
 
+      // Check if Supabase is available
+      if (!supabase) {
+        setError('Database connection unavailable')
+        return
+      }
+
       // Get current authenticated user
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      
+
       if (!authUser) {
         setError('User not authenticated')
         return
@@ -49,6 +55,7 @@ export function useOrganization(): UseOrganizationReturn {
       setOrganization(organization)
       setUser(userData)
     } catch (err) {
+      console.error('Organization fetch error:', err)
       setError('Failed to load organization data')
     } finally {
       setLoading(false)
@@ -58,7 +65,11 @@ export function useOrganization(): UseOrganizationReturn {
   useEffect(() => {
     fetchOrganizationData()
 
-    // Listen for auth state changes
+    // Listen for auth state changes only if Supabase is available
+    if (!supabase) {
+      return
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         fetchOrganizationData()

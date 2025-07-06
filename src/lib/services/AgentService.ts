@@ -205,12 +205,9 @@ export class AgentService {
   static validateAgentConfig(agent: Partial<AIAgent>): { valid: boolean; errors: string[] } {
     const errors: string[] = []
 
+    // Basic validation
     if (!agent.name || agent.name.trim().length < 2) {
       errors.push('Agent name must be at least 2 characters long')
-    }
-
-    if (!agent.agent_type) {
-      errors.push('Agent type is required')
     }
 
     if (agent.name && agent.name.length > 50) {
@@ -221,9 +218,119 @@ export class AgentService {
       errors.push('Agent description must be less than 500 characters')
     }
 
+    // Voice configuration validation
+    if (agent.voice_config) {
+      const voiceConfig = agent.voice_config as any
+      if (voiceConfig.provider && !['azure', 'openai', 'playht', 'cartesia', 'elevenlabs'].includes(voiceConfig.provider)) {
+        errors.push('Invalid voice provider. Must be one of: azure, openai, playht, cartesia, elevenlabs')
+      }
+      if (voiceConfig.speed && (voiceConfig.speed < 0.5 || voiceConfig.speed > 2.0)) {
+        errors.push('Voice speed must be between 0.5 and 2.0')
+      }
+      if (voiceConfig.pitch && (voiceConfig.pitch < -20 || voiceConfig.pitch > 20)) {
+        errors.push('Voice pitch must be between -20 and 20')
+      }
+      if (voiceConfig.stability && (voiceConfig.stability < 0 || voiceConfig.stability > 1)) {
+        errors.push('Voice stability must be between 0 and 1')
+      }
+    }
+
+    // Audio configuration validation
+    if (agent.audio_config) {
+      const audioConfig = agent.audio_config as any
+      if (audioConfig.backgroundSound && !['off', 'office', 'cafe', 'nature'].includes(audioConfig.backgroundSound)) {
+        errors.push('Invalid background sound option. Must be one of: off, office, cafe, nature')
+      }
+      if (audioConfig.inputGain && (audioConfig.inputGain < -20 || audioConfig.inputGain > 20)) {
+        errors.push('Input gain must be between -20 and 20 dB')
+      }
+      if (audioConfig.outputGain && (audioConfig.outputGain < -20 || audioConfig.outputGain > 20)) {
+        errors.push('Output gain must be between -20 and 20 dB')
+      }
+    }
+
+    // Transcriber configuration validation
+    if (agent.transcribe_config) {
+      const transcribeConfig = agent.transcribe_config as any
+      if (transcribeConfig.provider && !['deepgram', 'assembly-ai', 'azure'].includes(transcribeConfig.provider)) {
+        errors.push('Invalid transcriber provider. Must be one of: deepgram, assembly-ai, azure')
+      }
+      if (transcribeConfig.language && !/^[a-z]{2}(-[A-Z]{2})?$/.test(transcribeConfig.language)) {
+        errors.push('Invalid language code. Use format: en, en-US, es-ES, etc.')
+      }
+      if (transcribeConfig.model && transcribeConfig.model.trim().length === 0) {
+        errors.push('Transcriber model cannot be empty')
+      }
+    }
+
+    // Analysis configuration validation
+    if (agent.analysis_config) {
+      const analysisConfig = agent.analysis_config as any
+      if (analysisConfig.dataSchema) {
+        try {
+          JSON.parse(analysisConfig.dataSchema)
+        } catch {
+          errors.push('Invalid JSON schema for data extraction')
+        }
+      }
+    }
+
+    // Recording configuration validation
+    if (agent.recording_config) {
+      const recordingConfig = agent.recording_config as any
+      if (recordingConfig.retentionDays && (recordingConfig.retentionDays < 1 || recordingConfig.retentionDays > 365)) {
+        errors.push('Retention period must be between 1 and 365 days')
+      }
+    }
+
+    // Tools configuration validation
+    if (agent.tools_config) {
+      const toolsConfig = agent.tools_config as any
+      if (toolsConfig.functions && Array.isArray(toolsConfig.functions)) {
+        toolsConfig.functions.forEach((func: any, index: number) => {
+          if (!func.name || func.name.trim().length === 0) {
+            errors.push(`Function ${index + 1} must have a name`)
+          }
+          if (func.parameters && typeof func.parameters === 'string') {
+            try {
+              JSON.parse(func.parameters)
+            } catch {
+              errors.push(`Function ${index + 1} has invalid JSON parameters`)
+            }
+          }
+        })
+      }
+    }
+
+    // Security configuration validation
+    if (agent.security_config) {
+      const securityConfig = agent.security_config as any
+      if (securityConfig.maxCallsPerHour && (securityConfig.maxCallsPerHour < 1 || securityConfig.maxCallsPerHour > 1000)) {
+        errors.push('Max calls per hour must be between 1 and 1000')
+      }
+    }
+
+    // Hooks configuration validation
+    if (agent.hooks_config) {
+      const hooksConfig = agent.hooks_config as any
+      if (hooksConfig.webhookUrl && !this.isValidUrl(hooksConfig.webhookUrl)) {
+        errors.push('Invalid webhook URL')
+      }
+    }
+
     return {
       valid: errors.length === 0,
       errors
+    }
+  }
+
+  // Helper method to validate URLs
+  private static isValidUrl(url: string): boolean {
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
     }
   }
 

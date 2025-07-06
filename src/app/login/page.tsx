@@ -57,10 +57,10 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">ZyxAI</h1>
+            <h1 className="text-2xl font-bold text-foreground">ZyxAI</h1>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
-          <p className="text-gray-600">Sign in to your AI voice automation platform</p>
+          <h2 className="text-xl font-semibold text-foreground">Welcome back</h2>
+          <p className="text-muted-foreground">Sign in to your AI voice automation platform</p>
         </div>
 
         {/* Login Form */}

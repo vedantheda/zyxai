@@ -88,7 +88,7 @@ export function LoadingProvider({
         if (loadingStartRef.current) {
           const duration = Date.now() - loadingStartRef.current
           if (duration > maxLoadingTime * 0.8) { // Warn at 80% of max time
-            }s)`)
+            console.warn(`Loading taking longer than expected (${duration / 1000}s)`)
           }
         }
       }, 2000)
@@ -156,7 +156,7 @@ export function useAsyncWithLoading() {
         return result
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Unknown error')
-        :`, error.message)
+        console.error(`Execution failed:`, error.message)
         onError?.(error, retryCountRef.current)
         if (retryCountRef.current <= maxRetries) {
           console.log(`Retrying in ${retryDelay}ms... (${retryCountRef.current}/${maxRetries})`)

@@ -3,7 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { AIAgent, AgentTemplate } from '@/types/database'
-import { VapiService } from './VapiService'
+import VapiService from './VapiService'
 
 // Service role client for server-side operations that bypass RLS
 const supabaseAdmin = createClient(
@@ -159,34 +159,18 @@ export class AgentServiceServer {
         try {
           console.log(`🤖 Syncing with Vapi assistant: ${vapiAssistantId}`)
 
-          // Prepare Vapi update data
-          const vapiUpdates: any = {}
-
-          // Update name if changed
-          if (updates.name && updates.name !== currentAgent.name) {
-            vapiUpdates.name = updates.name
-          }
-
-          // Update voice if changed
-          if (updates.voice_config?.voice_id && updates.voice_config.voice_id !== currentAgent.voice_config?.voice_id) {
-            vapiUpdates.voice = this.getVapiVoiceConfig(updates.voice_config.voice_id)
-          }
-
-          // Update first message if script changed
-          if (updates.script_config?.greeting) {
-            vapiUpdates.firstMessage = updates.script_config.greeting
-          }
-
-          // Note: System prompt updates are disabled due to Vapi API constraints
-          // The system prompt is set during assistant creation and cannot be updated via PATCH
-          // This is a limitation of the current Vapi API
+          // Build comprehensive Vapi configuration from all sections
+          const vapiConfig = await this.buildVapiConfigFromAgent(updatedAgent, currentAgent)
 
           // Update Vapi assistant if there are changes
-          if (Object.keys(vapiUpdates).length > 0) {
-            const { success, error: vapiError } = await VapiService.updateAssistant(vapiAssistantId, vapiUpdates)
+          if (Object.keys(vapiConfig).length > 0) {
+            console.log('🤖 Vapi updates:', JSON.stringify(vapiConfig, null, 2))
+
+            // Use the advanced update method for comprehensive configuration
+            const { success, error: vapiError } = await VapiService.updateAdvancedAssistant(vapiAssistantId, vapiConfig)
 
             if (success) {
-              console.log(`✅ Vapi assistant updated successfully`)
+              console.log(`✅ Vapi assistant updated successfully with advanced configuration`)
             } else {
               console.warn(`⚠️ Vapi update failed: ${vapiError}`)
               // Continue anyway - local update succeeded
@@ -206,6 +190,70 @@ export class AgentServiceServer {
       console.log(`❌ AgentServiceServer update error: ${error}`)
       return { agent: null, error: 'Failed to update agent' }
     }
+  }
+
+  // Build comprehensive Vapi configuration from agent data
+  private static async buildVapiConfigFromAgent(updatedAgent: any, currentAgent: any): Promise<any> {
+    const vapiConfig: any = {}
+
+    // Basic configuration
+    if (updatedAgent.name !== currentAgent.name) {
+      vapiConfig.name = updatedAgent.name
+    }
+
+    if (updatedAgent.script_config?.greeting !== currentAgent.script_config?.greeting) {
+      vapiConfig.firstMessage = updatedAgent.script_config?.greeting
+    }
+
+    // Voice configuration
+    if (updatedAgent.voice_config && JSON.stringify(updatedAgent.voice_config) !== JSON.stringify(currentAgent.voice_config)) {
+      vapiConfig.voice = {
+        provider: updatedAgent.voice_config.provider || 'azure',
+        voiceId: updatedAgent.voice_config.voice_id || 'en-US-AriaNeural'
+      }
+    }
+
+    // Audio configuration
+    if (updatedAgent.audio_config && JSON.stringify(updatedAgent.audio_config) !== JSON.stringify(currentAgent.audio_config)) {
+      vapiConfig.backgroundSound = updatedAgent.audio_config.backgroundSound
+      vapiConfig.backgroundDenoisingEnabled = updatedAgent.audio_config.enableBackgroundDenoising
+      vapiConfig.backchanneling = updatedAgent.audio_config.enableBackchanneling
+    }
+
+    // Transcriber configuration
+    if (updatedAgent.transcribe_config && JSON.stringify(updatedAgent.transcribe_config) !== JSON.stringify(currentAgent.transcribe_config)) {
+      vapiConfig.transcriber = {
+        provider: updatedAgent.transcribe_config.provider || 'deepgram',
+        model: updatedAgent.transcribe_config.model || 'nova-2',
+        language: updatedAgent.transcribe_config.language || 'en-US'
+      }
+    }
+
+    // Analysis configuration
+    if (updatedAgent.analysis_config && JSON.stringify(updatedAgent.analysis_config) !== JSON.stringify(currentAgent.analysis_config)) {
+      vapiConfig.analysisPlan = {
+        summaryPlan: {
+          enabled: updatedAgent.analysis_config.enableSuccessEvaluation,
+          type: updatedAgent.analysis_config.summaryType
+        },
+        structuredDataPlan: {
+          enabled: updatedAgent.analysis_config.enableDataExtraction,
+          schema: updatedAgent.analysis_config.dataSchema
+        }
+      }
+    }
+
+    // Recording configuration
+    if (updatedAgent.recording_config && JSON.stringify(updatedAgent.recording_config) !== JSON.stringify(currentAgent.recording_config)) {
+      vapiConfig.recordingEnabled = updatedAgent.recording_config.enableAudioRecording
+    }
+
+    // Security configuration
+    if (updatedAgent.security_config && JSON.stringify(updatedAgent.security_config) !== JSON.stringify(currentAgent.security_config)) {
+      vapiConfig.hipaaEnabled = updatedAgent.security_config.enableHIPAA
+    }
+
+    return vapiConfig
   }
 
   // Get Vapi voice configuration from custom voice ID

@@ -596,7 +596,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
   }, [apiCall])
   // Real-time subscriptions setup
   useEffect(() => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id || !supabase) return
 
     // Clean up existing channel first
     if (realtimeChannelRef.current) {
@@ -703,7 +703,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
     realtimeChannelRef.current = channel
 
     return () => {
-      if (realtimeChannelRef.current) {
+      if (realtimeChannelRef.current && supabase) {
         supabase.removeChannel(realtimeChannelRef.current)
         realtimeChannelRef.current = null
       }
@@ -748,7 +748,7 @@ export function useMessages(options: UseMessagesOptions = {}) {
       markAsReadTimeouts.current.forEach(timeout => clearTimeout(timeout))
       markAsReadTimeouts.current.clear()
 
-      if (realtimeChannelRef.current) {
+      if (realtimeChannelRef.current && supabase) {
         supabase.removeChannel(realtimeChannelRef.current)
         realtimeChannelRef.current = null
       }

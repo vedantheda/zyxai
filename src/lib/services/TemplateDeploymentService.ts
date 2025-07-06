@@ -3,7 +3,7 @@
  * Handles the deployment of industry templates to create working agents and campaigns
  */
 
-import { VapiService } from './VapiService'
+import VapiService from './VapiService'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getIndustryTemplate, type IndustryTemplate, type AgentTemplate } from '@/lib/templates/IndustryTemplates'
 

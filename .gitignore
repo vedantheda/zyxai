@@ -10,7 +10,11 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing (removed Jest)
+# testing
+/coverage
+/.nyc_output
+/test-results
+/playwright-report
 
 # next.js
 /.next/
@@ -22,6 +26,8 @@
 # misc
 .DS_Store
 *.pem
+.vscode/
+.idea/
 
 # debug
 npm-debug.log*
@@ -39,4 +45,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# temporary files
+*.tmp
+*.temp
+.cache/
+
+# package manager lock files (keep only one)
+bun.lock
+yarn.lock
+
+# backup files
+*.bak
+*.backup
+*~

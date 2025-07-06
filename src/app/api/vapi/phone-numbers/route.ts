@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { VapiService } from '@/lib/services/VapiService'
+import VapiService from '@/lib/services/VapiService'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const organizationId = searchParams.get('organizationId')
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: 'Organization ID is required' },
-        { status: 400 }
-      )
-    }
-
+    // Try to get real phone numbers from VAPI
     const { phoneNumbers, error } = await VapiService.getPhoneNumbers()
 
-    if (error) {
-      return NextResponse.json({ error }, { status: 500 })
+    if (!error && phoneNumbers && phoneNumbers.length > 0) {
+      return NextResponse.json({
+        success: true,
+        phoneNumbers: phoneNumbers.map(phone => ({
+          id: phone.id,
+          number: phone.number,
+          provider: phone.provider || 'vapi'
+        }))
+      })
     }
 
     // Mock data for demonstration - in real implementation, filter by organization

@@ -35,7 +35,7 @@ import {
   Filter,
   Plus
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth, useAuthStatus } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
 import { useClients } from '@/hooks/useSupabaseData'
 import DocumentChecklistManager from '@/components/features/documents/DocumentChecklistManager'
@@ -45,7 +45,9 @@ import { UploadTrackingDashboard } from '@/components/features/documents/UploadT
 import { DocumentAlerts } from '@/components/features/documents/DocumentAlerts'
 
 export default function DocumentCollectionPage() {
-  const { user, loading, isAuthenticated, isReady } = usePageAuth()
+  const { user, loading } = useAuth()
+  const { isAuthenticated } = useAuthStatus()
+  const isReady = !loading
   const { clients, loading: clientsLoading } = useClients()
   const [selectedClient, setSelectedClient] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')

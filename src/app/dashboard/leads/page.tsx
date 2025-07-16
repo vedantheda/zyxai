@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSessionSync } from '@/hooks/useSessionSync'
 import { LoadingScreen } from '@/components/ui/loading-screen'
+import { CRMVoiceIntegration } from '@/components/integrations/CRMVoiceIntegration'
+import { CRMAdvancedDashboard } from '@/components/integrations/CRMAdvancedDashboard'
 import {
   Users,
   Plus,
@@ -368,11 +370,13 @@ export default function LeadsPage() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="list">Leads List</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="vapi">Voice AI</TabsTrigger>
+          <TabsTrigger value="crm">CRM</TabsTrigger>
         </TabsList>
 
         {/* Leads List */}
@@ -585,6 +589,16 @@ export default function LeadsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Voice AI Integration */}
+        <TabsContent value="vapi" className="space-y-6">
+          <CRMVoiceIntegration />
+        </TabsContent>
+
+        {/* CRM Advanced Integration */}
+        <TabsContent value="crm" className="space-y-6">
+          <CRMAdvancedDashboard />
         </TabsContent>
       </Tabs>
 

@@ -77,9 +77,9 @@ export default function NicheSelectionPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8 pt-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Choose Your Business Niche</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Choose Your Business Industry</h1>
           <p className="text-lg text-slate-300">
-            Select your industry to get started with pre-built AI agents tailored for your business
+            Select your industry to get started with pre-built AI voice agents tailored for your business
           </p>
         </div>
 
@@ -165,10 +165,10 @@ export default function NicheSelectionPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-white">
                 <span>{selectedNiche.icon}</span>
-                <span>Available AI Agents for {selectedNiche.name}</span>
+                <span>Available AI Voice Agents for {selectedNiche.name}</span>
               </CardTitle>
               <CardDescription className="text-slate-300">
-                These pre-built AI agents are ready to use for your {selectedNiche.name.toLowerCase()} business
+                These pre-built AI voice agents are ready to use for your {selectedNiche.name.toLowerCase()} business
               </CardDescription>
             </CardHeader>
             <CardContent>

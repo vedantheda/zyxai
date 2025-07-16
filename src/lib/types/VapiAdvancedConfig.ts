@@ -297,19 +297,38 @@ export interface VapiSquadConfig {
 }
 
 export interface VapiWorkflowConfig {
+  id: string
+  name: string
+  description: string
   nodes: Array<VapiWorkflowNode>
-  edges?: Array<{
-    from: string
-    to: string
+  edges: Array<{
+    id: string
+    source: string
+    target: string
+    label?: string
     condition?: string
   }>
+  variables: Record<string, any>
+  status: 'draft' | 'active' | 'paused' | 'archived'
+  createdAt: string
+  updatedAt?: string
 }
 
 export interface VapiWorkflowNode {
   id: string
-  type: 'conversation' | 'transfer' | 'endCall' | 'condition'
+  type: 'start' | 'assistant' | 'condition' | 'action' | 'end'
+  name: string
+  position: { x: number; y: number }
+  data: {
+    assistantId?: string
+    condition?: string
+    action?: string
+    message?: string
+    [key: string]: any
+  }
+  connections: string[]
 
-  // Conversation node properties
+  // Legacy properties for backward compatibility
   firstMessage?: string
   systemPrompt?: string
   model?: VapiAdvancedAssistantConfig['model']

@@ -29,21 +29,21 @@ INSERT INTO public.business_niches (id, name, slug, description, icon, color, fe
 '["appointment_scheduling", "patient_reminders", "survey_collection", "hipaa_compliance", "emr_integration"]',
 '["epic", "cerner", "athenahealth", "calendly", "zocdoc"]');
 
--- Financial Services
+-- E-commerce & Retail
 INSERT INTO public.business_niches (id, name, slug, description, icon, color, features, integrations) VALUES
-('550e8400-e29b-41d4-a716-446655440004', 'Financial Services', 'financial-services',
-'AI voice agents for financial advisors including lead qualification, appointment setting, and follow-up calls.',
-'💰', '#F59E0B',
-'["lead_qualification", "appointment_scheduling", "portfolio_reviews", "compliance_tracking", "crm_integration"]',
-'["salesforce", "redtail", "wealthbox", "calendly", "hubspot"]');
+('550e8400-e29b-41d4-a716-446655440004', 'E-commerce & Retail', 'ecommerce-retail',
+'AI voice agents for online stores including order support, product inquiries, and customer service.',
+'🛒', '#F59E0B',
+'["order_support", "product_inquiries", "customer_service", "return_processing", "inventory_updates"]',
+'["shopify", "woocommerce", "magento", "bigcommerce", "stripe"]');
 
--- Home Services
+-- Professional Services
 INSERT INTO public.business_niches (id, name, slug, description, icon, color, features, integrations) VALUES
-('550e8400-e29b-41d4-a716-446655440005', 'Home Services', 'home-services',
-'AI voice agents for home service providers including lead qualification, estimate scheduling, and follow-up.',
-'🔧', '#EF4444',
-'["lead_qualification", "estimate_scheduling", "service_reminders", "review_requests", "payment_follow_up"]',
-'["servicetitan", "housecall_pro", "jobber", "calendly", "quickbooks"]');
+('550e8400-e29b-41d4-a716-446655440005', 'Professional Services', 'professional-services',
+'AI voice agents for consultants, lawyers, and agencies including appointment booking and client follow-up.',
+'💼', '#EF4444',
+'["appointment_booking", "client_follow_up", "consultation_scheduling", "service_inquiries", "lead_qualification"]',
+'["calendly", "acuity", "hubspot", "salesforce", "zoom"]');
 
 -- ============================================================================
 -- REAL ESTATE AGENT TEMPLATES

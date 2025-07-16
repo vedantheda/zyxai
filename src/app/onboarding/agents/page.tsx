@@ -214,10 +214,10 @@ export default function AgentConfigurationPage() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8 pt-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Configure Your {niche?.name} Agents
+            Configure Your AI Voice Agents
           </h1>
           <p className="text-lg text-slate-300">
-            Select and customize the AI agents you want for your business
+            Select and customize the AI voice agents you want for your {niche?.name.toLowerCase()} business
           </p>
         </div>
 
@@ -299,13 +299,13 @@ export default function AgentConfigurationPage() {
         </div>
 
         <div className="bg-slate-800/50 border-slate-700 rounded-lg border p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-white">Selected Agents Summary</h3>
+          <h3 className="text-lg font-semibold mb-4 text-white">Selected AI Voice Agents Summary</h3>
           {selectedTemplates.size === 0 ? (
-            <p className="text-slate-400">No agents selected. Choose at least one agent to continue.</p>
+            <p className="text-slate-400">No AI voice agents selected. Choose at least one agent to continue.</p>
           ) : (
             <div className="space-y-2">
               <p className="text-slate-300">
-                You've selected {selectedTemplates.size} agent{selectedTemplates.size !== 1 ? 's' : ''} for your {niche?.name.toLowerCase()} business:
+                You've selected {selectedTemplates.size} AI voice agent{selectedTemplates.size !== 1 ? 's' : ''} for your {niche?.name.toLowerCase()} business:
               </p>
               <div className="flex flex-wrap gap-2">
                 {templates

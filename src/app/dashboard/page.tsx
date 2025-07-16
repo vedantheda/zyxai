@@ -251,14 +251,14 @@ export default function DashboardPage() {
                   <h3 className="font-medium text-foreground">Choose Your Niche</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Select your business industry to get pre-built AI agents
+                  Select your business industry to get pre-built AI voice agents
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => router.push('/onboarding/niche')}
                 >
-                  Select Niche
+                  Select Industry
                 </Button>
               </div>
 
@@ -267,17 +267,17 @@ export default function DashboardPage() {
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                     <span className="text-primary font-semibold text-sm">2</span>
                   </div>
-                  <h3 className="font-medium text-foreground">Configure Agents</h3>
+                  <h3 className="font-medium text-foreground">Configure Voice Agents</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Customize your AI agents' personalities and scripts
+                  Customize your AI voice agents' personalities and scripts
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => router.push('/dashboard/agents')}
                 >
-                  Manage Agents
+                  Manage Voice Agents
                 </Button>
               </div>
 

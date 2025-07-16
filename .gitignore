@@ -10,11 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-/.nyc_output
-/test-results
-/playwright-report
+
 
 # next.js
 /.next/

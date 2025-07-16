@@ -150,7 +150,7 @@ export default function ResetPasswordPage() {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Remember your password?{' '}
-                <Link href="/login" className="text-primary hover:underline">
+                <Link href="/signin" className="text-primary hover:underline">
                   Sign in
                 </Link>
               </p>

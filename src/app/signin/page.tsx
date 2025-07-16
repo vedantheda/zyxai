@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Brain, FileText, Zap } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth, useAuthStatus } from '@/contexts/AuthProvider'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
@@ -19,16 +19,23 @@ export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading, signIn } = useAuth()
+  const { isAuthenticated, needsProfileCompletion } = useAuthStatus()
 
   // Get redirect URL from query params
   const redirectTo = searchParams.get('redirect') || '/dashboard'
 
-  // Redirect if already authenticated
+  // Handle authentication redirects
   useEffect(() => {
-    if (!loading && user) {
+    if (loading) return // Wait for auth to initialize
+
+    if (isAuthenticated) {
+      console.log('🔐 SignIn: User authenticated, redirecting to:', redirectTo)
       router.replace(redirectTo)
+    } else if (user && needsProfileCompletion) {
+      console.log('🔐 SignIn: User needs profile completion')
+      router.replace('/complete-profile')
     }
-  }, [user, loading, router, redirectTo])
+  }, [user, loading, isAuthenticated, needsProfileCompletion, redirectTo, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,8 +49,8 @@ export default function SignInPage() {
         setError(error.message)
         setIsLoading(false)
       } else {
-        // Success - redirect will happen automatically via useEffect
-        router.replace(redirectTo)
+        // Success - let the auth context handle the redirect
+        // The useEffect below will handle redirecting based on profile completion status
       }
     } catch (err) {
       console.error('Sign in error:', err)

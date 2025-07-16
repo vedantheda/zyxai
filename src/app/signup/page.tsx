@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, Brain, Shield, Users, Zap } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { OrganizationService } from '@/lib/services/OrganizationService'
 import { useAuth } from '@/contexts/AuthProvider'
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -20,13 +20,30 @@ export default function SignUpPage() {
     password: '',
     confirmPassword: '',
     organizationName: '',
-    role: 'client', // Default to client
+    organizationSlug: '',
+    organizationDescription: '',
+    organizationIndustry: '',
+    organizationWebsite: '',
+    organizationPhone: '',
     agreeToTerms: false
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const router = useRouter()
   const { user, loading } = useAuth()
+
+  // Auto-generate slug from organization name
+  const handleOrgNameChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      organizationName: value,
+      organizationSlug: prev.organizationSlug === OrganizationService.generateSlug(prev.organizationName)
+        ? OrganizationService.generateSlug(value)
+        : prev.organizationSlug
+    }))
+  }
+
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
@@ -38,6 +55,8 @@ export default function SignUpPage() {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setSuccess('')
+
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
@@ -54,47 +73,50 @@ export default function SignUpPage() {
       setIsLoading(false)
       return
     }
+    if (!formData.organizationName.trim()) {
+      setError('Organization name is required')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      console.log('🔐 SignUp: Attempting sign up for:', formData.email)
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.lastName}`,
-            organization_name: formData.organizationName,
-            role: formData.role,
-          }
-        }
+      console.log('🔐 SignUp: Attempting complete signup for:', formData.email)
+
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          organizationName: formData.organizationName,
+          organizationSlug: formData.organizationSlug || undefined,
+          organizationDescription: formData.organizationDescription || undefined,
+          organizationIndustry: formData.organizationIndustry || undefined,
+          organizationWebsite: formData.organizationWebsite || undefined,
+          organizationPhone: formData.organizationPhone || undefined
+        })
       })
-      if (error) {
-        console.error('🔐 SignUp: Supabase error:', error)
-        // Provide more specific error messages
-        if (error.message.includes('already registered')) {
-          setError('An account with this email already exists. Please sign in instead.')
-        } else if (error.message.includes('invalid email')) {
-          setError('Please enter a valid email address.')
-        } else if (error.message.includes('password')) {
-          setError('Password must be at least 6 characters long.')
-        } else if (error.message.includes('Database error')) {
-          setError('Database error occurred. Please contact support if this persists.')
-        } else {
-          setError(`Signup failed: ${error.message}`)
-        }
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || 'Signup failed')
         setIsLoading(false)
         return
       }
-      if (data.user) {
-        console.log('🔐 SignUp: Success, redirecting based on role:', formData.role)
-        // Use window.location.href for reliable redirect (avoids hydration issues)
-        setTimeout(() => {
-          const destination = formData.role === 'client' ? '/onboarding' : '/dashboard'
-          console.log('🔐 SignUp: Performing redirect with full page reload to:', destination)
-          window.location.href = destination
-        }, 800)
-      }
+
+      console.log('✅ Complete signup successful:', result)
+      setSuccess(result.message)
+
+      // Redirect to signin page with success message
+      setTimeout(() => {
+        router.push(`/signin?message=${encodeURIComponent(result.message)}`)
+      }, 2000)
+
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
@@ -153,6 +175,11 @@ export default function SignUpPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
+              {success && (
+                <Alert>
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
@@ -180,33 +207,50 @@ export default function SignUpPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">I am a...</Label>
+                <Label htmlFor="organizationName">Organization Name *</Label>
+                <Input
+                  id="organizationName"
+                  placeholder="Your Company LLC"
+                  value={formData.organizationName}
+                  onChange={(e) => handleOrgNameChange(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  autoComplete="organization"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="organizationSlug">Organization URL Slug</Label>
+                <Input
+                  id="organizationSlug"
+                  placeholder="your-company"
+                  value={formData.organizationSlug}
+                  onChange={(e) => handleInputChange('organizationSlug', e.target.value)}
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This will be used in your organization's URL: zyxai.com/{formData.organizationSlug || 'your-company'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="organizationIndustry">Industry (Optional)</Label>
                 <Select
-                  value={formData.role}
-                  onValueChange={(value) => handleInputChange('role', value)}
+                  value={formData.organizationIndustry}
+                  onValueChange={(value) => handleInputChange('organizationIndustry', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
+                    <SelectValue placeholder="Select your industry" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="client">Individual Taxpayer (Client)</SelectItem>
-                    <SelectItem value="admin">Tax Professional (CPA/EA)</SelectItem>
+                    <SelectItem value="real-estate">Real Estate</SelectItem>
+                    <SelectItem value="healthcare">Healthcare</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="technology">Technology</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {formData.role === 'admin' && (
-                <div className="space-y-2">
-                  <Label htmlFor="organizationName">Practice/Organization Name</Label>
-                  <Input
-                    id="organizationName"
-                    placeholder="Your Tax Practice LLC"
-                    value={formData.organizationName}
-                    onChange={(e) => handleInputChange('organizationName', e.target.value)}
-                    disabled={isLoading}
-                    autoComplete="organization"
-                  />
-                </div>
-              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

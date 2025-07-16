@@ -246,6 +246,41 @@ export interface ActivityLog {
   created_at: string
 }
 
+export interface UserInvitation {
+  id: string
+  organization_id: string
+  invited_by?: string
+  email: string
+  first_name?: string
+  last_name?: string
+  role: 'owner' | 'admin' | 'manager' | 'agent' | 'viewer'
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled'
+  invitation_token: string
+  created_at: string
+  expires_at: string
+  accepted_at?: string
+  cancelled_at?: string
+  invitation_message?: string
+  permissions?: any
+  metadata?: any
+}
+
+export interface OrganizationMemberAudit {
+  id: string
+  organization_id: string
+  user_id?: string
+  performed_by?: string
+  action: string
+  target_email?: string
+  target_user_id?: string
+  old_role?: string
+  new_role?: string
+  details?: any
+  ip_address?: string
+  user_agent?: string
+  created_at: string
+}
+
 // Database response types
 export type Database = {
   public: {
@@ -294,6 +329,16 @@ export type Database = {
         Row: Call
         Insert: Omit<Call, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Call, 'id' | 'created_at' | 'updated_at'>>
+      }
+      user_invitations: {
+        Row: UserInvitation
+        Insert: Omit<UserInvitation, 'id' | 'created_at'>
+        Update: Partial<Omit<UserInvitation, 'id' | 'created_at'>>
+      }
+      organization_member_audit: {
+        Row: OrganizationMemberAudit
+        Insert: Omit<OrganizationMemberAudit, 'id' | 'created_at'>
+        Update: Partial<Omit<OrganizationMemberAudit, 'id' | 'created_at'>>
       }
     }
   }

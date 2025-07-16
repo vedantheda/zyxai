@@ -21,9 +21,11 @@ export async function middleware(request: NextRequest) {
     '/signup',
     '/login',
     '/register',
-    '/auth-test',
-    '/test-instant',
-    '/force-signout'
+    '/forgot-password',
+    '/reset-password',
+    '/complete-profile',
+    '/force-signout',
+    '/accept-invitation'
   ]
 
   // Check if this is a public route

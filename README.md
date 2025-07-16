@@ -66,17 +66,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - **AI Processing**: OpenRouter + Custom AI Models
 - **Styling**: Tailwind CSS + shadcn/ui
 
-## 🧪 Testing
-```bash
-# Run unit tests
-npm run test
 
-# Run E2E tests
-npm run test:e2e
-
-# Run with coverage
-npm run test:coverage
-```
 
 ## 🚀 Deployment
 See [Production Deployment Checklist](./docs/deployment/production-checklist.md) for detailed deployment instructions.

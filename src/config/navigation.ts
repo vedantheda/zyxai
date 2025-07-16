@@ -26,7 +26,12 @@ import {
   AlertTriangle,
   Shield,
   Database,
-  Zap
+  Zap,
+  Phone,
+  PhoneCall,
+  GitBranch,
+  Hash,
+  Mic
 } from 'lucide-react'
 
 export interface NavigationItem {
@@ -39,94 +44,79 @@ export interface NavigationItem {
   isComingSoon?: boolean
 }
 
-// Admin navigation for tax professionals
+// Admin navigation for AI Voice Platform
 export const adminNavigation: NavigationItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-    description: 'Overview and key metrics'
+    description: 'Overview and analytics'
   },
   {
-    name: 'Pipeline',
-    href: '/pipeline',
-    icon: Target,
-    description: 'Client progress tracking'
-  },
-  {
-    name: 'Clients',
-    href: '/clients',
-    icon: Users,
-    description: 'Manage client accounts'
-  },
-  {
-    name: 'Documents',
-    href: '/documents',
-    icon: FileText,
-    description: 'Document management'
-  },
-  {
-    name: 'Document Processing',
-    href: '/documents/processing',
-    icon: FileText,
-    description: 'AI-powered document processing',
-    isNew: true
-  },
-  {
-    name: 'Auto-Fill Forms',
-    href: '/documents/auto-fill',
-    icon: Zap,
-    description: 'Auto-populate tax forms from processed documents',
-    isNew: true
-  },
-  {
-    name: 'Tasks',
-    href: '/tasks',
-    icon: CheckSquare,
-    description: 'Task management'
-  },
-  {
-    name: 'Messages',
-    href: '/messages',
-    icon: MessageSquare,
-    description: 'Client communications'
-  },
-  {
-    name: 'Bookkeeping',
-    href: '/bookkeeping',
-    icon: DollarSign,
-    description: 'Financial management'
-  },
-  {
-    name: 'Reports',
-    href: '/reports',
-    icon: BarChart3,
-    description: 'Analytics and reports'
-  },
-  {
-    name: 'AI Assistant',
-    href: '/ai-assistant',
+    name: 'AI Agents',
+    href: '/dashboard/agents',
     icon: Brain,
-    description: 'AI-powered assistance',
-    isNew: true
+    description: 'Manage AI voice agents'
   },
   {
-    name: 'Calendar',
-    href: '/calendar',
-    icon: Calendar,
-    description: 'Schedule and appointments'
+    name: 'Campaigns',
+    href: '/dashboard/campaigns',
+    icon: Phone,
+    description: 'Voice call campaigns'
   },
   {
-    name: 'Compliance',
-    href: '/compliance',
-    icon: Shield,
-    description: 'Compliance monitoring'
+    name: 'Contacts',
+    href: '/dashboard/contacts',
+    icon: Users,
+    description: 'Contact management'
+  },
+  {
+    name: 'Calls',
+    href: '/dashboard/calls',
+    icon: PhoneCall,
+    description: 'Call history and logs'
+  },
+  {
+    name: 'Analytics',
+    href: '/dashboard/voice-analytics',
+    icon: BarChart3,
+    description: 'Voice analytics and reports'
+  },
+  {
+    name: 'Integrations',
+    href: '/dashboard/integrations',
+    icon: Zap,
+    description: 'CRM and third-party integrations'
+  },
+  {
+    name: 'Workflows',
+    href: '/dashboard/workflows',
+    icon: GitBranch,
+    description: 'Automation workflows'
+  },
+  {
+    name: 'Phone Numbers',
+    href: '/dashboard/phone-numbers',
+    icon: Hash,
+    description: 'Manage phone numbers'
+  },
+  {
+    name: 'Team',
+    href: '/dashboard/team',
+    icon: UserCheck,
+    description: 'Team management'
+  },
+  {
+    name: 'Voice Config',
+    href: '/dashboard/voice-config',
+    icon: Mic,
+    description: 'Voice configuration'
   },
   {
     name: 'Settings',
     href: '/settings',
     icon: Settings,
-    description: 'System configuration'
+    description: 'Account settings'
   }
 ]
 

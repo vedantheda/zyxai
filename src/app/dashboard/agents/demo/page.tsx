@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AgentService } from '@/lib/services/AgentService'
 import { AIAgent } from '@/types/database'
+import { useOrganization } from '@/hooks/useOrganization'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +34,7 @@ import {
 export default function AgentDemoPage() {
   const searchParams = useSearchParams()
   const preselectedAgentId = searchParams.get('agentId')
+  const { organization, loading: orgLoading, error: orgError } = useOrganization()
 
   const [agents, setAgents] = useState<AIAgent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null)
@@ -46,8 +48,13 @@ export default function AgentDemoPage() {
   })
 
   useEffect(() => {
-    loadAgents()
-  }, [])
+    if (organization && !orgLoading) {
+      loadAgents()
+    } else if (orgError) {
+      setError(orgError)
+      setLoading(false)
+    }
+  }, [organization, orgLoading, orgError])
 
   useEffect(() => {
     if (preselectedAgentId && agents.length > 0) {
@@ -59,8 +66,11 @@ export default function AgentDemoPage() {
   }, [preselectedAgentId, agents])
 
   const loadAgents = async () => {
+    if (!organization) return
+
     try {
-      const { agents, error } = await AgentService.getAgents()
+      setLoading(true)
+      const { agents, error } = await AgentService.getOrganizationAgents(organization.id)
       if (error) {
         setError(error)
       } else {

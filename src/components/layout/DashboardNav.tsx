@@ -17,7 +17,9 @@ import {
   Zap,
   Cog,
   Palette,
-  TestTube
+  TestTube,
+  CreditCard,
+  Bell
 } from 'lucide-react'
 
 const navigation = [
@@ -31,12 +33,16 @@ const navigation = [
   { name: 'Phone Numbers', href: '/dashboard/phone-numbers', icon: Phone },
   { name: 'White Label', href: '/dashboard/white-label', icon: Palette },
   { name: 'VAPI Config', href: '/dashboard/vapi-config', icon: Cog },
+  { name: 'VAPI Advanced', href: '/dashboard/vapi-advanced', icon: Zap },
   { name: 'VAPI Status', href: '/dashboard/vapi-status', icon: TrendingUp },
   { name: 'VAPI Demo Call', href: '/demo/vapi-call', icon: TestTube },
   { name: 'Optimization', href: '/dashboard/optimization', icon: BarChart3 },
   { name: 'Integrations', href: '/dashboard/integrations', icon: Building2 },
+  { name: 'Leads', href: '/dashboard/leads', icon: Users },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Voice Analytics', href: '/dashboard/voice-analytics', icon: BarChart3 },
+  { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 

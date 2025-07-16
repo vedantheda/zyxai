@@ -48,6 +48,7 @@ export default function AgentConfigPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [agent, setAgent] = useState<AIAgent | null>(null)
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -67,6 +68,7 @@ export default function AgentConfigPage() {
   const [securityConfig, setSecurityConfig] = useState<any>({})
   const [hooksConfig, setHooksConfig] = useState<any>({})
   const [fallbackConfig, setFallbackConfig] = useState<any>({})
+  const [modelConfig, setModelConfig] = useState<any>({})
 
   // Validation
   const agentData = {
@@ -83,7 +85,8 @@ export default function AgentConfigPage() {
     tools_config: toolsConfig,
     security_config: securityConfig,
     hooks_config: hooksConfig,
-    fallback_config: fallbackConfig
+    fallback_config: fallbackConfig,
+    model_config: modelConfig
   }
   const validation = useAgentValidation(agentData)
 
@@ -97,6 +100,7 @@ export default function AgentConfigPage() {
     if (templateConfig.speech_config) setSpeechConfig(templateConfig.speech_config)
     if (templateConfig.analysis_config) setAnalysisConfig(templateConfig.analysis_config)
     if (templateConfig.recording_config) setRecordingConfig(templateConfig.recording_config)
+    if (templateConfig.model_config) setModelConfig(templateConfig.model_config)
     if (templateConfig.tools_config) setToolsConfig(templateConfig.tools_config)
     if (templateConfig.security_config) setSecurityConfig(templateConfig.security_config)
     if (templateConfig.hooks_config) setHooksConfig(templateConfig.hooks_config)
@@ -153,6 +157,7 @@ export default function AgentConfigPage() {
       setSecurityConfig(agent.security_config || {})
       setHooksConfig(agent.hooks_config || {})
       setFallbackConfig(agent.fallback_config || {})
+      setModelConfig(agent.model_config || {})
       }
     } catch (err) {
       setError('Failed to load agent')
@@ -188,7 +193,8 @@ export default function AgentConfigPage() {
         tools_config: toolsConfig,
         security_config: securityConfig,
         hooks_config: hooksConfig,
-        fallback_config: fallbackConfig
+        fallback_config: fallbackConfig,
+        model_config: modelConfig
       }
 
       const validation = AgentService.validateAgentConfig(updates)
@@ -293,6 +299,26 @@ export default function AgentConfigPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Simple/Advanced Mode Toggle */}
+            <div className="flex items-center space-x-1 bg-gray-700 rounded-lg p-1">
+              <Button
+                variant={!isAdvancedMode ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setIsAdvancedMode(false)}
+                className="h-8 px-3 text-xs"
+              >
+                Simple
+              </Button>
+              <Button
+                variant={isAdvancedMode ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setIsAdvancedMode(true)}
+                className="h-8 px-3 text-xs"
+              >
+                Advanced
+              </Button>
+            </div>
+
             {/* Configuration Management - Compact */}
             <div className="flex items-center gap-1">
               <ConfigurationTemplates
@@ -414,9 +440,31 @@ export default function AgentConfigPage() {
       {/* Configuration Navigation */}
       <div className="space-y-4 w-full overflow-x-hidden">
         <Tabs defaultValue="essentials" className="space-y-4 w-full">
+          {/* Simple Mode Message */}
+          {!isAdvancedMode && (
+            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+              <Bot className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                <strong>Simple Mode:</strong> You're viewing basic settings only. For complex configurations, consider using our{' '}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-blue-600 underline"
+                  onClick={() => router.push('/setup')}
+                >
+                  pre-built templates
+                </Button>{' '}
+                or switch to Advanced Mode for full VAPI customization.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Simplified Navigation */}
           <div className="bg-gray-800/30 rounded-lg p-3 w-full">
-            <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 gap-1 h-auto p-1 bg-gray-800/50">
+            <TabsList className={`grid w-full gap-1 h-auto p-1 bg-gray-800/50 ${
+              isAdvancedMode
+                ? 'grid-cols-1 md:grid-cols-4'
+                : 'grid-cols-1 md:grid-cols-2'
+            }`}>
               <TabsTrigger value="essentials" className="py-2 px-3 text-xs font-medium flex items-center gap-1">
                 <Settings className="h-3 w-3" />
                 Essentials
@@ -425,14 +473,18 @@ export default function AgentConfigPage() {
                 <Mic className="h-3 w-3" />
                 Voice & Script
               </TabsTrigger>
-              <TabsTrigger value="advanced" className="py-2 px-3 text-xs font-medium flex items-center gap-1">
-                <Wrench className="h-3 w-3" />
-                Advanced
-              </TabsTrigger>
-              <TabsTrigger value="test" className="py-2 px-3 text-xs font-medium flex items-center gap-1">
-                <Play className="h-3 w-3" />
-                Test & Monitor
-              </TabsTrigger>
+              {isAdvancedMode && (
+                <>
+                  <TabsTrigger value="advanced" className="py-2 px-3 text-xs font-medium flex items-center gap-1">
+                    <Wrench className="h-3 w-3" />
+                    Advanced
+                  </TabsTrigger>
+                  <TabsTrigger value="test" className="py-2 px-3 text-xs font-medium flex items-center gap-1">
+                    <Play className="h-3 w-3" />
+                    Test & Monitor
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
           </div>
 
@@ -907,7 +959,8 @@ export default function AgentConfigPage() {
 
 
         {/* Advanced Tab - Technical configurations */}
-        <TabsContent value="advanced" className="space-y-4 mt-4 w-full">
+        {isAdvancedMode && (
+          <TabsContent value="advanced" className="space-y-4 mt-4 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
             {/* Audio Settings */}
             <Card>
@@ -1449,10 +1502,906 @@ export default function AgentConfigPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Additional VAPI Configuration Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
+            {/* Message Plans */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Message Plans
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure idle messages and timeout behavior
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Idle Messages (one per line)</Label>
+                  <Textarea
+                    value={speechConfig.idleMessages?.join('\n') || ''}
+                    onChange={(e) => setSpeechConfig(prev => ({
+                      ...prev,
+                      idleMessages: e.target.value.split('\n').filter(Boolean)
+                    }))}
+                    placeholder="Are you still there?&#10;How can I help you?&#10;Is there anything else?"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Idle Timeout (seconds)</Label>
+                    <Input
+                      type="number"
+                      value={speechConfig.idleTimeoutSeconds || 30}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        idleTimeoutSeconds: parseInt(e.target.value) || 30
+                      }))}
+                      min={5}
+                      max={300}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Max Spoken Count</Label>
+                    <Input
+                      type="number"
+                      value={speechConfig.idleMessageMaxSpokenCount || 3}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        idleMessageMaxSpokenCount: parseInt(e.target.value) || 3
+                      }))}
+                      min={1}
+                      max={10}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Silence Timeout Message</Label>
+                  <Input
+                    value={speechConfig.silenceTimeoutMessage || ''}
+                    onChange={(e) => setSpeechConfig(prev => ({
+                      ...prev,
+                      silenceTimeoutMessage: e.target.value
+                    }))}
+                    placeholder="I didn't hear anything. Goodbye!"
+                    className="h-9"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="resetCountOnSpeech"
+                    checked={speechConfig.idleMessageResetCountOnUserSpeechEnabled ?? true}
+                    onCheckedChange={(checked) => setSpeechConfig(prev => ({
+                      ...prev,
+                      idleMessageResetCountOnUserSpeechEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="resetCountOnSpeech" className="text-sm">
+                    Reset count when user speaks
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Start Speaking Plans */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Play className="h-4 w-4" />
+                  Start Speaking Plans
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure when the agent starts speaking
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Wait Seconds</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={speechConfig.startSpeakingWaitSeconds || 0.4}
+                    onChange={(e) => setSpeechConfig(prev => ({
+                      ...prev,
+                      startSpeakingWaitSeconds: parseFloat(e.target.value) || 0.4
+                    }))}
+                    min={0}
+                    max={5}
+                    className="h-9"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="smartEndpointing"
+                    checked={speechConfig.smartEndpointingEnabled ?? false}
+                    onCheckedChange={(checked) => setSpeechConfig(prev => ({
+                      ...prev,
+                      smartEndpointingEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="smartEndpointing" className="text-sm">
+                    Enable Smart Endpointing
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Smart Endpointing Provider</Label>
+                  <Select
+                    value={speechConfig.smartEndpointingProvider || 'vapi'}
+                    onValueChange={(value) => setSpeechConfig(prev => ({
+                      ...prev,
+                      smartEndpointingProvider: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vapi">VAPI</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs">On Punctuation (s)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={speechConfig.onPunctuationSeconds || 0.1}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        onPunctuationSeconds: parseFloat(e.target.value) || 0.1
+                      }))}
+                      min={0}
+                      max={2}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">No Punctuation (s)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={speechConfig.onNoPunctuationSeconds || 1.5}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        onNoPunctuationSeconds: parseFloat(e.target.value) || 1.5
+                      }))}
+                      min={0}
+                      max={5}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">On Number (s)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={speechConfig.onNumberSeconds || 0.5}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        onNumberSeconds: parseFloat(e.target.value) || 0.5
+                      }))}
+                      min={0}
+                      max={2}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stop Speaking & Interruption Plans */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
+            {/* Stop Speaking Configuration */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Pause className="h-4 w-4" />
+                  Stop Speaking Plans
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure when the agent stops speaking
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Num Words</Label>
+                    <Input
+                      type="number"
+                      value={speechConfig.stopSpeakingNumWords || 0}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        stopSpeakingNumWords: parseInt(e.target.value) || 0
+                      }))}
+                      min={0}
+                      max={10}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Voice Seconds</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={speechConfig.stopSpeakingVoiceSeconds || 0.2}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        stopSpeakingVoiceSeconds: parseFloat(e.target.value) || 0.2
+                      }))}
+                      min={0}
+                      max={2}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Backoff Seconds</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={speechConfig.stopSpeakingBackoffSeconds || 1}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        stopSpeakingBackoffSeconds: parseFloat(e.target.value) || 1
+                      }))}
+                      min={0}
+                      max={5}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Acknowledgement Phrases (one per line)</Label>
+                  <Textarea
+                    value={speechConfig.acknowledgementPhrases?.join('\n') || 'i understand\ni see\ni got it\nokay\nright\ngot it'}
+                    onChange={(e) => setSpeechConfig(prev => ({
+                      ...prev,
+                      acknowledgementPhrases: e.target.value.split('\n').filter(Boolean)
+                    }))}
+                    placeholder="i understand&#10;i see&#10;i got it&#10;okay&#10;right"
+                    rows={4}
+                    className="resize-none text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Interruption Phrases (one per line)</Label>
+                  <Textarea
+                    value={speechConfig.interruptionPhrases?.join('\n') || 'stop\nwait\nhold\ncut\npause\nno\nactually'}
+                    onChange={(e) => setSpeechConfig(prev => ({
+                      ...prev,
+                      interruptionPhrases: e.target.value.split('\n').filter(Boolean)
+                    }))}
+                    placeholder="stop&#10;wait&#10;hold&#10;cut&#10;pause"
+                    rows={4}
+                    className="resize-none text-xs"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Monitor Plans */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Monitor Plans
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure call monitoring and control
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="listenEnabled"
+                      checked={speechConfig.monitorListenEnabled ?? false}
+                      onCheckedChange={(checked) => setSpeechConfig(prev => ({
+                        ...prev,
+                        monitorListenEnabled: checked
+                      }))}
+                    />
+                    <Label htmlFor="listenEnabled" className="text-sm">
+                      Listen Enabled
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="listenAuth"
+                      checked={speechConfig.monitorListenAuthEnabled ?? false}
+                      onCheckedChange={(checked) => setSpeechConfig(prev => ({
+                        ...prev,
+                        monitorListenAuthEnabled: checked
+                      }))}
+                    />
+                    <Label htmlFor="listenAuth" className="text-sm">
+                      Listen Auth Required
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="controlEnabled"
+                      checked={speechConfig.monitorControlEnabled ?? false}
+                      onCheckedChange={(checked) => setSpeechConfig(prev => ({
+                        ...prev,
+                        monitorControlEnabled: checked
+                      }))}
+                    />
+                    <Label htmlFor="controlEnabled" className="text-sm">
+                      Control Enabled
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="controlAuth"
+                      checked={speechConfig.monitorControlAuthEnabled ?? false}
+                      onCheckedChange={(checked) => setSpeechConfig(prev => ({
+                        ...prev,
+                        monitorControlAuthEnabled: checked
+                      }))}
+                    />
+                    <Label htmlFor="controlAuth" className="text-sm">
+                      Control Auth Required
+                    </Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Server & Transport Configuration */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
+            {/* Server Configuration */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Server Configuration
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure server endpoints and timeouts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Server URL</Label>
+                  <Input
+                    value={hooksConfig.serverUrl || ''}
+                    onChange={(e) => setHooksConfig(prev => ({
+                      ...prev,
+                      serverUrl: e.target.value
+                    }))}
+                    placeholder="https://your-server.com/webhook"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Timeout (seconds)</Label>
+                  <Input
+                    type="number"
+                    value={hooksConfig.serverTimeoutSeconds || 20}
+                    onChange={(e) => setHooksConfig(prev => ({
+                      ...prev,
+                      serverTimeoutSeconds: parseInt(e.target.value) || 20
+                    }))}
+                    min={1}
+                    max={300}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Backoff Type</Label>
+                  <Select
+                    value={hooksConfig.backoffType || 'fixed'}
+                    onValueChange={(value) => setHooksConfig(prev => ({
+                      ...prev,
+                      backoffType: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Fixed</SelectItem>
+                      <SelectItem value="exponential">Exponential</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Max Retries</Label>
+                    <Input
+                      type="number"
+                      value={hooksConfig.maxRetries || 3}
+                      onChange={(e) => setHooksConfig(prev => ({
+                        ...prev,
+                        maxRetries: parseInt(e.target.value) || 3
+                      }))}
+                      min={0}
+                      max={10}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Base Delay (s)</Label>
+                    <Input
+                      type="number"
+                      value={hooksConfig.baseDelaySeconds || 1}
+                      onChange={(e) => setHooksConfig(prev => ({
+                        ...prev,
+                        baseDelaySeconds: parseInt(e.target.value) || 1
+                      }))}
+                      min={1}
+                      max={60}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Transport Configuration */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Transport Configuration
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure call transport settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Provider</Label>
+                  <Select
+                    value={recordingConfig.transportProvider || 'twilio'}
+                    onValueChange={(value) => setRecordingConfig(prev => ({
+                      ...prev,
+                      transportProvider: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="twilio">Twilio</SelectItem>
+                      <SelectItem value="vonage">Vonage</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Timeout (seconds)</Label>
+                  <Input
+                    type="number"
+                    value={recordingConfig.transportTimeout || 60}
+                    onChange={(e) => setRecordingConfig(prev => ({
+                      ...prev,
+                      transportTimeout: parseInt(e.target.value) || 60
+                    }))}
+                    min={10}
+                    max={300}
+                    className="h-9"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="transportRecord"
+                    checked={recordingConfig.transportRecord ?? false}
+                    onCheckedChange={(checked) => setRecordingConfig(prev => ({
+                      ...prev,
+                      transportRecord: checked
+                    }))}
+                  />
+                  <Label htmlFor="transportRecord" className="text-sm">
+                    Enable Transport Recording
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Recording Channels</Label>
+                  <Select
+                    value={recordingConfig.recordingChannels || 'mono'}
+                    onValueChange={(value) => setRecordingConfig(prev => ({
+                      ...prev,
+                      recordingChannels: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mono">Mono</SelectItem>
+                      <SelectItem value="dual">Dual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Advanced Model & Voice Configuration */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
+            {/* Advanced Model Settings */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Bot className="h-4 w-4" />
+                  Advanced Model Settings
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure advanced AI model behavior
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="emotionRecognition"
+                    checked={modelConfig.emotionRecognitionEnabled ?? false}
+                    onCheckedChange={(checked) => setModelConfig(prev => ({
+                      ...prev,
+                      emotionRecognitionEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="emotionRecognition" className="text-sm">
+                    Enable Emotion Recognition
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Number of Fast Turns</Label>
+                  <Input
+                    type="number"
+                    value={modelConfig.numFastTurns || 1}
+                    onChange={(e) => setModelConfig(prev => ({
+                      ...prev,
+                      numFastTurns: parseInt(e.target.value) || 1
+                    }))}
+                    min={1}
+                    max={10}
+                    className="h-9"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="thinkingEnabled"
+                    checked={modelConfig.thinkingEnabled ?? false}
+                    onCheckedChange={(checked) => setModelConfig(prev => ({
+                      ...prev,
+                      thinkingEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="thinkingEnabled" className="text-sm">
+                    Enable Thinking Mode
+                  </Label>
+                </div>
+                {modelConfig.thinkingEnabled && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Thinking Budget Tokens</Label>
+                    <Input
+                      type="number"
+                      value={modelConfig.thinkingBudgetTokens || 1000}
+                      onChange={(e) => setModelConfig(prev => ({
+                        ...prev,
+                        thinkingBudgetTokens: parseInt(e.target.value) || 1000
+                      }))}
+                      min={100}
+                      max={10000}
+                      className="h-9"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="modelOutputInMessages"
+                    checked={modelConfig.modelOutputInMessagesEnabled ?? false}
+                    onCheckedChange={(checked) => setModelConfig(prev => ({
+                      ...prev,
+                      modelOutputInMessagesEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="modelOutputInMessages" className="text-sm">
+                    Include Model Output in Messages
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Advanced Voice Settings */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Mic className="h-4 w-4" />
+                  Advanced Voice Settings
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure advanced voice synthesis options
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="voiceCaching"
+                    checked={voiceConfig.cachingEnabled ?? true}
+                    onCheckedChange={(checked) => setVoiceConfig(prev => ({
+                      ...prev,
+                      cachingEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="voiceCaching" className="text-sm">
+                    Enable Voice Caching
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="chunkingEnabled"
+                    checked={voiceConfig.chunkingEnabled ?? true}
+                    onCheckedChange={(checked) => setVoiceConfig(prev => ({
+                      ...prev,
+                      chunkingEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="chunkingEnabled" className="text-sm">
+                    Enable Voice Chunking
+                  </Label>
+                </div>
+                {voiceConfig.chunkingEnabled && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Min Characters per Chunk</Label>
+                      <Input
+                        type="number"
+                        value={voiceConfig.minCharacters || 30}
+                        onChange={(e) => setVoiceConfig(prev => ({
+                          ...prev,
+                          minCharacters: parseInt(e.target.value) || 30
+                        }))}
+                        min={10}
+                        max={200}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Punctuation Boundaries</Label>
+                      <Input
+                        value={voiceConfig.punctuationBoundaries || '.!?'}
+                        onChange={(e) => setVoiceConfig(prev => ({
+                          ...prev,
+                          punctuationBoundaries: e.target.value
+                        }))}
+                        placeholder=".!?;,"
+                        className="h-9"
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="formatPlanEnabled"
+                    checked={voiceConfig.formatPlanEnabled ?? true}
+                    onCheckedChange={(checked) => setVoiceConfig(prev => ({
+                      ...prev,
+                      formatPlanEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="formatPlanEnabled" className="text-sm">
+                    Enable Format Plan
+                  </Label>
+                </div>
+                {voiceConfig.formatPlanEnabled && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Number to Digits Cutoff</Label>
+                    <Input
+                      type="number"
+                      value={voiceConfig.numberToDigitsCutoff || 2025}
+                      onChange={(e) => setVoiceConfig(prev => ({
+                        ...prev,
+                        numberToDigitsCutoff: parseInt(e.target.value) || 2025
+                      }))}
+                      min={100}
+                      max={10000}
+                      className="h-9"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Call Flow & Compliance */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
+            {/* Call Flow Settings */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Call Flow Settings
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure call behavior and timeouts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">First Message Mode</Label>
+                  <Select
+                    value={scriptConfig.firstMessageMode || 'assistant-speaks-first'}
+                    onValueChange={(value) => setScriptConfig(prev => ({
+                      ...prev,
+                      firstMessageMode: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="assistant-speaks-first">Assistant Speaks First</SelectItem>
+                      <SelectItem value="assistant-waits-for-user">Assistant Waits for User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="firstMessageInterruptions"
+                    checked={scriptConfig.firstMessageInterruptionsEnabled ?? false}
+                    onCheckedChange={(checked) => setScriptConfig(prev => ({
+                      ...prev,
+                      firstMessageInterruptionsEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="firstMessageInterruptions" className="text-sm">
+                    Allow First Message Interruptions
+                  </Label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Silence Timeout (s)</Label>
+                    <Input
+                      type="number"
+                      value={speechConfig.silenceTimeoutSeconds || 30}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        silenceTimeoutSeconds: parseInt(e.target.value) || 30
+                      }))}
+                      min={5}
+                      max={300}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Max Duration (s)</Label>
+                    <Input
+                      type="number"
+                      value={speechConfig.maxDurationSeconds || 600}
+                      onChange={(e) => setSpeechConfig(prev => ({
+                        ...prev,
+                        maxDurationSeconds: parseInt(e.target.value) || 600
+                      }))}
+                      min={60}
+                      max={3600}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">End Call Phrases (one per line)</Label>
+                  <Textarea
+                    value={scriptConfig.endCallPhrases?.join('\n') || 'goodbye\nbye\nend call\nhang up'}
+                    onChange={(e) => setScriptConfig(prev => ({
+                      ...prev,
+                      endCallPhrases: e.target.value.split('\n').filter(Boolean)
+                    }))}
+                    placeholder="goodbye&#10;bye&#10;end call&#10;hang up"
+                    rows={3}
+                    className="resize-none text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">End Call Message</Label>
+                  <Input
+                    value={scriptConfig.endCallMessage || ''}
+                    onChange={(e) => setScriptConfig(prev => ({
+                      ...prev,
+                      endCallMessage: e.target.value
+                    }))}
+                    placeholder="Thank you for calling. Goodbye!"
+                    className="h-9"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Compliance Settings */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Compliance Settings
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configure compliance and regulatory settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hipaaCompliance"
+                    checked={securityConfig.hipaaEnabled ?? false}
+                    onCheckedChange={(checked) => setSecurityConfig(prev => ({
+                      ...prev,
+                      hipaaEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="hipaaCompliance" className="text-sm">
+                    Enable HIPAA Compliance
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="pciCompliance"
+                    checked={securityConfig.pciEnabled ?? false}
+                    onCheckedChange={(checked) => setSecurityConfig(prev => ({
+                      ...prev,
+                      pciEnabled: checked
+                    }))}
+                  />
+                  <Label htmlFor="pciCompliance" className="text-sm">
+                    Enable PCI Compliance
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Client Messages</Label>
+                  <Select
+                    value={securityConfig.clientMessages || 'conversation-update'}
+                    onValueChange={(value) => setSecurityConfig(prev => ({
+                      ...prev,
+                      clientMessages: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conversation-update">Conversation Update</SelectItem>
+                      <SelectItem value="off">Off</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Server Messages</Label>
+                  <Select
+                    value={securityConfig.serverMessages || 'conversation-update'}
+                    onValueChange={(value) => setSecurityConfig(prev => ({
+                      ...prev,
+                      serverMessages: value
+                    }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conversation-update">Conversation Update</SelectItem>
+                      <SelectItem value="off">Off</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
+        )}
 
         {/* Test & Monitor Tab - Testing and performance monitoring */}
-        <TabsContent value="test" className="space-y-4 mt-4 w-full">
+        {isAdvancedMode && (
+          <TabsContent value="test" className="space-y-4 mt-4 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 w-full">
             {/* Voice Testing */}
             <Card>
@@ -1856,6 +2805,7 @@ export default function AgentConfigPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         </Tabs>
       </div>

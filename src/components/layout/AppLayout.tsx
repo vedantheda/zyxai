@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthProvider'
 import { SimpleLoading } from '@/components/ui/simple-loading'
 import NotificationCenter from '@/components/notifications/NotificationCenter'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import GlobalSearch from '@/components/search/GlobalSearch'
 import { MobileSearchTrigger } from '@/components/search/MobileSearch'
 import { ClientLayoutContent } from '@/components/client/ClientLayoutContent'
@@ -85,7 +86,7 @@ function Header({ userRole, showQuickActions = true, customActions }: HeaderProp
         )}
 
         {/* Notifications */}
-        <NotificationCenter showAsDropdown={true} />
+        <NotificationBell />
       </div>
     </header>
   )

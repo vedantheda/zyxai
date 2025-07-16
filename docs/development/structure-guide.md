@@ -39,7 +39,7 @@ src/
 │   └── [core hooks]              # Core application hooks
 ├── contexts/                     # React contexts
 ├── styles/                       # Global styles
-└── __tests__/                    # Test files
+
 ```
 
 ## 🎯 Clean Architecture Benefits

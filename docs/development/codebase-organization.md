@@ -65,7 +65,7 @@ src/
 │   └── [core hooks]              # Application hooks
 ├── contexts/                     # React contexts
 ├── styles/                       # Global styles
-└── __tests__/                    # Test files
+
 ```
 
 ---

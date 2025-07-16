@@ -1038,31 +1038,7 @@ interface TargetState {
 
 ### **6.1 Testing Procedures**
 
-#### **Unit Testing Requirements**
-```typescript
-interface TestingStrategy {
-  unitTesting: {
-    coverage: '90%+ code coverage for all business logic',
-    scope: [
-      'All tRPC procedures and business logic',
-      'Critical UI components and hooks',
-      'Database operations and transactions',
-      'Authentication and authorization flows'
-    ],
-    tools: ['Jest', 'React Testing Library', '@testing-library/jest-dom'],
-    automation: 'Automated testing in CI/CD pipeline'
-  },
 
-  integrationTesting: {
-    scope: [
-      'API endpoint integration tests',
-      'Database integration with real data',
-      'Third-party service integrations',
-      'File upload and processing workflows'
-    ],
-    tools: ['Playwright', 'Supertest', 'Test containers'],
-    frequency: 'Run on every pull request'
-  },
 
   e2eTesting: {
     scope: [

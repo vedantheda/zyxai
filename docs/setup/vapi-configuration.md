@@ -339,16 +339,7 @@ const response = await fetch('/api/vapi/calls', {
 })
 ```
 
-## 🔍 Testing and Debugging
-
-### Test VAPI Integration
-Visit: `http://localhost:3001/test-vapi`
-
-### Available Test Functions
-- **Test Frontend Integration** - Verify API connectivity
-- **Test Daily.co Connectivity** - Check WebRTC compatibility
-- **Test Direct Script Load** - Validate browser compatibility
-- **Start Test Call** - Full voice integration test
+## 🔍 Debugging
 
 ### Browser Console Debugging
 ```javascript

@@ -11,21 +11,13 @@
 
 ### 🎯 **Testing Your Implementation**
 
-#### **Web Call Testing (Recommended First)**
-1. Navigate to `/demo/vapi-call`
-2. Select "Web Call (Demo)" tab
+#### **Voice Testing**
+1. Navigate to `/dashboard/vapi-status`
+2. Use the Voice Widget to test web calls
 3. Choose an assistant from your VAPI dashboard
-4. Wait for "Web SDK Ready" status
-5. Click "Start Web Call"
-6. Speak into your microphone
-7. Watch real-time transcription and responses
-
-#### **Phone Call Testing**
-1. Select "Phone Call (Real)" tab
-2. Choose an assistant and phone number
-3. Enter a test phone number
-4. Click "Place Demo Call"
-5. Monitor call status in real-time
+4. Click "Start Call" to begin testing
+5. Speak into your microphone
+6. Watch real-time transcription and responses
 
 ---
 

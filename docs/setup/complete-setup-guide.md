@@ -68,10 +68,7 @@ Go to your Supabase SQL Editor and run these files in order:
 See [Database Setup Guide](../../database/README.md) for detailed instructions.
 
 ### 2.3 Verify Setup
-```bash
-npm run test:db
-```
-Should show "DATABASE CONNECTION READY!" with tables found.
+Check that the application starts successfully with `npm run dev`.
 
 ## Step 3: Development Server
 
@@ -83,12 +80,7 @@ npm run dev
 ### 3.2 Access Application
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Step 4: Testing
 
-### 4.1 Run Tests
-```bash
-# Unit tests
-npm run test
 
 # E2E tests
 npm run test:e2e

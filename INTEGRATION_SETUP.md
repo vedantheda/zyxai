@@ -32,11 +32,11 @@ cp .env.example .env.local
 Update the following variables in `.env.local`:
 
 ```env
-# HubSpot Integration
-HUBSPOT_ACCESS_TOKEN=your_crm_access_token
+# CRM Integration
+CRM_ACCESS_TOKEN=your_crm_access_token
 
-# VAPI Integration  
-VAPI_API_KEY=your_vapi_api_key
+# Voice AI Integration
+VOICE_AI_API_KEY=your_voice_ai_api_key
 
 # Database
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url

@@ -449,7 +449,7 @@ class HubSpotEmailIntegration {
 }
 
 // Export singleton instance
-export const hubspotEmailIntegration = new HubSpotEmailIntegration('process.env.CRM_ACCESS_TOKEN || ""')
+export const hubspotEmailIntegration = new HubSpotEmailIntegration(process.env.CRM_ACCESS_TOKEN || '')
 
 // Export class for testing
 export { HubSpotEmailIntegration }

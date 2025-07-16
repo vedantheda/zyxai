@@ -527,7 +527,7 @@ class HubSpotWorkflowIntegration {
 }
 
 // Export singleton instance
-export const hubspotWorkflowIntegration = new HubSpotWorkflowIntegration('process.env.CRM_ACCESS_TOKEN || ""')
+export const hubspotWorkflowIntegration = new HubSpotWorkflowIntegration(process.env.CRM_ACCESS_TOKEN || '')
 
 // Export class for testing
 export { HubSpotWorkflowIntegration }

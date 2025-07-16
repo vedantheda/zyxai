@@ -436,7 +436,7 @@ class HubSpotCampaignIntegration {
 }
 
 // Export singleton instance
-export const hubspotCampaignIntegration = new HubSpotCampaignIntegration('process.env.CRM_ACCESS_TOKEN || ""')
+export const hubspotCampaignIntegration = new HubSpotCampaignIntegration(process.env.CRM_ACCESS_TOKEN || '')
 
 // Export class for testing
 export { HubSpotCampaignIntegration }

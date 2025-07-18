@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useDataFetchReady } from '@/hooks/useDataFetchReady'
 interface UserClient {
   id: string
   name: string

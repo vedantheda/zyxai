@@ -5,7 +5,7 @@
 
 'use client'
 
-import { memo, useEffect, useState } from 'react'
+import { memo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -92,28 +92,6 @@ QuickActionButton.displayName = 'QuickActionButton'
 
 // Main dashboard component
 export const WorkingDashboard = memo(() => {
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Simple loading simulation
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <div className="text-lg font-medium mb-2">Loading Dashboard</div>
-          <div className="text-muted-foreground">Setting up your workspace...</div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -6,503 +6,273 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  UserPlus,
-  FileText,
-  CheckSquare,
-  Mail,
-  FolderPlus,
-  Workflow,
-  Clock,
+  Bot,
   Users,
-  AlertTriangle,
-  Play,
-  Pause,
+  Phone,
   Settings,
-  Eye,
-  Send
+  CheckSquare,
+  ArrowRight,
+  Rocket,
+  Clock,
+  TrendingUp,
+  Building2
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingScreen } from '@/components/ui/loading-spinner'
-// Removed ClientIntakeForm import - using placeholder instead
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-interface OnboardingWorkflow {
+interface OnboardingStep {
   id: string
-  clientId: string
-  clientName: string
-  clientEmail: string
-  status: 'pending' | 'in_progress' | 'completed' | 'failed'
-  currentStep: string
-  progress: number
-  startedAt: string
-  completedAt?: string
-  automatedTasks: {
-    intakeForm: boolean
-    folderCreation: boolean
-    crmEntry: boolean
-    engagementLetter: boolean
-    welcomeEmail: boolean
-    documentChecklist: boolean
-  }
+  title: string
+  description: string
+  icon: any
+  completed: boolean
+  href?: string
+  estimatedTime: string
+  difficulty: 'Easy' | 'Medium' | 'Advanced'
 }
-export default function ClientOnboardingPage() {
-  const { user, loading: authLoading } = useAuth()
-  const isAuthenticated = !!user
-  const isReady = !authLoading
+
+interface OnboardingSection {
+  id: string
+  title: string
+  description: string
+  steps: OnboardingStep[]
+  progress: number
+}
+
+export default function OnboardingPage() {
+  const { user } = useAuth()
   const router = useRouter()
-  const [activeWorkflows, setActiveWorkflows] = useState<OnboardingWorkflow[]>([])
+  const [completedSteps, setCompletedSteps] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const [showIntakeForm, setShowIntakeForm] = useState(false)
-  const [completedIntake, setCompletedIntake] = useState<string | null>(null)
-  // Mock data for onboarding workflows
-  const mockWorkflows: OnboardingWorkflow[] = [
+  // Onboarding sections and steps
+  const onboardingSections: OnboardingSection[] = [
     {
-      id: '1',
-      clientId: 'client-1',
-      clientName: 'Sarah Johnson',
-      clientEmail: 'sarah.johnson@email.com',
-      status: 'in_progress',
-      currentStep: 'Document Collection',
-      progress: 65,
-      startedAt: '2024-01-15T10:00:00Z',
-      automatedTasks: {
-        intakeForm: true,
-        folderCreation: true,
-        crmEntry: true,
-        engagementLetter: true,
-        welcomeEmail: true,
-        documentChecklist: false
-      }
-    },
-    {
-      id: '2',
-      clientId: 'client-2',
-      clientName: 'Michael Chen',
-      clientEmail: 'michael.chen@email.com',
-      status: 'completed',
-      currentStep: 'Completed',
-      progress: 100,
-      startedAt: '2024-01-10T09:00:00Z',
-      completedAt: '2024-01-12T16:30:00Z',
-      automatedTasks: {
-        intakeForm: true,
-        folderCreation: true,
-        crmEntry: true,
-        engagementLetter: true,
-        welcomeEmail: true,
-        documentChecklist: true
-      }
-    },
-    {
-      id: '3',
-      clientId: 'client-3',
-      clientName: 'Emily Davis',
-      clientEmail: 'emily.davis@email.com',
-      status: 'pending',
-      currentStep: 'Intake Form',
-      progress: 10,
-      startedAt: '2024-01-20T14:00:00Z',
-      automatedTasks: {
-        intakeForm: false,
-        folderCreation: false,
-        crmEntry: true,
-        engagementLetter: false,
-        welcomeEmail: true,
-        documentChecklist: false
-      }
+      id: 'getting-started',
+      title: 'Getting Started',
+      description: 'Essential first steps to set up your ZyxAI voice platform',
+      progress: 0,
+      steps: [
+        {
+          id: 'profile-setup',
+          title: 'Complete Your Profile',
+          description: 'Set up your organization profile and preferences',
+          icon: Building2,
+          completed: false,
+          href: '/settings/profile',
+          estimatedTime: '5 min',
+          difficulty: 'Easy'
+        },
+        {
+          id: 'team-setup',
+          title: 'Invite Team Members',
+          description: 'Add colleagues to collaborate on voice campaigns',
+          icon: Users,
+          completed: false,
+          href: '/dashboard/team',
+          estimatedTime: '10 min',
+          difficulty: 'Easy'
+        },
+        {
+          id: 'first-agent',
+          title: 'Create Your First AI Agent',
+          description: 'Build your first voice AI agent using our templates',
+          icon: Bot,
+          completed: false,
+          href: '/dashboard/agents',
+          estimatedTime: '15 min',
+          difficulty: 'Medium'
+        },
+        {
+          id: 'phone-number',
+          title: 'Get a Phone Number',
+          description: 'Acquire a phone number for your voice campaigns',
+          icon: Phone,
+          completed: false,
+          href: '/dashboard/phone-numbers',
+          estimatedTime: '5 min',
+          difficulty: 'Easy'
+        }
+      ]
     }
   ]
   useEffect(() => {
-    // Simulate loading workflows
-    setTimeout(() => {
-      setActiveWorkflows(mockWorkflows)
-      setLoading(false)
-    }, 1000)
+    // Load completed steps from localStorage
+    const saved = localStorage.getItem('zyxai-onboarding-progress')
+    if (saved) {
+      setCompletedSteps(JSON.parse(saved))
+    }
+    setLoading(false)
   }, [])
-  const handleIntakeComplete = (clientId: string) => {
-    setCompletedIntake(clientId)
-    setShowIntakeForm(false)
-    // Refresh workflows to show new client
-    setActiveWorkflows(prev => [...prev, {
-      id: Date.now().toString(),
-      clientId,
-      clientName: 'New Client',
-      clientEmail: 'new@client.com',
-      status: 'in_progress',
-      currentStep: 'Document Collection',
-      progress: 25,
-      startedAt: new Date().toISOString(),
-      automatedTasks: {
-        intakeForm: true,
-        folderCreation: true,
-        crmEntry: true,
-        engagementLetter: false,
-        welcomeEmail: true,
-        documentChecklist: false
-      }
-    }])
+
+  const markStepComplete = (stepId: string) => {
+    const newCompleted = [...completedSteps, stepId]
+    setCompletedSteps(newCompleted)
+    localStorage.setItem('zyxai-onboarding-progress', JSON.stringify(newCompleted))
   }
-  const viewClient = (clientId: string) => {
-    router.push(`/clients/${clientId}`)
+
+  const resetProgress = () => {
+    setCompletedSteps([])
+    localStorage.removeItem('zyxai-onboarding-progress')
   }
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'in_progress': return 'bg-blue-100 text-blue-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'failed': return 'bg-red-100 text-red-800'
+
+  // Calculate progress for each section
+  const sectionsWithProgress = onboardingSections.map(section => ({
+    ...section,
+    progress: Math.round((section.steps.filter(step => completedSteps.includes(step.id)).length / section.steps.length) * 100),
+    steps: section.steps.map(step => ({
+      ...step,
+      completed: completedSteps.includes(step.id)
+    }))
+  }))
+
+  const overallProgress = Math.round(
+    (completedSteps.length / onboardingSections.reduce((acc, section) => acc + section.steps.length, 0)) * 100
+  )
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Easy': return 'bg-green-100 text-green-800'
+      case 'Medium': return 'bg-yellow-100 text-yellow-800'
+      case 'Advanced': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
-  const onboardingStats = {
-    totalWorkflows: activeWorkflows.length,
-    completedWorkflows: activeWorkflows.filter(w => w.status === 'completed').length,
-    inProgressWorkflows: activeWorkflows.filter(w => w.status === 'in_progress').length,
-    averageCompletionTime: '2.3 days'
-  }
-  // Show loading during session sync
-  if (authLoading || !isReady) {
-    return <LoadingScreen text="Loading onboarding..." />
-  }
-  // Handle unauthenticated state
-  if (!isAuthenticated) {
-    return <LoadingScreen text="Please log in to view onboarding" />
-  }
+
   // Show loading for onboarding data
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading onboarding workflows...</p>
+          <p className="mt-2 text-muted-foreground">Loading onboarding guide...</p>
         </div>
       </div>
     )
   }
-  if (showIntakeForm) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Client Onboarding</h1>
-            <p className="text-muted-foreground">New client intake form</p>
-          </div>
-          <Button variant="outline" onClick={() => setShowIntakeForm(false)}>
-            Back to Overview
-          </Button>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Intake Form</CardTitle>
-            <CardDescription>Collect client information for onboarding</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Client intake form will be implemented here.</p>
-            <Button onClick={() => handleIntakeComplete('demo-client')} className="mt-4">
-              Complete Demo Intake
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-  if (completedIntake) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <CheckSquare className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-foreground mb-2">Onboarding Complete!</h1>
-          <p className="text-muted-foreground mb-6">
-            The client has been successfully added to your practice and initial tasks have been created.
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Button onClick={() => viewClient(completedIntake)}>
-              <Eye className="w-4 h-4 mr-2" />
-              View Client
-            </Button>
-            <Button variant="outline" onClick={() => {
-              setCompletedIntake(null)
-              setShowIntakeForm(false)
-            }}>
-              Onboard Another Client
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6 bg-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Automated Client Onboarding</h1>
+          <h1 className="text-3xl font-bold text-foreground">Welcome to ZyxAI!</h1>
           <p className="text-muted-foreground">
-            Streamlined client intake with automated workflows and document management
+            Get started with your AI voice platform in just a few steps
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={resetProgress}>
             <Settings className="w-4 h-4 mr-2" />
-            Configure Workflows
+            Reset Progress
           </Button>
-          <Button onClick={() => setShowIntakeForm(true)}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Start New Onboarding
+          <Button onClick={() => router.push('/dashboard')}>
+            <Rocket className="w-4 h-4 mr-2" />
+            Go to Dashboard
           </Button>
         </div>
       </div>
-      {/* Onboarding Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
-            <Workflow className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{onboardingStats.totalWorkflows}</div>
-            <p className="text-xs text-muted-foreground">
-              Active onboarding processes
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{onboardingStats.completedWorkflows}</div>
-            <p className="text-xs text-muted-foreground">
-              Successfully onboarded
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{onboardingStats.inProgressWorkflows}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently onboarding
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Completion</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{onboardingStats.averageCompletionTime}</div>
-            <p className="text-xs text-muted-foreground">
-              Time to complete
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Onboarding Workflows */}
-      <Tabs defaultValue="active" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="active">Active Workflows ({activeWorkflows.length})</TabsTrigger>
-          <TabsTrigger value="templates">Workflow Templates</TabsTrigger>
-          <TabsTrigger value="automation">Automation Settings</TabsTrigger>
-        </TabsList>
-        <TabsContent value="active" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Onboarding Workflows</CardTitle>
-              <CardDescription>
-                Monitor and manage automated client onboarding processes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Current Step</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Automated Tasks</TableHead>
-                    <TableHead>Started</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeWorkflows.map((workflow) => (
-                    <TableRow key={workflow.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{workflow.clientName}</div>
-                          <div className="text-sm text-muted-foreground">{workflow.clientEmail}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(workflow.status)}>
-                          {workflow.status.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{workflow.currentStep}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Progress value={workflow.progress} className="w-20" />
-                          <div className="text-xs text-muted-foreground">{workflow.progress}%</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-1">
-                          {Object.entries(workflow.automatedTasks).map(([task, completed]) => (
-                            <div
-                              key={task}
-                              className={`w-3 h-3 rounded-full ${
-                                completed ? 'bg-green-500' : 'bg-gray-300'
-                              }`}
-                              title={task.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                            />
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(workflow.startedAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Send className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="templates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Onboarding Workflow Templates</CardTitle>
-              <CardDescription>
-                Pre-configured workflows for different client types
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    name: 'Individual Tax Client',
-                    description: 'Standard onboarding for individual taxpayers',
-                    steps: 6,
-                    automations: 5
-                  },
-                  {
-                    name: 'Business Tax Client',
-                    description: 'Enhanced onboarding for business entities',
-                    steps: 8,
-                    automations: 7
-                  },
-                  {
-                    name: 'High-Value Client',
-                    description: 'Premium onboarding with white-glove service',
-                    steps: 10,
-                    automations: 9
-                  }
-                ].map((template, index) => (
-                  <div key={index} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <h4 className="font-medium mb-2">{template.name}</h4>
-                    <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-                    <div className="flex justify-between text-xs text-muted-foreground mb-3">
-                      <span>{template.steps} steps</span>
-                      <span>{template.automations} automations</span>
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full">
-                      Use Template
-                    </Button>
+
+      {/* Overall Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Your Onboarding Progress
+          </CardTitle>
+          <CardDescription>
+            Complete these steps to get the most out of ZyxAI
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Overall Progress</span>
+              <span className="text-sm text-muted-foreground">{completedSteps.length} of {onboardingSections.reduce((acc, section) => acc + section.steps.length, 0)} steps completed</span>
+            </div>
+            <Progress value={overallProgress} className="w-full" />
+            <div className="text-center">
+              <span className="text-2xl font-bold text-primary">{overallProgress}%</span>
+              <p className="text-sm text-muted-foreground">Complete</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Steps */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Getting Started Steps</CardTitle>
+          <CardDescription>Complete these essential steps to set up your platform</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {sectionsWithProgress[0].steps.map((step) => (
+              <div
+                key={step.id}
+                className={`p-4 border rounded-lg transition-all ${
+                  step.completed
+                    ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                    : 'hover:bg-accent/50 border-border'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-2 rounded-lg ${
+                    step.completed
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {step.completed ? (
+                      <CheckSquare className="w-5 h-5" />
+                    ) : (
+                      <step.icon className="w-5 h-5" />
+                    )}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="automation" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Automation Configuration</CardTitle>
-              <CardDescription>
-                Configure automated tasks and triggers for client onboarding
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {[
-                  {
-                    name: 'Intake Form Processing',
-                    description: 'Automatically process submitted intake forms and extract data',
-                    enabled: true
-                  },
-                  {
-                    name: 'Folder Creation',
-                    description: 'Create organized folder structure for each new client',
-                    enabled: true
-                  },
-                  {
-                    name: 'CRM Entry Creation',
-                    description: 'Automatically create CRM entries with client information',
-                    enabled: true
-                  },
-                  {
-                    name: 'Engagement Letter Generation',
-                    description: 'Generate and send e-signed engagement letters',
-                    enabled: true
-                  },
-                  {
-                    name: 'Welcome Email Sequence',
-                    description: 'Send automated welcome emails with next steps',
-                    enabled: true
-                  },
-                  {
-                    name: 'Document Checklist',
-                    description: 'Send customized document checklists based on client type',
-                    enabled: false
-                  }
-                ].map((automation, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{automation.name}</h4>
-                      <p className="text-sm text-muted-foreground">{automation.description}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={automation.enabled ? 'default' : 'secondary'}>
-                        {automation.enabled ? 'Enabled' : 'Disabled'}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium">{step.title}</h4>
+                      <Badge className={getDifficultyColor(step.difficulty)} variant="secondary">
+                        {step.difficulty}
                       </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Settings className="w-4 h-4" />
-                      </Button>
+                      <Badge variant="outline">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {step.estimatedTime}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {step.description}
+                    </p>
+                    <div className="flex gap-2">
+                      {step.href && (
+                        <Button
+                          size="sm"
+                          variant={step.completed ? "secondary" : "default"}
+                          onClick={() => {
+                            if (!step.completed) markStepComplete(step.id)
+                            router.push(step.href!)
+                          }}
+                        >
+                          {step.completed ? (
+                            <>
+                              <CheckSquare className="w-4 h-4 mr-2" />
+                              Review
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight className="w-4 h-4 mr-2" />
+                              Start
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
+

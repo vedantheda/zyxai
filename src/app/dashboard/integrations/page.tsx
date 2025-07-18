@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -51,7 +51,8 @@ interface CRMProvider {
 export default function IntegrationsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { organization, loading: orgLoading } = useOrganization()
+  const { user, loading: authLoading } = useAuth()
+  const organization = user?.organization
 
   const [integrations, setIntegrations] = useState<CRMIntegration[]>([])
   const [loading, setLoading] = useState(true)

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ContactService } from '@/lib/services/ContactService'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +21,8 @@ import {
 
 export default function ContactImportPage() {
   const router = useRouter()
-  const { organization, loading: orgLoading, error: orgError } = useOrganization()
+  const { user, loading: authLoading, authError } = useAuth()
+  const organization = user?.organization
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [progress, setProgress] = useState(0)

@@ -41,6 +41,7 @@ export default function SignInPage() {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setFormTimeout(false) // Reset form timeout flag
 
     try {
       const { error } = await signIn(email, password)
@@ -59,8 +60,38 @@ export default function SignInPage() {
     }
   }
 
-  // Show loading if auth is still initializing
-  if (loading) {
+  // Add timeout for loading state to prevent infinite loading
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [formTimeout, setFormTimeout] = useState(false)
+
+  useEffect(() => {
+    // If loading takes more than 10 seconds, show the form anyway
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('🚨 Loading timeout reached, showing signin form')
+        setLoadingTimeout(true)
+      }
+    }, 10000)
+
+    return () => clearTimeout(timeout)
+  }, [loading])
+
+  // Additional timeout for form submission to prevent hanging on tab switch
+  useEffect(() => {
+    if (isLoading) {
+      const formSubmissionTimeout = setTimeout(() => {
+        console.log('🚨 Form submission timeout - resetting form')
+        setIsLoading(false)
+        setFormTimeout(true)
+        setError('Sign in timed out. Please try again.')
+      }, 15000) // 15 second timeout for form submission
+
+      return () => clearTimeout(formSubmissionTimeout)
+    }
+  }, [isLoading])
+
+  // Show loading if auth is still initializing (but not if timeout reached)
+  if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

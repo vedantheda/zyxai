@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ContactService } from '@/lib/services/ContactService'
 import { ContactList, Contact } from '@/types/database'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,7 +32,8 @@ import {
 
 export default function ContactsPage() {
   const router = useRouter()
-  const { organization, loading: orgLoading, error: orgError } = useOrganization()
+  const { user, loading: authLoading, authError } = useAuth()
+  const organization = user?.organization
   const [loading, setLoading] = useState(true)
   const [contactLists, setContactLists] = useState<ContactList[]>([])
   const [selectedList, setSelectedList] = useState<ContactList | null>(null)
@@ -48,14 +49,14 @@ export default function ContactsPage() {
   const [syncing, setSyncing] = useState<string | null>(null)
 
   useEffect(() => {
-    if (organization && !orgLoading) {
+    if (organization && !authLoading) {
       loadContactLists()
       loadStats()
-    } else if (orgError) {
-      setError(orgError)
+    } else if (authError) {
+      setError(authError)
       setLoading(false)
     }
-  }, [organization, orgLoading, orgError])
+  }, [organization, authLoading, authError])
 
   useEffect(() => {
     if (selectedList) {

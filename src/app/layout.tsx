@@ -7,6 +7,9 @@ import { GlobalErrorBoundary } from "@/components/providers/ErrorBoundaryProvide
 import { AuthErrorProvider } from "@/components/ui/AuthErrorBoundary";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { ToastProvider } from "@/components/ui/toast";
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { PerformanceMonitor, setupGlobalPerformanceMonitoring } from "@/components/optimization/PerformanceMonitor";
+import { Suspense } from "react";
 
 
 const dmSans = DM_Sans({
@@ -70,24 +73,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Initialize performance monitoring
+  if (typeof window !== 'undefined') {
+    setupGlobalPerformanceMonitoring();
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${dmSans.variable} font-sans`}>
         <GlobalErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <AuthErrorProvider>
-              <AuthProvider>
-                <NotificationProvider>
-                  <ToastProvider>
+          <QueryProvider>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <AuthErrorProvider>
+                <AuthProvider>
+                  <NotificationProvider>
+                    <ToastProvider>
+                      <Suspense fallback={<div>Loading...</div>}>
+                        {children}
+                      </Suspense>
 
-                    {children}
-                  </ToastProvider>
-                </NotificationProvider>
-              </AuthProvider>
-            </AuthErrorProvider>
-          </ThemeProvider>
+                      {/* Performance Monitor (development only) */}
+                      <PerformanceMonitor />
+                    </ToastProvider>
+                  </NotificationProvider>
+                </AuthProvider>
+              </AuthErrorProvider>
+            </ThemeProvider>
+          </QueryProvider>
         </GlobalErrorBoundary>
       </body>
     </html>

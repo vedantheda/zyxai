@@ -2,6 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Modern UI Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
 
 
 /* Font is now loaded via Next.js font optimization in layout.tsx */
@@ -100,8 +158,31 @@
     cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSI2IiBjeT0iNiIgcj0iNiIgZmlsbD0iaHNsKDE5OSA4OSUgNDglIC8gMC41KSIvPjwvc3ZnPg==") 6 6, auto;
   }
 
+  /* Enhanced cursor feedback for interactive elements */
   a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-1"]) {
     cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSJoc2woMTk5IDg5JSA0OCUgLyAwLjgpIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9ImhzbCgxOTkgODklIDQ4JSAvIDAuMikiLz48L3N2Zz4=") 12 12, pointer;
+    transition: all 0.15s ease-in-out;
+  }
+
+  /* Click feedback animations */
+  a:active, button:active, [role="button"]:active {
+    transform: scale(0.98);
+    cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9ImhzbCgxOTkgODklIDQ4JSAvIDEpIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9ImhzbCgxOTkgODklIDQ4JSAvIDAuNCkiLz48L3N2Zz4=") 12 12, pointer;
+  }
+
+  /* Hover feedback for links */
+  a:hover {
+    cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSJoc2woMTk5IDg5JSA0OCUgLyAxKSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJoc2woMTk5IDg5JSA0OCUgLyAwLjMpIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNCIgZmlsbD0iaHNsKDE5OSA4OSUgNDglIC8gMSkiLz48L3N2Zz4=") 12 12, pointer;
+  }
+
+  /* Loading cursor for processing states */
+  .cursor-loading {
+    cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSJoc2woMTk5IDg5JSA0OCUgLyAwLjMpIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJtMTIgMmE4IDggMCAwIDEgOCA4IiBzdHJva2U9ImhzbCgxOTkgODklIDQ4JSAvIDEpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==") 12 12, wait;
+  }
+
+  /* Disabled cursor */
+  [disabled], .disabled {
+    cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSJoc2woMCAwJSA1MCUgLyAwLjUpIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJtNiA2IDEyIDEyIiBzdHJva2U9ImhzbCgwIDAlIDUwJSAvIDAuNSkiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==") 12 12, not-allowed !important;
   }
 
   body {
@@ -214,6 +295,89 @@
 
   .glow-automation {
     box-shadow: 0 0 20px hsl(142 76% 36% / 0.3);
+  }
+
+  /* Interactive feedback classes */
+  .interactive-element {
+    @apply transition-all duration-150 ease-in-out;
+  }
+
+  .interactive-element:hover {
+    @apply transform scale-105;
+  }
+
+  .interactive-element:active {
+    @apply transform scale-95;
+  }
+
+  /* Click ripple effect */
+  .ripple-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple-effect::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: hsl(199 89% 48% / 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease-out, height 0.3s ease-out;
+    pointer-events: none;
+  }
+
+  .ripple-effect:active::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Button press feedback */
+  .btn-press {
+    @apply transition-all duration-100 ease-in-out;
+  }
+
+  .btn-press:active {
+    @apply transform scale-95 brightness-110;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Link hover effects */
+  .link-hover {
+    @apply transition-all duration-200 ease-in-out relative;
+  }
+
+  .link-hover::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: hsl(199 89% 48%);
+    transition: width 0.3s ease-in-out;
+  }
+
+  .link-hover:hover::after {
+    width: 100%;
+  }
+
+  /* Card interactive feedback */
+  .card-interactive {
+    @apply transition-all duration-200 ease-in-out cursor-pointer;
+  }
+
+  .card-interactive:hover {
+    @apply transform translate-y-[-2px] shadow-lg;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-interactive:active {
+    @apply transform translate-y-[1px];
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   }
 }
 

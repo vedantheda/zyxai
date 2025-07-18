@@ -6,14 +6,16 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Users, UserPlus, Settings, Crown, Shield, Eye, Briefcase, User } from 'lucide-react'
+import { Loader2, Users, UserPlus, Settings, Crown, Shield, Eye, Briefcase, User, RefreshCw } from 'lucide-react'
 import { InviteUserDialog } from '@/components/team/InviteUserDialog'
 import { TeamMembersList } from '@/components/team/TeamMembersList'
 import { useAuth } from '@/contexts/AuthProvider'
+import { supabase } from '@/lib/supabase'
+import { apiClient } from '@/lib/api-client'
 import type { User } from '@/types/database'
 
 export default function TeamPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading, needsProfileCompletion, completeProfile } = useAuth()
   const [teamMembers, setTeamMembers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -21,25 +23,70 @@ export default function TeamPage() {
   const fetchTeamMembers = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/team/members')
-      
+      setError('')
+
+      console.log('🔍 Fetching team members...')
+
+      // Use the authenticated API client
+      const response = await apiClient.get('/api/team/members')
+
+      console.log('📡 Team members response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to fetch team members')
+        const errorData = await response.json()
+        console.error('🚨 Team members API error:', errorData)
+
+        if (response.status === 404 && errorData.error?.includes('profile')) {
+          throw new Error('Please complete your profile setup to access team management.')
+        }
+
+        throw new Error(errorData.error || `Failed to fetch team members (${response.status})`)
       }
 
       const result = await response.json()
-      setTeamMembers(result.members || [])
-    } catch (error) {
-      console.error('Error fetching team members:', error)
-      setError('Failed to load team members')
+      console.log('✅ Team members data received:', result)
+
+      const members = result.members || []
+
+      // Ensure current user is included in the list if not already present
+      if (user && !members.find(m => m.id === user.id)) {
+        members.unshift(user)
+      }
+
+      setTeamMembers(members)
+      console.log('✅ Team members set:', members.length, 'members')
+    } catch (error: any) {
+      console.error('🚨 Error fetching team members:', error)
+      setError(error.message || 'Failed to load team members. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchTeamMembers()
-  }, [])
+    console.log('🔍 Team Page: Auth state changed:', {
+      authLoading,
+      needsProfileCompletion,
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userRole: user?.role,
+      userOrgId: user?.organization_id
+    })
+
+    // Wait for auth to complete and user to be available
+    if (!authLoading && !needsProfileCompletion && user) {
+      console.log('✅ Team Page: Conditions met, fetching team members')
+      fetchTeamMembers()
+    } else {
+      console.log('⏳ Team Page: Waiting for auth completion:', {
+        authLoading,
+        needsProfileCompletion,
+        hasUser: !!user,
+        reason: !user ? 'No user' : authLoading ? 'Auth loading' : needsProfileCompletion ? 'Profile incomplete' : 'Unknown'
+      })
+    }
+  }, [authLoading, needsProfileCompletion, user])
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -79,19 +126,83 @@ export default function TeamPage() {
 
   const canManageTeam = user && ['owner', 'admin', 'manager'].includes(user.role)
 
+  // Show loading while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="p-6 space-y-6 bg-background min-h-screen">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin mr-3" />
+          <span className="text-lg">Loading your team...</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Show sign-in prompt if no user
+  if (!authLoading && !user) {
+    return (
+      <div className="p-6 space-y-6 bg-background min-h-screen">
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-6" />
+          <h3 className="text-xl font-semibold mb-2">Authentication Required</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            You need to sign in to access team management features.
+          </p>
+          <Button onClick={() => window.location.href = '/signin'}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sign In
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show profile completion message if needed
+  if (needsProfileCompletion) {
+    return (
+      <div className="p-6 space-y-6 bg-background min-h-screen">
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-6" />
+          <h3 className="text-xl font-semibold mb-2">Complete Your Profile</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Please complete your profile setup to access team management features.
+          </p>
+          <Button onClick={async () => {
+            await completeProfile()
+            fetchTeamMembers()
+          }}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry Setup
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6 bg-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Teams</h1>
           <p className="text-muted-foreground">
             Manage your organization's team members and invitations
           </p>
         </div>
-        {canManageTeam && (
-          <InviteUserDialog onInviteSent={fetchTeamMembers} />
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchTeamMembers}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          {canManageTeam && (
+            <InviteUserDialog onInviteSent={fetchTeamMembers} />
+          )}
+        </div>
       </div>
 
       {/* Team Overview */}
@@ -103,6 +214,9 @@ export default function TeamPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{teamMembers.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {teamMembers.filter(m => m.last_active_at && new Date(m.last_active_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} active this week
+            </p>
           </CardContent>
         </Card>
         
@@ -115,6 +229,9 @@ export default function TeamPage() {
             <div className="text-2xl font-bold">
               {teamMembers.filter(m => ['owner', 'admin'].includes(m.role)).length}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Full access
+            </p>
           </CardContent>
         </Card>
         
@@ -127,6 +244,9 @@ export default function TeamPage() {
             <div className="text-2xl font-bold">
               {teamMembers.filter(m => m.role === 'manager').length}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Team management
+            </p>
           </CardContent>
         </Card>
         
@@ -137,8 +257,11 @@ export default function TeamPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {teamMembers.filter(m => m.role === 'agent').length}
+              {teamMembers.filter(m => ['agent', 'viewer'].includes(m.role)).length}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Operational roles
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -157,7 +280,17 @@ export default function TeamPage() {
         <CardContent>
           {error && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="flex items-center justify-between">
+                <span>{error}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchTeamMembers}
+                  disabled={isLoading}
+                >
+                  Try Again
+                </Button>
+              </AlertDescription>
             </Alert>
           )}
 
@@ -167,12 +300,28 @@ export default function TeamPage() {
               Loading team members...
             </div>
           ) : teamMembers.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No team members found</h3>
-              <p className="text-muted-foreground">
-                Start building your team by inviting colleagues.
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-6" />
+              <h3 className="text-xl font-semibold mb-2">Your team is just getting started</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                You're currently the only member of this organization. Invite colleagues to collaborate and grow your team.
               </p>
+              {canManageTeam && (
+                <InviteUserDialog
+                  onInviteSent={fetchTeamMembers}
+                  trigger={
+                    <Button size="lg">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Invite Your First Team Member
+                    </Button>
+                  }
+                />
+              )}
+              {!canManageTeam && (
+                <p className="text-sm text-muted-foreground">
+                  Contact your administrator to invite new team members.
+                </p>
+              )}
             </div>
           ) : (
             <div className="rounded-md border">

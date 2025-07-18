@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AgentService } from '@/lib/services/AgentService'
 import { AIAgent } from '@/types/database'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +34,8 @@ import {
 export default function AgentDemoPage() {
   const searchParams = useSearchParams()
   const preselectedAgentId = searchParams.get('agentId')
-  const { organization, loading: orgLoading, error: orgError } = useOrganization()
+  const { user, loading: authLoading, authError } = useAuth()
+  const organization = user?.organization
 
   const [agents, setAgents] = useState<AIAgent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null)
@@ -48,13 +49,13 @@ export default function AgentDemoPage() {
   })
 
   useEffect(() => {
-    if (organization && !orgLoading) {
+    if (organization && !authLoading) {
       loadAgents()
-    } else if (orgError) {
-      setError(orgError)
+    } else if (authError) {
+      setError(authError)
       setLoading(false)
     }
-  }, [organization, orgLoading, orgError])
+  }, [organization, authLoading, authError])
 
   useEffect(() => {
     if (preselectedAgentId && agents.length > 0) {

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { OrganizationService } from '@/lib/services/OrganizationService'
 import { BusinessNiche, AgentTemplate, AIAgent } from '@/types/database'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,8 @@ export default function AgentConfigurationPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nicheId = searchParams.get('niche')
-  const { organization, loading: orgLoading, error: orgError } = useOrganization()
+  const { user, loading: authLoading, authError } = useAuth()
+  const organization = user?.organization
 
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)

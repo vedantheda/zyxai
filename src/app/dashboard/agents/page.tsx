@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AgentService } from '@/lib/services/AgentService'
 import { AIAgent } from '@/types/database'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { OrganizationErrorHandler } from '@/components/error/OrganizationErrorHandler'
+// Tooltip imports temporarily disabled
+// import { HelpTooltip, QuickTooltip, FeatureTooltip } from '@/components/ui/help-tooltip'
+// import { getTooltipContent, getTips } from '@/lib/tooltips/tooltip-content'
 import {
   Bot,
   Plus,
@@ -34,7 +38,8 @@ import { CreateAgentDialog } from '@/components/agents/CreateAgentDialog'
 
 export default function AgentsPage() {
   const router = useRouter()
-  const { organization, loading: orgLoading, error: orgError } = useOrganization()
+  const { user, loading: authLoading, authError } = useAuth()
+  const organization = user?.organization
   const [loading, setLoading] = useState(true)
   const [agents, setAgents] = useState<AIAgent[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -43,13 +48,16 @@ export default function AgentsPage() {
   const [deletingAgent, setDeletingAgent] = useState<string | null>(null)
 
   useEffect(() => {
-    if (organization && !orgLoading) {
+    if (organization && !authLoading) {
       loadAgents()
-    } else if (orgError) {
-      setError(orgError)
+    } else if (authError) {
+      setError(authError)
+      setLoading(false)
+    } else if (!authLoading && !organization) {
+      setError('No organization found. Please complete your account setup.')
       setLoading(false)
     }
-  }, [organization, orgLoading, orgError])
+  }, [organization, authLoading, authError])
 
   const loadAgents = async () => {
     if (!organization) return
@@ -159,13 +167,15 @@ export default function AgentsPage() {
     }
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Bot className="mx-auto h-12 w-12 text-muted-foreground animate-pulse" />
-            <p className="mt-4 text-muted-foreground">Loading your AI agents...</p>
+            <p className="mt-4 text-muted-foreground">
+              {authLoading ? 'Loading your account...' : 'Loading your AI agents...'}
+            </p>
           </div>
         </div>
       </div>
@@ -191,11 +201,18 @@ export default function AgentsPage() {
             <Bot className="mr-2 h-4 w-4" />
             AI Employee Builder
           </Button>
-          <Button variant="outline" onClick={() => router.push('/setup')}>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/setup')}
+            title="Use pre-built agent templates optimized for specific industries"
+          >
             <Settings className="mr-2 h-4 w-4" />
             Deploy Template
           </Button>
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            title="Build a custom AI agent from scratch with full control over configuration"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Create Custom Agent
           </Button>
@@ -227,9 +244,18 @@ export default function AgentsPage() {
       )}
 
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <OrganizationErrorHandler
+          error={error}
+          onRetry={() => {
+            setError(null)
+            if (organization) {
+              loadAgents()
+            } else {
+              window.location.reload()
+            }
+          }}
+          loading={loading}
+        />
       )}
 
       {/* Agents Display */}

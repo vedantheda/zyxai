@@ -22,7 +22,7 @@ import {
   Line
 } from 'recharts'
 import {
-  Sync,
+  RefreshCw as Sync,
   TrendingUp,
   Users,
   Mail,

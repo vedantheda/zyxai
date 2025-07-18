@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Users, Mail, Calendar, MoreHorizontal, X } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { InviteUserDialog } from './InviteUserDialog'
+import { supabase } from '@/lib/supabase'
+import { apiClient } from '@/lib/api-client'
 import type { UserInvitation } from '@/types/database'
 
 interface TeamMembersListProps {
@@ -23,17 +25,33 @@ export function TeamMembersList({ showInvitations = true }: TeamMembersListProps
   const fetchInvitations = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/invitations/list')
-      
+      setError('')
+
+      console.log('🔍 Fetching invitations...')
+
+      // Use the authenticated API client
+      const response = await apiClient.get('/api/invitations/list')
+
+      console.log('📡 Invitations response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to fetch invitations')
+        const errorData = await response.json()
+        console.error('🚨 Invitations API error:', errorData)
+
+        if (response.status === 404 && errorData.error?.includes('profile')) {
+          throw new Error('Please complete your profile setup to access invitations.')
+        }
+
+        throw new Error(errorData.error || `Failed to fetch invitations (${response.status})`)
       }
 
       const result = await response.json()
+      console.log('✅ Invitations data received:', result)
+
       setInvitations(result.invitations || [])
-    } catch (error) {
-      console.error('Error fetching invitations:', error)
-      setError('Failed to load team invitations')
+    } catch (error: any) {
+      console.error('🚨 Error fetching invitations:', error)
+      setError(error.message || 'Failed to load team invitations')
     } finally {
       setIsLoading(false)
     }

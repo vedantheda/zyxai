@@ -22,9 +22,9 @@ interface VapiMessage {
 }
 
 interface VoiceWidgetProps {
-  /** VAPI Assistant ID to use for the call */
+  /** Voice AI Assistant ID to use for the call */
   assistantId: string
-  /** VAPI Public Key (optional, will use env var if not provided) */
+  /** Voice AI Public Key (optional, will use env var if not provided) */
   publicKey?: string
   /** Voice ID for the assistant (optional) */
   voiceId?: string
@@ -36,7 +36,7 @@ interface VoiceWidgetProps {
   onCallStart?: () => void
   /** Callback when call ends */
   onCallEnd?: () => void
-  /** Callback for all VAPI messages */
+  /** Callback for all Voice AI messages */
   onMessage?: (message: VapiMessage) => void
   /** Additional CSS classes */
   className?: string
@@ -47,9 +47,9 @@ interface VoiceWidgetProps {
 }
 
 /**
- * VoiceWidget - A React component for VAPI voice assistant integration
+ * VoiceWidget - A React component for Voice AI assistant integration
  *
- * This component provides a clean interface for voice calls using VAPI.ai.
+ * This component provides a clean interface for voice calls using Voice AI.
  * It handles microphone permissions, call state management, and real-time transcription.
  *
  * @example
@@ -87,11 +87,11 @@ export function VoiceWidget({
   useEffect(() => {
     const initializeVapi = () => {
       if (typeof window !== 'undefined' && !vapiRef.current) {
-        const apiKey = publicKey || process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
+        const apiKey = publicKey || process.env.NEXT_PUBLIC_VOICE_AI_PUBLIC_KEY
 
         if (!apiKey) {
-          console.error('❌ No VAPI API key found')
-          setError('VAPI API key is required')
+          console.error('❌ No Voice AI API key found')
+          setError('Voice AI API key is required')
           return
         }
 
@@ -108,14 +108,14 @@ export function VoiceWidget({
           return
         }
 
-        console.log('🎤 Initializing VAPI...')
+        console.log('🎤 Initializing Voice AI...')
 
         try {
           // Create VAPI instance with direct import
           const vapi = new Vapi(apiKey)
           vapiRef.current = vapi
 
-          console.log('✅ VAPI initialized successfully')
+          console.log('✅ Voice AI initialized successfully')
 
           // Set up event listeners
           vapi.on('call-start', () => {
@@ -175,7 +175,7 @@ export function VoiceWidget({
           })
 
         } catch (initError) {
-          console.error('❌ VAPI initialization error:', initError)
+          console.error('❌ Voice AI initialization error:', initError)
           setError('Failed to initialize voice assistant')
         }
       }

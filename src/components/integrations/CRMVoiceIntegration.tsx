@@ -12,7 +12,7 @@ import {
   Phone,
   PhoneCall,
   Users,
-  Sync,
+  RefreshCw as Sync,
   Play,
   Square,
   Mic,

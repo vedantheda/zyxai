@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useOrganization } from '@/hooks/useOrganization'
+import { useAuth } from '@/contexts/AuthProvider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,7 +42,8 @@ interface Field {
 }
 
 export default function FieldMappingManager() {
-  const { organization } = useOrganization()
+  const { user } = useAuth()
+  const organization = user?.organization
   const [activeTab, setActiveTab] = useState('contact')
   const [mappings, setMappings] = useState<FieldMapping[]>([])
   const [zyxaiFields, setZyxaiFields] = useState<Field[]>([])

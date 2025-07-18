@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react'
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 interface Toast {
   id: string
@@ -47,71 +48,82 @@ export function useToast() {
 function ToastContainer() {
   const { toasts } = useToast()
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map(toast => (
-        <ToastItem key={toast.id} toast={toast} />
-      ))}
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      <AnimatePresence mode="popLayout">
+        {toasts.map(toast => (
+          <ToastItem key={toast.id} toast={toast} />
+        ))}
+      </AnimatePresence>
     </div>
   )
 }
 function ToastItem({ toast }: { toast: Toast }) {
   const { removeToast } = useToast()
-  const [isVisible, setIsVisible] = useState(false)
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
+
   const handleClose = () => {
-    setIsVisible(false)
-    setTimeout(() => removeToast(toast.id), 150)
+    removeToast(toast.id)
   }
+
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-500" />
+        return <CheckCircle className="w-5 h-5 text-green-600" />
       case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />
+        return <XCircle className="w-5 h-5 text-red-600" />
       case 'warning':
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />
+        return <AlertTriangle className="w-5 h-5 text-yellow-600" />
       default:
-        return <AlertCircle className="w-5 h-5 text-blue-500" />
+        return <Info className="w-5 h-5 text-blue-600" />
     }
   }
-  const getBorderColor = () => {
+
+  const getStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'border-green-200'
+        return 'border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800'
       case 'error':
-        return 'border-red-200'
+        return 'border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800'
       case 'warning':
-        return 'border-yellow-200'
+        return 'border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800'
       default:
-        return 'border-blue-200'
+        return 'border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800'
     }
   }
+
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -50, scale: 0.3 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -50, scale: 0.5 }}
+      transition={{ duration: 0.2 }}
       className={cn(
-        'bg-white border rounded-lg shadow-lg p-4 min-w-[300px] max-w-[400px] transition-all duration-150',
-        getBorderColor(),
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+        'border rounded-lg shadow-lg p-4 w-full backdrop-blur-sm',
+        getStyles()
       )}
     >
       <div className="flex items-start gap-3">
-        {getIcon()}
-        <div className="flex-1">
-          <h4 className="font-medium text-gray-900">{toast.title}</h4>
+        <div className="flex-shrink-0 mt-0.5">
+          {getIcon()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-foreground text-sm">{toast.title}</h4>
           {toast.description && (
-            <p className="text-sm text-gray-600 mt-1">{toast.description}</p>
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              {toast.description}
+            </p>
           )}
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           onClick={handleClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-background/50"
         >
           <X className="w-4 h-4" />
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   )
 }
 // Helper functions for easy usage

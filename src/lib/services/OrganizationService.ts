@@ -130,6 +130,14 @@ export class OrganizationService {
   // Get user's organization
   static async getUserOrganization(userId: string): Promise<{ organization: Organization | null; user: User | null; error: string | null }> {
     try {
+      console.log('🏢 OrganizationService: Fetching user organization for:', userId)
+
+      // Check if supabase client is available
+      if (!supabase) {
+        console.error('🚨 OrganizationService: Supabase client is null!')
+        return { organization: null, user: null, error: 'Database connection unavailable' }
+      }
+
       const { data: user, error: userError } = await supabase
         .from('users')
         .select(`
@@ -140,21 +148,37 @@ export class OrganizationService {
         .maybeSingle()
 
       if (userError) {
-        return { organization: null, user: null, error: userError.message }
+        console.error('🚨 OrganizationService: Database error:', userError)
+        return { organization: null, user: null, error: `Database error: ${userError.message}` }
       }
 
-      // If user doesn't exist in our users table, they need to complete signup
+      console.log('🏢 OrganizationService: Query result:', {
+        hasUser: !!user,
+        userEmail: user?.email,
+        hasOrganization: !!user?.organization,
+        organizationName: user?.organization?.name
+      })
+
+      // If user doesn't exist in our users table, they need to complete their profile
       if (!user) {
-        return { organization: null, user: null, error: null }
+        console.log('🏢 OrganizationService: User not found in users table - needs profile completion')
+        return {
+          organization: null,
+          user: null,
+          error: 'User profile incomplete. Please complete your account setup.'
+        }
       }
+
+      console.log('🏢 OrganizationService: User found:', user.email, 'Organization:', user.organization?.name || 'None')
 
       return {
         organization: user.organization as Organization,
         user: user as User,
         error: null
       }
-    } catch (error) {
-      return { organization: null, user: null, error: 'Failed to fetch user organization' }
+    } catch (error: any) {
+      console.error('🚨 OrganizationService: Unexpected error:', error)
+      return { organization: null, user: null, error: `Failed to fetch user organization: ${error.message}` }
     }
   }
 

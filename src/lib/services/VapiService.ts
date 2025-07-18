@@ -13,7 +13,7 @@ import {
 
 // Initialize Vapi client with proper token
 const vapi = new VapiClient({
-  token: process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY!
+  token: process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY!
 })
 
 export interface VapiAssistant {
@@ -145,7 +145,7 @@ export interface VapiPhoneNumber {
 
 export class VapiService {
   private static baseUrl = 'https://api.vapi.ai'
-  private static privateKey = process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY!
+  private static privateKey = process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY!
 
   // Enhanced voice configuration mapping with multiple providers
   private static voiceMapping: Record<string, {

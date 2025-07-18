@@ -99,7 +99,7 @@ export class InvitationService {
         console.error('Error creating invitation:', invitationError)
         return {
           success: false,
-          error: 'Failed to create invitation'
+          error: invitationError?.message || 'Failed to create invitation'
         }
       }
 

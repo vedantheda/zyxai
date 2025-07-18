@@ -230,7 +230,7 @@ export async function PATCH(request: NextRequest) {
         result = await fetch(`https://api.vapi.ai/call/${callId}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
+            'Authorization': `Bearer ${process.env.VOICE_AI_API_KEY}`,
             'Content-Type': 'application/json'
           }
         })
@@ -241,7 +241,7 @@ export async function PATCH(request: NextRequest) {
         result = await fetch(`https://api.vapi.ai/call/${callId}/mute`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
+            'Authorization': `Bearer ${process.env.VOICE_AI_API_KEY}`,
             'Content-Type': 'application/json'
           }
         })
@@ -252,7 +252,7 @@ export async function PATCH(request: NextRequest) {
         result = await fetch(`https://api.vapi.ai/call/${callId}/unmute`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
+            'Authorization': `Bearer ${process.env.VOICE_AI_API_KEY}`,
             'Content-Type': 'application/json'
           }
         })

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
 
     // Get authenticated user

@@ -4,7 +4,8 @@ import { cookies } from 'next/headers'
 export async function GET(_request: NextRequest) {
   try {
     console.log('🔐 Session API: Getting session from server-side')
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = await cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: { session }, error } = await supabase.auth.getSession()
     console.log('🔐 Session API: Session result', {
       hasSession: !!session,

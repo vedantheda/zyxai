@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
       assistantIdProvided: !!assistantId,
       assistantIdFormat: assistantId?.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/),
       environmentVariables: {
-        NEXT_PUBLIC_VAPI_PUBLIC_KEY: !!process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY,
-        VAPI_API_KEY: !!process.env.VAPI_API_KEY
+        NEXT_PUBLIC_VOICE_AI_PUBLIC_KEY: !!process.env.NEXT_PUBLIC_VOICE_AI_PUBLIC_KEY,
+        VOICE_AI_API_KEY: !!process.env.VOICE_AI_API_KEY
       }
     }
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     try {
       const response = await fetch('https://api.vapi.ai/assistant', {
         headers: {
-          'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
+          'Authorization': `Bearer ${process.env.VOICE_AI_API_KEY}`,
           'Content-Type': 'application/json'
         }
       })
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Add recommendations based on test results
     if (!tests.publicKeyProvided) {
-      result.recommendations.push('Public key is missing. Check NEXT_PUBLIC_VAPI_PUBLIC_KEY environment variable.')
+      result.recommendations.push('Public key is missing. Check NEXT_PUBLIC_VOICE_AI_PUBLIC_KEY environment variable.')
     }
     
     if (!tests.publicKeyFormat) {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (!serverApiTest) {
-      result.recommendations.push('Server cannot reach VAPI API. Check VAPI_API_KEY and network connectivity.')
+      result.recommendations.push('Server cannot reach Voice AI API. Check VOICE_AI_API_KEY and network connectivity.')
     }
 
     return NextResponse.json(result)

@@ -475,7 +475,7 @@ class VAPICRMIntegration {
 }
 
 // Export singleton instance (replace with actual VAPI API key)
-export const vapiCRMIntegration = new VAPICRMIntegration(process.env.VAPI_API_KEY || 'your-vapi-api-key')
+export const vapiCRMIntegration = new VAPICRMIntegration(process.env.VOICE_AI_API_KEY || 'your-voice-ai-api-key')
 
 // Export class for testing
 export { VAPICRMIntegration }

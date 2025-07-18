@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { VapiClient } from '@vapi-ai/server-sdk'
 
 const vapi = new VapiClient({
-  token: process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY!
+  token: process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY!
 })
 
 export async function GET(

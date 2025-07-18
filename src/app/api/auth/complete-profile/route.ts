@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Verify the user is authenticated and matches the userId

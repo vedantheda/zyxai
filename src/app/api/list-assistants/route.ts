@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // Get the API key from environment variables
-    const apiKey = process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY;
+    const apiKey = process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY;
     
     if (!apiKey) {
       return NextResponse.json(

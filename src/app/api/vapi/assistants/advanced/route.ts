@@ -3,7 +3,7 @@ import { VapiClient } from '@vapi-ai/server-sdk'
 import { VapiAdvancedAssistantConfig } from '@/lib/types/VapiAdvancedConfig'
 
 const vapi = new VapiClient({
-  token: process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY!
+  token: process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY!
 })
 
 const corsHeaders = {

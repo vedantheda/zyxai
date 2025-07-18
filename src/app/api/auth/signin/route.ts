@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔐 API SignIn: Starting server-side sign in')
     const { email, password, redirectTo } = await request.json()
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({

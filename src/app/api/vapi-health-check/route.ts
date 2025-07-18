@@ -26,18 +26,18 @@ export async function GET(request: NextRequest) {
 
   try {
     // Check 1: Environment Variables
-    const privateKey = process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || process.env.VAPI_PUBLIC_KEY
+    const privateKey = process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY
+    const publicKey = process.env.NEXT_PUBLIC_VOICE_AI_PUBLIC_KEY || process.env.VOICE_AI_PUBLIC_KEY
 
     healthCheck.config.hasPrivateKey = !!privateKey
     healthCheck.config.hasPublicKey = !!publicKey
 
     if (!privateKey) {
-      healthCheck.errors.push('Missing VAPI private key (VAPI_API_KEY or VAPI_PRIVATE_KEY)')
+      healthCheck.errors.push('Missing Voice AI private key (VOICE_AI_API_KEY or VOICE_AI_PRIVATE_KEY)')
     }
 
     if (!publicKey) {
-      healthCheck.errors.push('Missing VAPI public key (NEXT_PUBLIC_VAPI_PUBLIC_KEY)')
+      healthCheck.errors.push('Missing Voice AI public key (NEXT_PUBLIC_VOICE_AI_PUBLIC_KEY)')
     }
 
     healthCheck.checks.environment = !!(privateKey && publicKey)
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { testType = 'basic' } = body
 
-    const privateKey = process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_KEY
+    const privateKey = process.env.VOICE_AI_API_KEY || process.env.VOICE_AI_PRIVATE_KEY
     if (!privateKey) {
       return NextResponse.json({
         success: false,

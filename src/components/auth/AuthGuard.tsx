@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, useAuthStatus } from '@/contexts/AuthProvider'
 import { Loader2 } from 'lucide-react'
@@ -12,19 +12,42 @@ interface AuthGuardProps {
   fallback?: React.ReactNode
 }
 
-export function AuthGuard({ 
-  children, 
-  requireAuth = true, 
+export function AuthGuard({
+  children,
+  requireAuth = true,
   redirectTo = '/signin',
-  fallback 
+  fallback
 }: AuthGuardProps) {
   const { user, loading, authError } = useAuth()
   const { isAuthenticated, needsProfileCompletion } = useAuthStatus()
   const router = useRouter()
+  const [forceReady, setForceReady] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Force ready after timeout to prevent infinite loading
+  useEffect(() => {
+    if (loading && !forceReady) {
+      timeoutRef.current = setTimeout(() => {
+        console.warn('🚨 AuthGuard: Force ready after timeout to prevent infinite loading')
+        setForceReady(true)
+      }, 8000) // 8 second timeout
+    } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [loading, forceReady])
 
   useEffect(() => {
-    // Don't redirect while still loading
-    if (loading) return
+    // Don't redirect while still loading (unless force ready)
+    if (loading && !forceReady) return
 
     // If auth is required but user is not authenticated
     if (requireAuth && !isAuthenticated) {
@@ -42,10 +65,10 @@ export function AuthGuard({
     if (!requireAuth && isAuthenticated && window.location.pathname === '/signin') {
       router.push('/dashboard')
     }
-  }, [loading, isAuthenticated, needsProfileCompletion, requireAuth, redirectTo, router])
+  }, [loading, isAuthenticated, needsProfileCompletion, requireAuth, redirectTo, router, forceReady])
 
-  // Show loading state
-  if (loading) {
+  // Show loading state (unless force ready)
+  if (loading && !forceReady) {
     return fallback || (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -75,8 +98,8 @@ export function AuthGuard({
   }
 
   // If auth is required but user is not authenticated, don't render children
-  // (redirect will happen in useEffect)
-  if (requireAuth && !isAuthenticated) {
+  // (redirect will happen in useEffect) - but allow force ready to bypass
+  if (requireAuth && !isAuthenticated && !forceReady) {
     return fallback || (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">

@@ -21,7 +21,9 @@ function createSafeSupabaseClient() {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
-        flowType: 'pkce'
+        flowType: 'pkce',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'zyxai-auth-token'
       },
       global: {
         headers: {

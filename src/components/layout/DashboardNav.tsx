@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthProvider'
+import { Button } from '@/components/ui/button'
 import {
   LayoutDashboard,
   Bot,
@@ -19,11 +21,15 @@ import {
   Palette,
   TestTube,
   CreditCard,
-  Bell
+  Bell,
+  LogOut,
+  UserCheck
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Onboarding', href: '/onboarding', icon: TestTube },
+  { name: 'Teams', href: '/dashboard/team', icon: UserCheck },
   { name: 'Templates', href: '/dashboard/templates', icon: Zap },
   { name: 'AI Agents', href: '/dashboard/agents', icon: Bot },
   { name: 'Contacts', href: '/dashboard/contacts', icon: Users },
@@ -32,10 +38,10 @@ const navigation = [
   { name: 'Workflows', href: '/dashboard/workflows/builder', icon: Settings },
   { name: 'Phone Numbers', href: '/dashboard/phone-numbers', icon: Phone },
   { name: 'White Label', href: '/dashboard/white-label', icon: Palette },
-  { name: 'VAPI Config', href: '/dashboard/vapi-config', icon: Cog },
-  { name: 'VAPI Advanced', href: '/dashboard/vapi-advanced', icon: Zap },
-  { name: 'VAPI Status', href: '/dashboard/vapi-status', icon: TrendingUp },
-  { name: 'VAPI Demo Call', href: '/demo/vapi-call', icon: TestTube },
+  { name: 'Voice Config', href: '/dashboard/voice-config', icon: Cog },
+  { name: 'Voice Advanced', href: '/dashboard/vapi-advanced', icon: Zap },
+  { name: 'Voice Status', href: '/dashboard/voice-status', icon: TrendingUp },
+  { name: 'Voice Demo Call', href: '/demo/vapi-call', icon: TestTube },
   { name: 'Optimization', href: '/dashboard/optimization', icon: BarChart3 },
   { name: 'Integrations', href: '/dashboard/integrations', icon: Building2 },
   { name: 'Leads', href: '/dashboard/leads', icon: Users },
@@ -48,6 +54,15 @@ const navigation = [
 
 export function DashboardNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { signOut, user } = useAuth()
+
+  const handleSignOut = async () => {
+    const { error } = await signOut()
+    if (!error) {
+      router.push('/signin')
+    }
+  }
 
   return (
     <nav className="bg-card border-r border-border w-64 min-h-screen flex flex-col">
@@ -89,8 +104,39 @@ export function DashboardNav() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-6 border-t border-border">
+      {/* User Info & Sign Out */}
+      <div className="p-6 border-t border-border space-y-4">
+        {/* User Info */}
+        {user && (
+          <div className="flex items-center space-x-3 p-3 bg-accent/50 rounded-lg">
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-primary-foreground">
+                {user.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user.user_metadata?.full_name || user.email?.split('@')[0]}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Sign Out Button */}
+        <Button
+          onClick={handleSignOut}
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
+
+        {/* Footer */}
         <div className="text-xs text-muted-foreground text-center">
           <p>ZyxAI v1.0</p>
           <p className="mt-1">AI Voice Automation</p>

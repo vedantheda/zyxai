@@ -11,7 +11,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell'
 import GlobalSearch from '@/components/search/GlobalSearch'
 import { MobileSearchTrigger } from '@/components/search/MobileSearch'
 import { ClientLayoutContent } from '@/components/client/ClientLayoutContent'
-import { GlobalSidebar } from '@/components/layout/GlobalSidebar'
+import { ModernSidebar } from '@/components/layout/ModernSidebar'
 import { VoiceWidget } from '@/components/voice/VoiceWidget'
 
 interface AppLayoutProps {
@@ -39,7 +39,7 @@ function Header({ userRole, showQuickActions = true, customActions }: HeaderProp
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64">
-            <GlobalSidebar userRole={userRole} />
+            <ModernSidebar userRole={userRole} />
           </SheetContent>
         </Sheet>
 
@@ -131,7 +131,7 @@ export function AppLayout({
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col">
-        <GlobalSidebar userRole={userRole} />
+        <ModernSidebar userRole={userRole} />
       </div>
 
       {/* Main Content */}

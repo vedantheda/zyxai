@@ -32,7 +32,7 @@ import {
   GitBranch,
   Hash,
   Mic
-} from 'lucide-react'
+} from '@/lib/optimization/IconOptimizer'
 
 export interface NavigationItem {
   name: string
@@ -44,13 +44,13 @@ export interface NavigationItem {
   isComingSoon?: boolean
 }
 
-// Admin navigation for AI Voice Platform
+// Clean & Focused Admin Navigation (Option A)
 export const adminNavigation: NavigationItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-    description: 'Overview and analytics'
+    description: 'Overview and key metrics'
   },
   {
     name: 'AI Agents',
@@ -74,49 +74,71 @@ export const adminNavigation: NavigationItem[] = [
     name: 'Calls',
     href: '/dashboard/calls',
     icon: PhoneCall,
-    description: 'Call history and logs'
+    description: 'Call history and monitoring'
   },
   {
     name: 'Analytics',
-    href: '/dashboard/voice-analytics',
+    href: '/dashboard/analytics',
     icon: BarChart3,
-    description: 'Voice analytics and reports'
-  },
-  {
-    name: 'Integrations',
-    href: '/dashboard/integrations',
-    icon: Zap,
-    description: 'CRM and third-party integrations'
-  },
-  {
-    name: 'Workflows',
-    href: '/dashboard/workflows',
-    icon: GitBranch,
-    description: 'Automation workflows'
-  },
-  {
-    name: 'Phone Numbers',
-    href: '/dashboard/phone-numbers',
-    icon: Hash,
-    description: 'Manage phone numbers'
-  },
-  {
-    name: 'Team',
-    href: '/dashboard/team',
-    icon: UserCheck,
-    description: 'Team management'
-  },
-  {
-    name: 'Voice Config',
-    href: '/dashboard/voice-config',
-    icon: Mic,
-    description: 'Voice configuration'
+    description: 'Performance insights'
   },
   {
     name: 'Settings',
     href: '/settings',
     icon: Settings,
-    description: 'Account settings'
+    description: 'Account and system settings'
+  }
+]
+
+// Settings submenu items (moved from main sidebar)
+export const settingsNavigation: NavigationItem[] = [
+  {
+    name: 'Account',
+    href: '/settings/account',
+    icon: UserCheck,
+    description: 'Profile and account settings'
+  },
+  {
+    name: 'Team',
+    href: '/settings/team',
+    icon: Users,
+    description: 'Team management and roles'
+  },
+  {
+    name: 'Phone Numbers',
+    href: '/settings/phone-numbers',
+    icon: Hash,
+    description: 'Manage phone numbers'
+  },
+  {
+    name: 'Voice & Audio',
+    href: '/settings/voice',
+    icon: Mic,
+    description: 'Voice configuration and audio settings'
+  },
+  {
+    name: 'Integrations',
+    href: '/settings/integrations',
+    icon: Zap,
+    description: 'CRM and third-party integrations'
+  },
+  {
+    name: 'Workflows',
+    href: '/settings/workflows',
+    icon: GitBranch,
+    description: 'Automation workflows'
+  },
+  {
+    name: 'Billing',
+    href: '/settings/billing',
+    icon: CreditCard,
+    description: 'Subscription and billing'
+  },
+  {
+    name: 'Help & Support',
+    href: '/settings/help',
+    icon: AlertTriangle,
+    description: 'Documentation and support'
   }
 ]
 
@@ -172,8 +194,8 @@ export const clientNavigation: NavigationItem[] = [
   }
 ]
 
-// Divider positions for admin navigation (after which items to show dividers)
-export const adminNavigationDividers: number[] = [5, 9] // After Messages (Core), after Calendar (Advanced)
+// Divider positions for clean navigation (after which items to show dividers)
+export const adminNavigationDividers: number[] = [4, 5] // After Calls (Core Operations), after Analytics (Insights)
 
 // Extended admin navigation with more detailed sections
 export const extendedAdminNavigation: NavigationItem[] = [
@@ -272,37 +294,37 @@ export const extendedAdminNavigation: NavigationItem[] = [
   }
 ]
 
-// Quick action items for dashboard
+// Quick action items for AI Voice Platform
 export const quickActions: NavigationItem[] = [
   {
-    name: 'Add Client',
-    href: '/clients/new',
-    icon: UserCheck,
-    description: 'Create new client account'
+    name: 'Create Agent',
+    href: '/dashboard/agents/new',
+    icon: Brain,
+    description: 'Create new AI voice agent'
   },
   {
-    name: 'Upload Documents',
-    href: '/documents/upload',
+    name: 'Start Campaign',
+    href: '/dashboard/campaigns/new',
+    icon: Phone,
+    description: 'Launch new voice campaign'
+  },
+  {
+    name: 'Add Contacts',
+    href: '/dashboard/contacts/import',
     icon: Upload,
-    description: 'Upload client documents'
+    description: 'Import or add contacts'
   },
   {
-    name: 'Create Task',
-    href: '/tasks/new',
-    icon: CheckSquare,
-    description: 'Add new task'
+    name: 'Demo Call',
+    href: '/dashboard/calls/demo',
+    icon: PhoneCall,
+    description: 'Test your AI agent'
   },
   {
-    name: 'Send Message',
-    href: '/messages/new',
-    icon: MessageSquare,
-    description: 'Message a client'
-  },
-  {
-    name: 'Schedule Appointment',
-    href: '/calendar',
-    icon: Calendar,
-    description: 'Schedule client appointment'
+    name: 'View Analytics',
+    href: '/dashboard/analytics',
+    icon: BarChart3,
+    description: 'Check performance metrics'
   }
 ]
 

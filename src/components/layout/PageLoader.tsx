@@ -11,22 +11,32 @@ export function PageLoader({ children, requireAuth = false, redirectTo = '/login
   const { user, session, loading } = useAuth()
   const isHydrated = !loading
   const [isReady, setIsReady] = useState(false)
+  const [forceReady, setForceReady] = useState(false)
+
   useEffect(() => {
-    // Simple timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
+    // Force ready after maximum wait time to prevent infinite loading
+    const forceTimeout = setTimeout(() => {
+      console.log('🚨 PageLoader: Force ready after timeout to prevent infinite loading')
+      setForceReady(true)
       setIsReady(true)
-    }, 3000) // 3 second max wait
-    // Check if we're ready
+    }, 5000) // 5 second max wait
+
+    // Set ready immediately if conditions are met
     if (isHydrated && !loading) {
-      clearTimeout(timeout)
+      clearTimeout(forceTimeout)
       setIsReady(true)
     }
-    return () => clearTimeout(timeout)
+
+    return () => clearTimeout(forceTimeout)
   }, [isHydrated, loading])
+
+  const finalReady = isReady || forceReady
+
   // Show loading if not hydrated, still loading, or not ready
-  if (!isHydrated || loading || !isReady) {
+  if (!isHydrated || loading || !finalReady) {
     return <LoadingScreen text="Loading..." />
   }
+
   // If auth is required but user is not authenticated, redirect
   if (requireAuth && (!user || !session)) {
     if (typeof window !== 'undefined') {
@@ -34,6 +44,7 @@ export function PageLoader({ children, requireAuth = false, redirectTo = '/login
     }
     return <LoadingScreen text="Redirecting to login..." />
   }
+
   return <>{children}</>
 }
 // Simplified hook for pages
@@ -42,26 +53,37 @@ export function usePageReady() {
   const isHydrated = !loading
   const [isReady, setIsReady] = useState(false)
   const [forceReady, setForceReady] = useState(false)
+
   useEffect(() => {
-    // Force ready after 2 seconds no matter what
+    // Force ready after timeout to prevent infinite loading
     const forceTimeout = setTimeout(() => {
+      console.log('🚨 usePageReady: Force ready after timeout to prevent infinite loading')
       setForceReady(true)
       setIsReady(true)
-    }, 2000)
+    }, 3000) // 3 second max wait
+
     // Set ready immediately if conditions are met
     if (isHydrated && !loading) {
       clearTimeout(forceTimeout)
       setIsReady(true)
     }
+
     return () => clearTimeout(forceTimeout)
   }, [isHydrated, loading])
+
   const finalReady = isReady || forceReady
   const finalLoading = !finalReady
-  console.log('🧪 usePageReady final state:', {
-    finalReady,
-    finalLoading,
-    isAuthenticated: !!user && !!session
-  })
+
+  // Only log in development to reduce console noise
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🧪 usePageReady final state:', {
+      finalReady,
+      finalLoading,
+      isAuthenticated: !!user && !!session,
+      authLoading: loading
+    })
+  }
+
   return {
     isReady: finalReady,
     isAuthenticated: !!user && !!session,

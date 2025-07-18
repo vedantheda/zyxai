@@ -95,6 +95,8 @@ export function LoadingProvider({
       return () => clearInterval(checkInterval)
     }
   }, [isLoading, maxLoadingTime])
+
+  // Removed problematic tab visibility handling - this was causing loading interruptions
   const value = {
     isLoading,
     setLoading,

@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import { CRMIntegrationService } from './CRMIntegrationService'
 import { FieldMappingService } from './FieldMappingService'
+import { HubSpotDealsService } from '@/lib/services/HubSpotDealsService'
+import {
+  mapHubSpotDealToOpportunity,
+  extractContactIdsFromDeals,
+  extractOwnerIdsFromDeals
+} from '@/lib/mappers/hubspotToOpportunities'
 
 export interface WebhookEvent {
   id: string
@@ -243,6 +249,12 @@ export class WebhookService {
             mappings.filter(m => m.entity_type === 'deal')
           )
 
+        case 'deal.deletion':
+          return await this.handleHubSpotDealDeletion(
+            organization_id,
+            event_data
+          )
+
         default:
           console.log(`Unhandled HubSpot event type: ${event_type}`)
           return true // Mark as processed to avoid retries
@@ -377,12 +389,183 @@ export class WebhookService {
     mappings: any[]
   ): Promise<boolean> {
     try {
-      // Implementation for deal sync
-      // This would create/update deals in ZyxAI based on HubSpot data
-      console.log('Deal sync not implemented yet')
+      console.log('🔄 Syncing HubSpot deal to ZyxAI:', eventData)
+
+      // Extract deal ID from event data
+      const dealId = eventData.objectId || eventData.dealId
+      if (!dealId) {
+        console.error('No deal ID found in webhook event data')
+        return false
+      }
+
+      // Get HubSpot integration for this organization
+      const { data: integration } = await supabase
+        .from('integrations')
+        .select('access_token')
+        .eq('organization_id', organizationId)
+        .eq('provider', 'hubspot')
+        .eq('is_active', true)
+        .single()
+
+      if (!integration?.access_token) {
+        console.error('No active HubSpot integration found for organization:', organizationId)
+        return false
+      }
+
+      // Use imported HubSpot services
+
+      // Set access token and fetch the deal
+      HubSpotDealsService.setAccessToken(integration.access_token)
+      const hubspotDeal = await HubSpotDealsService.getDeal(dealId)
+
+      if (!hubspotDeal) {
+        console.error('Deal not found in HubSpot:', dealId)
+        return false
+      }
+
+      // Get additional data for mapping
+      const [pipelinesResponse, contactIds, ownerIds] = await Promise.all([
+        HubSpotDealsService.getPipelines(),
+        Promise.resolve(extractContactIdsFromDeals([hubspotDeal])),
+        Promise.resolve(extractOwnerIdsFromDeals([hubspotDeal]))
+      ])
+
+      const [contacts, owners] = await Promise.all([
+        HubSpotDealsService.getContactsForDeals(contactIds),
+        HubSpotDealsService.getOwnersForDeals(ownerIds)
+      ])
+
+      // Map to our opportunity format
+      const opportunity = mapHubSpotDealToOpportunity(
+        hubspotDeal,
+        contacts,
+        owners,
+        pipelinesResponse || []
+      )
+
+      // Check if we already have this deal in our system
+      const { data: existingDeal } = await supabase
+        .from('deals')
+        .select('id')
+        .eq('custom_fields->hubspot_id', dealId)
+        .eq('organization_id', organizationId)
+        .single()
+
+      if (existingDeal) {
+        // Update existing deal
+        const { error } = await supabase
+          .from('deals')
+          .update({
+            title: opportunity.name,
+            value_cents: Math.round(opportunity.amount * 100),
+            stage_id: opportunity.stage.id,
+            pipeline_id: opportunity.pipeline.id,
+            expected_close_date: opportunity.closeDate,
+            priority: opportunity.priority,
+            lead_source: opportunity.source,
+            description: opportunity.description,
+            custom_fields: {
+              ...existingDeal,
+              hubspot_id: dealId,
+              hubspot_data: hubspotDeal
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingDeal.id)
+
+        if (error) {
+          console.error('Failed to update existing deal:', error)
+          return false
+        }
+
+        console.log('✅ Updated existing deal:', existingDeal.id)
+      } else {
+        // Create new deal
+        const { error } = await supabase
+          .from('deals')
+          .insert({
+            organization_id: organizationId,
+            title: opportunity.name,
+            value_cents: Math.round(opportunity.amount * 100),
+            stage_id: opportunity.stage.id,
+            pipeline_id: opportunity.pipeline.id,
+            expected_close_date: opportunity.closeDate,
+            priority: opportunity.priority,
+            lead_source: opportunity.source,
+            description: opportunity.description,
+            custom_fields: {
+              hubspot_id: dealId,
+              hubspot_data: hubspotDeal
+            }
+          })
+
+        if (error) {
+          console.error('Failed to create new deal:', error)
+          return false
+        }
+
+        console.log('✅ Created new deal from HubSpot:', dealId)
+      }
+
       return true
     } catch (error) {
       console.error('Error syncing HubSpot deal to ZyxAI:', error)
+      return false
+    }
+  }
+
+  /**
+   * Handle HubSpot deal deletion
+   */
+  private static async handleHubSpotDealDeletion(
+    organizationId: string,
+    eventData: any
+  ): Promise<boolean> {
+    try {
+      console.log('🗑️ Handling HubSpot deal deletion:', eventData)
+
+      const dealId = eventData.objectId || eventData.dealId
+      if (!dealId) {
+        console.error('No deal ID found in deletion event data')
+        return false
+      }
+
+      // Find and soft delete the deal in our system
+      const { data: existingDeal } = await supabase
+        .from('deals')
+        .select('id, title')
+        .eq('custom_fields->hubspot_id', dealId)
+        .eq('organization_id', organizationId)
+        .single()
+
+      if (existingDeal) {
+        // Soft delete by marking as deleted
+        const { error } = await supabase
+          .from('deals')
+          .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString(),
+            custom_fields: {
+              ...existingDeal,
+              deleted_from_hubspot: true,
+              hubspot_deletion_date: new Date().toISOString()
+            }
+          })
+          .eq('id', existingDeal.id)
+
+        if (error) {
+          console.error('Failed to delete deal:', error)
+          return false
+        }
+
+        console.log('✅ Soft deleted deal:', existingDeal.title)
+      } else {
+        console.log('Deal not found in local system, skipping deletion')
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error handling HubSpot deal deletion:', error)
       return false
     }
   }

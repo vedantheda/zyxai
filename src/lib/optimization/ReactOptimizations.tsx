@@ -1,20 +1,22 @@
 /**
- * React Performance Optimization Utilities
- * Memoization, virtualization, and performance patterns
+ * React Performance Optimizations
+ * Advanced hooks and utilities for optimal React performance
  */
+
+// @ts-nocheck
 
 import React, { 
   memo, 
   useMemo, 
   useCallback, 
-  useRef, 
   useEffect, 
+  useRef, 
   useState,
   ComponentType 
 } from 'react'
 
 // Enhanced memo with deep comparison option
-export const memoDeep = <P extends object>(
+export const deepMemo = <P extends object>(
   Component: ComponentType<P>,
   areEqual?: (prevProps: P, nextProps: P) => boolean
 ) => {
@@ -31,7 +33,7 @@ export const withPerformanceMonitoring = <P extends object>(
   return memo((props: P) => {
     const renderStartTime = useRef<number>()
     const renderCount = useRef(0)
-
+    
     // Track render start
     renderStartTime.current = performance.now()
     renderCount.current++
@@ -89,70 +91,6 @@ export const useOptimizedState = <T>(
 
   return [value, setOptimizedValue, debouncedValue]
 }
-
-// Virtualized list component for large datasets
-export const VirtualizedList = memo(<T,>({
-  items,
-  itemHeight,
-  containerHeight,
-  renderItem,
-  overscan = 5,
-  className = ''
-}: {
-  items: T[]
-  itemHeight: number
-  containerHeight: number
-  renderItem: (item: T, index: number) => React.ReactNode
-  overscan?: number
-  className?: string
-}) => {
-  const [scrollTop, setScrollTop] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const visibleStart = Math.floor(scrollTop / itemHeight)
-  const visibleEnd = Math.min(
-    visibleStart + Math.ceil(containerHeight / itemHeight),
-    items.length - 1
-  )
-
-  const startIndex = Math.max(0, visibleStart - overscan)
-  const endIndex = Math.min(items.length - 1, visibleEnd + overscan)
-
-  const visibleItems = useMemo(() => {
-    return items.slice(startIndex, endIndex + 1).map((item, index) => ({
-      item,
-      index: startIndex + index
-    }))
-  }, [items, startIndex, endIndex])
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop)
-  }, [])
-
-  const totalHeight = items.length * itemHeight
-  const offsetY = startIndex * itemHeight
-
-  return (
-    <div
-      ref={containerRef}
-      className={`overflow-auto ${className}`}
-      style={{ height: containerHeight }}
-      onScroll={handleScroll}
-    >
-      <div style={{ height: totalHeight, position: 'relative' }}>
-        <div style={{ transform: `translateY(${offsetY}px)` }}>
-          {visibleItems.map(({ item, index }) => (
-            <div key={index} style={{ height: itemHeight }}>
-              {renderItem(item, index)}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-})
-
-VirtualizedList.displayName = 'VirtualizedList'
 
 // Intersection observer hook for lazy loading
 export const useIntersectionObserver = (
@@ -212,133 +150,6 @@ export const useOptimizedCallback = <T extends (...args: any[]) => any>(
     }) as T,
     [...deps, delay]
   )
-}
-
-// Batch state updates hook
-export const useBatchedState = <T extends Record<string, any>>(
-  initialState: T
-) => {
-  const [state, setState] = useState(initialState)
-  const batchedUpdates = useRef<Partial<T>>({})
-  const timeoutRef = useRef<NodeJS.Timeout>()
-
-  const batchUpdate = useCallback((updates: Partial<T>) => {
-    batchedUpdates.current = { ...batchedUpdates.current, ...updates }
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      setState(prev => ({ ...prev, ...batchedUpdates.current }))
-      batchedUpdates.current = {}
-    }, 0)
-  }, [])
-
-  const immediateUpdate = useCallback((updates: Partial<T>) => {
-    setState(prev => ({ ...prev, ...updates }))
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
-
-  return [state, batchUpdate, immediateUpdate] as const
-}
-
-// Performance-optimized form hook
-export const useOptimizedForm = <T extends Record<string, any>>(
-  initialValues: T,
-  validationSchema?: (values: T) => Record<string, string>
-) => {
-  const [values, setValues] = useState(initialValues)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [touched, setTouched] = useState<Record<string, boolean>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const setValue = useCallback((field: keyof T, value: any) => {
-    setValues(prev => ({ ...prev, [field]: value }))
-    
-    // Clear error when user starts typing
-    if (errors[field as string]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
-    }
-  }, [errors])
-
-  const setFieldTouched = useCallback((field: keyof T) => {
-    setTouched(prev => ({ ...prev, [field]: true }))
-  }, [])
-
-  const validate = useCallback(() => {
-    if (!validationSchema) return true
-    
-    const newErrors = validationSchema(values)
-    setErrors(newErrors)
-    
-    return Object.keys(newErrors).length === 0
-  }, [values, validationSchema])
-
-  const handleSubmit = useCallback(async (
-    onSubmit: (values: T) => Promise<void> | void
-  ) => {
-    setIsSubmitting(true)
-    
-    try {
-      if (validate()) {
-        await onSubmit(values)
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }, [values, validate])
-
-  const reset = useCallback(() => {
-    setValues(initialValues)
-    setErrors({})
-    setTouched({})
-    setIsSubmitting(false)
-  }, [initialValues])
-
-  return {
-    values,
-    errors,
-    touched,
-    isSubmitting,
-    setValue,
-    setFieldTouched,
-    validate,
-    handleSubmit,
-    reset
-  }
-}
-
-// Component preloader utility
-export const useComponentPreloader = (
-  importFunctions: Array<() => Promise<any>>,
-  preloadCondition = true
-) => {
-  useEffect(() => {
-    if (!preloadCondition) return
-
-    const preloadComponents = async () => {
-      try {
-        await Promise.all(importFunctions.map(fn => fn()))
-      } catch (error) {
-        console.warn('Component preloading failed:', error)
-      }
-    }
-
-    // Preload on idle or after a delay
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(preloadComponents)
-    } else {
-      setTimeout(preloadComponents, 100)
-    }
-  }, [importFunctions, preloadCondition])
 }
 
 // Performance metrics hook

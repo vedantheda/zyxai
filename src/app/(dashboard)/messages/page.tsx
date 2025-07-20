@@ -262,7 +262,7 @@ export default function MessagesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Response Time</p>
-                  <p className="text-2xl font-bold">< 1h</p>
+                  <p className="text-2xl font-bold">&lt; 1h</p>
                 </div>
                 <Clock className="h-8 w-8 text-orange-500" />
               </div>

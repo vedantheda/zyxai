@@ -1,7 +1,5 @@
-import { Suspense } from 'react'
-import { PageSkeleton } from '@/components/ui/page-skeleton'
-import { VoiceAgentDashboard } from '@/components/dashboard/VoiceAgentDashboard'
 import { Metadata } from 'next'
+import DashboardClient from './dashboard-client'
 
 export const metadata: Metadata = {
   title: 'Dashboard - ZyxAI',
@@ -9,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<PageSkeleton type="dashboard" />}>
-      <VoiceAgentDashboard />
-    </Suspense>
-  )
+  return <DashboardClient />
 }

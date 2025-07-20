@@ -1,12 +1,10 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { OrganizationService } from '@/lib/services/OrganizationService'
-import { getConnectionManager } from '@/lib/utils/connectionManager'
-import { AuditLogger } from '@/lib/audit/auditLogger'
-import type { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js'
+import type { Session, AuthError } from '@supabase/supabase-js'
 import type { User as DatabaseUser, Organization } from '@/types/database'
 
 interface UserProfile extends DatabaseUser {
@@ -22,6 +20,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   refreshSession: () => Promise<{ error: AuthError | null }>
+  validateSession: () => Promise<boolean>
   completeProfile: () => Promise<void>
 }
 
@@ -35,233 +34,155 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false)
   const router = useRouter()
 
-  // Simplified refresh tracking
-  const lastRefreshRef = useRef<number>(0)
-  const REFRESH_DEBOUNCE_MS = 5000 // 5 seconds - less aggressive
-
-  // Load user profile from database - two-stage approach
-  const loadUserProfile = useCallback(async (authUser: SupabaseUser): Promise<UserProfile | null> => {
-    try {
-      console.log('🔄 Loading user profile for:', authUser.id)
-
-      // Stage 1: Try to load full profile with organization
-      try {
-        console.log('🔄 Attempting to load organization data...')
-        const { organization, user: dbUser, error } = await OrganizationService.getUserOrganization(authUser.id)
-
-        console.log('🔄 Organization service result:', {
-          hasUser: !!dbUser,
-          hasOrg: !!organization,
-          error: error,
-          userId: authUser.id
-        })
-
-        if (!error && dbUser) {
-          console.log('🔄 Full user profile loaded successfully with organization:', organization?.name || 'No org')
-          setNeedsProfileCompletion(false)
-          return {
-            ...dbUser,
-            organization: organization || undefined
-          }
-        }
-
-        console.log('🔄 Full profile loading failed, using basic profile. Error:', error)
-      } catch (orgError) {
-        console.log('🔄 Organization loading exception, using basic profile:', orgError)
-      }
-
-      // Stage 2: Fallback to basic profile from auth data
-      const basicProfile: UserProfile = {
-        id: authUser.id,
-        email: authUser.email || '',
-        first_name: authUser.user_metadata?.first_name || '',
-        last_name: authUser.user_metadata?.last_name || '',
-        role: 'admin' as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      console.log('🔄 Using basic user profile for signin')
-      setNeedsProfileCompletion(true) // User needs to complete profile setup
-      return basicProfile
-    } catch (error) {
-      console.error('Failed to load user profile:', error)
-      setNeedsProfileCompletion(true)
-      return null
-    }
-  }, [])
-
-  // Initialize auth state
+  // Initialize auth
   useEffect(() => {
-    let mounted = true
-    let refreshTimeoutRef: NodeJS.Timeout | null = null
+    const initAuth = async () => {
+      console.log('🔄 AuthProvider: Starting initialization')
 
-    const initializeAuth = async (isRefresh = false) => {
-      if (isRefresh) {
-        console.log('🔄 Refreshing auth state after tab focus (silent refresh)')
-        // For refresh operations, don't show loading spinner to prevent infinite loading cycles
-        // Only refresh the session and user data silently
-      } else {
-        console.log('🔄 Initial auth initialization')
-        // Only set loading to true for initial auth, not for refresh operations
-        setLoading(true)
+      if (!supabase) {
+        console.log('🚨 No Supabase client available')
+        setLoading(false)
+        return
       }
-
-      // Ensure loading is set to false after a maximum timeout
-      const maxTimeout = setTimeout(() => {
-        console.log('🚨 Auth initialization timeout - forcing loading to false')
-        if (mounted) {
-          setLoading(false)
-        }
-      }, 8000) // 8 second maximum timeout (reduced)
 
       try {
-        setAuthError(null)
-        setNeedsProfileCompletion(false)
+        console.log('🔄 Getting session...')
+        const { data: { session }, error } = await supabase.auth.getSession()
 
-        if (!supabase) {
-          console.log('🚨 No Supabase client available')
-          setAuthError('Database connection unavailable')
-          setLoading(false)
-          clearTimeout(maxTimeout)
-          return
-        }
-
-        // Get initial session with simplified logic
-        console.log('🔄 Fetching session on page load...')
-        const { data: sessionData, error } = await supabase.auth.getSession()
-        const session = sessionData?.session
-
-        console.log('🔄 Session fetch result:', {
-          hasSession: !!session,
-          userId: session?.user?.id,
-          error: error?.message,
-          isRefresh
-        })
-
-        if (error) {
-          console.error('Auth initialization error:', error)
-          setAuthError(error.message || 'Authentication failed')
-        }
-
-        if (mounted) {
-          console.log('🔄 Setting session and loading user profile...')
-          setSession(session)
-
-          if (session?.user) {
-            console.log('🔄 Session found, loading user profile...')
-            const userProfile = await loadUserProfile(session.user)
-            console.log('🔄 User profile loaded, setting user state...')
-            setUser(userProfile)
-          } else {
-            console.log('🔄 No session found, clearing user state...')
-            setUser(null)
-            setNeedsProfileCompletion(false)
-          }
-
-          // Always set loading to false when done, regardless of refresh or initial load
-          console.log('🔄 Auth initialization complete, setting loading to false')
-          setLoading(false)
-          clearTimeout(maxTimeout)
-        }
-      } catch (error: any) {
-        console.error('Auth initialization failed:', error)
-        if (mounted) {
-          setAuthError(error.message || 'Failed to initialize authentication')
-          setLoading(false)
-          clearTimeout(maxTimeout)
-        }
-      }
-    }
-
-    initializeAuth()
-
-    // Removed visibility change handling to prevent tab switching interference
-
-    // Setup connection monitoring
-    const connectionManager = getConnectionManager()
-    const unsubscribeConnection = connectionManager.addListener((isOnline) => {
-      if (isOnline && mounted) {
-        const now = Date.now()
-        if (now - lastRefreshRef.current > REFRESH_DEBOUNCE_MS) {
-          console.log('🔌 Connection restored, scheduling auth refresh')
-          lastRefreshRef.current = now
-
-          // Clear any existing timeout to prevent multiple rapid calls
-          if (refreshTimeoutRef) {
-            clearTimeout(refreshTimeoutRef)
-          }
-
-          // Debounce the refresh to prevent rapid successive calls
-          refreshTimeoutRef = setTimeout(() => {
-            if (mounted) {
-              initializeAuth(true)
-            }
-          }, 200) // Slightly longer delay for connection events
-        }
-      }
-    })
-
-    // Listen for auth changes
-    if (!supabase) {
-      return () => {
-        mounted = false
-        unsubscribeConnection()
-
-        // Clear any pending refresh timeout
-        if (refreshTimeoutRef) {
-          clearTimeout(refreshTimeoutRef)
-        }
-      }
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: any) => {
-        console.log('🔐 Auth state change:', event, 'Session exists:', !!session, 'User ID:', session?.user?.id)
-
-        if (!mounted) return
-
-        // Small delay to prevent race conditions
-        await new Promise(resolve => setTimeout(resolve, 50))
+        console.log('🔄 Session result:', { hasSession: !!session, error: error?.message })
 
         setSession(session)
 
         if (session?.user) {
-          console.log('🔐 Loading user profile for session user:', session.user.id)
-          const userProfile = await loadUserProfile(session.user)
-          setUser(userProfile)
-          console.log('🔐 User profile loaded:', !!userProfile)
+          console.log('🔄 Session found, loading user profile...')
+          try {
+            // Load full user profile with organization
+            const { organization, user: dbUser, error: orgError } = await OrganizationService.getUserOrganization(session.user.id)
+
+            console.log('🔄 Organization service result:', {
+              hasUser: !!dbUser,
+              hasOrg: !!organization,
+              error: orgError
+            })
+
+            if (dbUser) {
+              const userProfile: UserProfile = {
+                ...dbUser,
+                organization: organization || undefined
+              }
+              setUser(userProfile)
+              console.log('✅ User profile loaded:', userProfile.email, 'Org:', organization?.name || 'No org')
+            } else {
+              console.log('⚠️ No database user found, creating basic profile')
+              // Fallback to basic profile if database user not found
+              const basicUser: UserProfile = {
+                id: session.user.id,
+                email: session.user.email || '',
+                first_name: session.user.user_metadata?.first_name || 'User',
+                last_name: session.user.user_metadata?.last_name || '',
+                role: 'admin',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+              setUser(basicUser)
+            }
+          } catch (profileError) {
+            console.error('🚨 Failed to load user profile:', profileError)
+            // Still create a basic user so they can access the app
+            const basicUser: UserProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              first_name: 'User',
+              last_name: '',
+              role: 'admin',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+            setUser(basicUser)
+            console.log('⚠️ Using fallback basic user profile')
+          }
         } else {
-          console.log('🔐 No session, clearing user state')
+          console.log('ℹ️ No session found, user set to null')
           setUser(null)
-          setNeedsProfileCompletion(false)
         }
 
-        // Handle sign out
-        if (event === 'SIGNED_OUT') {
-          console.log('🔐 User signed out, redirecting to signin')
+        console.log('✅ Auth initialization complete, setting loading to false')
+        setLoading(false)
+      } catch (error) {
+        console.error('🚨 Auth initialization failed:', error)
+        setLoading(false)
+      }
+    }
+
+    initAuth()
+
+    // Listen for auth changes
+    if (!supabase) {
+      return () => {
+        mountedRef.current = false
+      }
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔐 Auth change:', event)
+
+        setSession(session)
+
+        if (session?.user) {
+          try {
+            // Load full user profile with organization
+            const { organization, user: dbUser } = await OrganizationService.getUserOrganization(session.user.id)
+
+            if (dbUser) {
+              const userProfile: UserProfile = {
+                ...dbUser,
+                organization: organization || undefined
+              }
+              setUser(userProfile)
+            } else {
+              // Fallback to basic profile
+              const basicUser: UserProfile = {
+                id: session.user.id,
+                email: session.user.email || '',
+                first_name: 'User',
+                last_name: '',
+                role: 'admin',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+              setUser(basicUser)
+            }
+          } catch (error) {
+            console.error('🚨 Failed to load user profile in auth change:', error)
+            // Still create a basic user
+            const basicUser: UserProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              first_name: 'User',
+              last_name: '',
+              role: 'admin',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+            setUser(basicUser)
+          }
+        } else {
           setUser(null)
-          setNeedsProfileCompletion(false)
+        }
+
+        if (event === 'SIGNED_OUT') {
           router.push('/signin')
         }
 
-        // Ensure loading is false after any auth change
-        console.log('🔐 Setting loading to false after auth change')
         setLoading(false)
       }
     )
 
     return () => {
-      mounted = false
       subscription.unsubscribe()
-      unsubscribeConnection()
-
-      // Clear any pending refresh timeout
-      if (refreshTimeoutRef) {
-        clearTimeout(refreshTimeoutRef)
-      }
     }
-  }, [loadUserProfile, router])
+  }, [router])
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -282,28 +203,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         setLoading(false)
         setAuthError(error.message || 'Sign in failed')
-        // Log failed login attempt (non-blocking)
-        try {
-          await AuditLogger.logAuth('failed_login', undefined, {
-            email,
-            error: error.message
-          })
-        } catch (auditError) {
-          console.warn('Failed to log audit event:', auditError)
-        }
         return { error }
       }
 
-      // Log successful login (user ID will be available from session) (non-blocking)
-      try {
-        await AuditLogger.logAuth('login', undefined, {
-          email
-        })
-      } catch (auditError) {
-        console.warn('Failed to log audit event:', auditError)
-      }
-
-      return { error: null }
+      // Success - auth state change will handle the rest
+      console.log('🔐 Sign in successful, waiting for auth state change')
+      return {}
     } catch (err: any) {
       setLoading(false)
       const errorMessage = err.message || 'Sign in failed'
@@ -322,16 +227,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: { message: 'Database connection unavailable' } as AuthError }
       }
 
-      // Log logout before signing out (non-blocking)
-      if (user) {
-        try {
-          await AuditLogger.logAuth('logout', user.id)
-        } catch (auditError) {
-          console.warn('Failed to log audit event:', auditError)
-        }
-      }
-
       const { error } = await supabase.auth.signOut()
+
+      // Clear state
+      setUser(null)
+      setSession(null)
+      setNeedsProfileCompletion(false)
+      setAuthError(null)
+
+      router.push('/signin')
       return { error }
     } catch (err: any) {
       return {
@@ -351,24 +255,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.refreshSession()
       return { error }
     } catch (err: any) {
-      return {
-        error: {
-          message: err.message || 'Session refresh failed'
-        } as AuthError
-      }
+      return { error: { message: err.message || 'Session refresh failed' } as AuthError }
+    }
+  }
+
+  const validateSession = async () => {
+    try {
+      if (!supabase) return false
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) return false
+      return !!session
+    } catch (err) {
+      return false
     }
   }
 
   const completeProfile = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const userProfile = await loadUserProfile(session.user)
-        setUser(userProfile)
-      }
-    } catch (error) {
-      console.error('Failed to complete profile:', error)
-    }
+    // Simple implementation
+    setNeedsProfileCompletion(false)
   }
 
   const value = {
@@ -378,6 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     refreshSession,
+    validateSession,
     authError,
     needsProfileCompletion,
     completeProfile
@@ -401,8 +306,14 @@ export function useAuth() {
 // Convenience hook for checking authentication status
 export function useAuthStatus() {
   const { user, session, loading, needsProfileCompletion } = useAuth()
+
+  // More robust authentication check
+  // User is authenticated if they have both user and session
+  // Profile completion is a separate concern that shouldn't block authentication
+  const isAuthenticated = !!user && !!session
+
   return {
-    isAuthenticated: !!user && !!session && !needsProfileCompletion,
+    isAuthenticated,
     isLoading: loading,
     needsProfileCompletion,
     user,

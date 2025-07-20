@@ -118,10 +118,228 @@ function SkeletonStats() {
   )
 }
 
+// Dashboard skeleton for main dashboard page
+function SkeletonDashboard() {
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-[200px]" />
+        <Skeleton className="h-4 w-[400px]" />
+      </div>
+
+      {/* Stats Grid */}
+      <SkeletonStats />
+
+      {/* Charts and Content Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Recent Activity */}
+        <div className="lg:col-span-2">
+          <div className="rounded-lg border bg-card p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-6 w-[150px]" />
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-1 flex-1">
+                      <Skeleton className="h-4 w-[70%]" />
+                      <Skeleton className="h-3 w-[50%]" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="space-y-6">
+          <div className="rounded-lg border bg-card p-6">
+            <Skeleton className="h-6 w-[120px] mb-4" />
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full rounded-md" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Agents page skeleton
+function SkeletonAgents() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-[180px]" />
+          <Skeleton className="h-4 w-[300px]" />
+        </div>
+        <Skeleton className="h-10 w-[120px] rounded-md" />
+      </div>
+
+      {/* Filters */}
+      <div className="flex space-x-4">
+        <Skeleton className="h-10 w-[200px] rounded-md" />
+        <Skeleton className="h-10 w-[150px] rounded-md" />
+        <Skeleton className="h-10 w-[100px] rounded-md" />
+      </div>
+
+      {/* Agents Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-lg border bg-card p-6">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-5 w-[80%]" />
+                  <Skeleton className="h-3 w-[60%]" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[70%]" />
+              </div>
+              <div className="flex space-x-2">
+                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="h-8 w-20 rounded-md" />
+                <Skeleton className="h-8 w-8 rounded-md" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Contacts page skeleton
+function SkeletonContacts() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-[160px]" />
+          <Skeleton className="h-4 w-[280px]" />
+        </div>
+        <Skeleton className="h-10 w-[140px] rounded-md" />
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-lg border bg-card p-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[80px]" />
+              <Skeleton className="h-6 w-[60px]" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="rounded-lg border bg-card p-4">
+            <Skeleton className="h-6 w-[120px] mb-4" />
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-2 p-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-4 w-8" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-3">
+          <div className="rounded-lg border bg-card">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-6 w-[100px]" />
+                <Skeleton className="h-9 w-[200px] rounded-md" />
+              </div>
+            </div>
+            <SkeletonTable rows={8} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Campaigns page skeleton
+function SkeletonCampaigns() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-[180px]" />
+          <Skeleton className="h-4 w-[320px]" />
+        </div>
+        <Skeleton className="h-10 w-[140px] rounded-md" />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-[100px] rounded-md" />
+        ))}
+      </div>
+
+      {/* Campaign Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-lg border bg-card p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-5 w-[80%]" />
+                  <Skeleton className="h-3 w-[60%]" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-[60px]" />
+                  <Skeleton className="h-4 w-[40px]" />
+                </div>
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-[80px]" />
+                  <Skeleton className="h-4 w-[50px]" />
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="h-8 w-20 rounded-md" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export {
   Skeleton,
   SkeletonCard,
   SkeletonTable,
   SkeletonList,
   SkeletonStats,
+  SkeletonDashboard,
+  SkeletonAgents,
+  SkeletonContacts,
+  SkeletonCampaigns,
 }

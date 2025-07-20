@@ -6,7 +6,7 @@
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useCallback } from 'react'
 import { AdvancedDataService } from '@/lib/services/AdvancedDataService'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuth } from '@/contexts/AuthProvider'
 import { queryKeys } from '@/lib/queryClient'
 
 // Enhanced query options for better performance
@@ -26,7 +26,7 @@ const createOptimizedQueryOptions = (staleTime = 2 * 60 * 1000, gcTime = 10 * 60
  * Optimized dashboard data hook with parallel fetching
  */
 export function useOptimizedDashboard() {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
 
   return useQuery({
@@ -45,7 +45,7 @@ export function useOptimizedDashboard() {
  * Optimized agents hook with background updates
  */
 export function useOptimizedAgents() {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
   const queryClient = useQueryClient()
 
@@ -78,7 +78,7 @@ export function useOptimizedAgents() {
  * Optimized calls hook with real-time updates
  */
 export function useOptimizedCalls(limit = 20) {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
 
   return useQuery({
@@ -94,7 +94,7 @@ export function useOptimizedCalls(limit = 20) {
  * Parallel data fetching for multiple resources
  */
 export function useParallelDashboardData() {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
 
   const queries = useQueries({
@@ -141,7 +141,7 @@ export function useParallelDashboardData() {
  * Prefetching hook for critical data
  */
 export function usePrefetchCriticalData() {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
   const queryClient = useQueryClient()
 
@@ -180,7 +180,7 @@ export function usePrefetchCriticalData() {
  * Background data synchronization
  */
 export function useBackgroundSync() {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
   const queryClient = useQueryClient()
 
@@ -229,7 +229,7 @@ export function useOptimizedMutation<TData, TVariables>(
   } = {}
 ) {
   const queryClient = useQueryClient()
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
 
   return useMutation({

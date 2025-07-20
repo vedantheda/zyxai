@@ -9,18 +9,18 @@ import { memo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Brain, 
-  Phone, 
-  Users, 
-  BarChart3, 
-  TrendingUp, 
+import {
+  Brain,
+  Phone,
+  Users,
+  BarChart3,
+  TrendingUp,
   Activity,
   Plus,
   Settings,
   Zap,
   ArrowRight
-} from '@/lib/optimization/IconOptimizer'
+} from 'lucide-react'
 
 // Simple stat card component
 const StatCard = memo(({ 
@@ -193,25 +193,25 @@ export const WorkingDashboard = memo(() => {
                 icon={Brain}
                 title="Create Your First AI Agent"
                 description="Set up an intelligent voice assistant for your business"
-                href="/dashboard/agents"
+                href="/agents"
               />
               <QuickActionButton
                 icon={Users}
                 title="Import Contact Lists"
                 description="Upload your customer database to start outreach"
-                href="/dashboard/contacts"
+                href="/contacts"
               />
               <QuickActionButton
                 icon={Phone}
                 title="Make a Test Call"
                 description="Try out your agent with a demo conversation"
-                href="/dashboard/calls/demo"
+                href="/calls/demo"
               />
               <QuickActionButton
                 icon={Settings}
                 title="Configure Settings"
                 description="Customize your platform preferences"
-                href="/dashboard/settings"
+                href="/settings"
               />
             </div>
           </Card>
@@ -273,7 +273,7 @@ export const WorkingDashboard = memo(() => {
               <Button
                 size="lg"
                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => window.location.href = '/dashboard/agents'}
+                onClick={() => window.location.href = '/agents'}
               >
                 <Brain className="h-5 w-5 mr-2" />
                 Create First Agent

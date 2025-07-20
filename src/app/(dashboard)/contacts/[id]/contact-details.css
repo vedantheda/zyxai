@@ -1,0 +1,64 @@
+/* Contact Details Page Custom Styles */
+
+/* Resize handle styles */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 20;
+  transition: background-color 0.2s ease;
+}
+
+.resize-handle:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.resize-handle.left {
+  right: -2px;
+}
+
+.resize-handle.right {
+  left: -2px;
+}
+
+/* Panel styles */
+.resizable-panel {
+  position: relative;
+  min-width: 250px;
+  max-width: 500px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Custom scrollbar for resizable panels */
+.resizable-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resizable-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.resizable-panel::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+}
+
+.resizable-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Main content area */
+.main-content-container {
+  position: relative;
+}
+
+/* Center content should take remaining space */
+.center-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}

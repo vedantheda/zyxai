@@ -31,8 +31,14 @@ import {
   PhoneCall,
   GitBranch,
   Hash,
-  Mic
-} from '@/lib/optimization/IconOptimizer'
+  Mic,
+  Sparkles,
+  Activity,
+  Code,
+  Layout,
+  Workflow,
+  Rocket
+} from 'lucide-react'
 
 export interface NavigationItem {
   name: string
@@ -44,7 +50,7 @@ export interface NavigationItem {
   isComingSoon?: boolean
 }
 
-// Clean & Focused Admin Navigation (Option A)
+// Main Sidebar Navigation - Core Features Only
 export const adminNavigation: NavigationItem[] = [
   {
     name: 'Dashboard',
@@ -53,92 +59,141 @@ export const adminNavigation: NavigationItem[] = [
     description: 'Overview and key metrics'
   },
   {
+    name: 'Onboarding',
+    href: '/onboarding',
+    icon: Rocket,
+    description: 'Get started with ZyxAI',
+    isNew: true
+  },
+  {
     name: 'AI Agents',
-    href: '/dashboard/agents',
+    href: '/agents',
     icon: Brain,
     description: 'Manage AI voice agents'
   },
   {
-    name: 'Campaigns',
-    href: '/dashboard/campaigns',
-    icon: Phone,
-    description: 'Voice call campaigns'
-  },
-  {
     name: 'Contacts',
-    href: '/dashboard/contacts',
+    href: '/contacts',
     icon: Users,
     description: 'Contact management'
   },
   {
+    name: 'Campaigns',
+    href: '/campaigns',
+    icon: Phone,
+    description: 'Voice call campaigns'
+  },
+  {
+    name: 'Opportunities',
+    href: '/opportunities',
+    icon: DollarSign,
+    description: 'Sales pipeline & opportunities'
+  },
+  {
     name: 'Calls',
-    href: '/dashboard/calls',
+    href: '/calls',
     icon: PhoneCall,
     description: 'Call history and monitoring'
   },
   {
-    name: 'Analytics',
-    href: '/dashboard/analytics',
-    icon: BarChart3,
-    description: 'Performance insights'
+    name: 'Team',
+    href: '/team',
+    icon: UserCheck,
+    description: 'Team member management'
   },
   {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-    description: 'Account and system settings'
+    name: 'Conversations',
+    href: '/conversations',
+    icon: MessageSquare,
+    description: 'All lead communications (Email, SMS, Voice)'
   }
 ]
 
-// Settings submenu items (moved from main sidebar)
+// Settings submenu items - Advanced Features and Configuration
 export const settingsNavigation: NavigationItem[] = [
   {
-    name: 'Account',
-    href: '/settings/account',
-    icon: UserCheck,
-    description: 'Profile and account settings'
+    name: 'General',
+    href: '/settings',
+    icon: Settings,
+    description: 'General settings and preferences'
   },
   {
-    name: 'Team',
-    href: '/settings/team',
-    icon: Users,
-    description: 'Team management and roles'
-  },
-  {
-    name: 'Phone Numbers',
-    href: '/settings/phone-numbers',
-    icon: Hash,
-    description: 'Manage phone numbers'
-  },
-  {
-    name: 'Voice & Audio',
-    href: '/settings/voice',
-    icon: Mic,
-    description: 'Voice configuration and audio settings'
+    name: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
+    description: 'Business analytics and reporting'
   },
   {
     name: 'Integrations',
-    href: '/settings/integrations',
+    href: '/integrations',
     icon: Zap,
     description: 'CRM and third-party integrations'
   },
   {
-    name: 'Workflows',
-    href: '/settings/workflows',
-    icon: GitBranch,
-    description: 'Automation workflows'
-  },
-  {
     name: 'Billing',
-    href: '/settings/billing',
+    href: '/billing',
     icon: CreditCard,
-    description: 'Subscription and billing'
+    description: 'Subscription and payment management'
   },
   {
-    name: 'Help & Support',
-    href: '/settings/help',
-    icon: AlertTriangle,
-    description: 'Documentation and support'
+    name: 'Phone Numbers',
+    href: '/phone-numbers',
+    icon: Phone,
+    description: 'Phone number management'
+  },
+  {
+    name: 'Voice Analytics',
+    href: '/dashboard/voice-analytics',
+    icon: TrendingUp,
+    description: 'Voice call analytics and metrics'
+  },
+  {
+    name: 'Voice Config',
+    href: '/dashboard/voice-config',
+    icon: Mic,
+    description: 'Voice configuration and presets'
+  },
+  {
+    name: 'Voice Status',
+    href: '/dashboard/voice-status',
+    icon: Activity,
+    description: 'Voice system status monitoring'
+  },
+  {
+    name: 'Workflows',
+    href: '/dashboard/workflows',
+    icon: GitBranch,
+    description: 'Workflow automation builder'
+  },
+  {
+    name: 'VAPI Advanced',
+    href: '/dashboard/vapi-advanced',
+    icon: Code,
+    description: 'Complete VAPI configuration'
+  },
+  {
+    name: 'AI Analysis',
+    href: '/dashboard/ai-analysis',
+    icon: FileText,
+    description: 'AI document analysis and processing'
+  },
+  {
+    name: 'Industry Solutions',
+    href: '/dashboard/industry-solutions',
+    icon: Building,
+    description: 'Industry solution dashboard'
+  },
+  {
+    name: 'Templates',
+    href: '/dashboard/templates',
+    icon: Layout,
+    description: 'Industry-specific agent templates'
+  },
+  {
+    name: 'Workflows (Standalone)',
+    href: '/workflows',
+    icon: Workflow,
+    description: 'Standalone workflow management'
   }
 ]
 
@@ -195,7 +250,7 @@ export const clientNavigation: NavigationItem[] = [
 ]
 
 // Divider positions for clean navigation (after which items to show dividers)
-export const adminNavigationDividers: number[] = [4, 5] // After Calls (Core Operations), after Analytics (Insights)
+export const adminNavigationDividers: number[] = [6, 7] // After Calls (Core Operations), after Team (Team Management)
 
 // Extended admin navigation with more detailed sections
 export const extendedAdminNavigation: NavigationItem[] = [
@@ -266,13 +321,6 @@ export const extendedAdminNavigation: NavigationItem[] = [
 
   // Advanced Features
   {
-    name: 'AI Assistant',
-    href: '/ai-assistant',
-    icon: Brain,
-    description: 'AI-powered assistance',
-    isNew: true
-  },
-  {
     name: 'Calendar',
     href: '/calendar',
     icon: Calendar,
@@ -298,31 +346,31 @@ export const extendedAdminNavigation: NavigationItem[] = [
 export const quickActions: NavigationItem[] = [
   {
     name: 'Create Agent',
-    href: '/dashboard/agents/new',
+    href: '/agents/new',
     icon: Brain,
     description: 'Create new AI voice agent'
   },
   {
     name: 'Start Campaign',
-    href: '/dashboard/campaigns/new',
+    href: '/campaigns/new',
     icon: Phone,
     description: 'Launch new voice campaign'
   },
   {
     name: 'Add Contacts',
-    href: '/dashboard/contacts/import',
+    href: '/contacts/import',
     icon: Upload,
     description: 'Import or add contacts'
   },
   {
     name: 'Demo Call',
-    href: '/dashboard/calls/demo',
+    href: '/calls/demo',
     icon: PhoneCall,
     description: 'Test your AI agent'
   },
   {
     name: 'View Analytics',
-    href: '/dashboard/analytics',
+    href: '/analytics',
     icon: BarChart3,
     description: 'Check performance metrics'
   }

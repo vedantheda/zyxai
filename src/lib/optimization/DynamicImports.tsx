@@ -4,7 +4,7 @@
  */
 
 import React, { Suspense, ComponentType, LazyExoticComponent } from 'react'
-import { Loader2 } from '@/lib/optimization/IconOptimizer'
+import { Loader2 } from 'lucide-react'
 
 // Loading component for Suspense fallbacks
 export const LoadingSpinner = ({ 

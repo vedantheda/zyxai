@@ -51,11 +51,13 @@ export function AuthGuard({
 
     // If auth is required but user is not authenticated
     if (requireAuth && !isAuthenticated) {
-      if (needsProfileCompletion) {
+      // Only redirect to profile completion if explicitly needed AND user has a session
+      if (needsProfileCompletion && user) {
         router.push('/complete-profile')
       } else {
         const currentPath = window.location.pathname
         const redirectUrl = currentPath !== '/' ? `${redirectTo}?redirect=${encodeURIComponent(currentPath)}` : redirectTo
+        console.log('🔐 AuthGuard: Redirecting unauthenticated user to:', redirectUrl)
         router.push(redirectUrl)
       }
       return
@@ -63,9 +65,10 @@ export function AuthGuard({
 
     // If auth is not required but user is authenticated, they might want to go to dashboard
     if (!requireAuth && isAuthenticated && window.location.pathname === '/signin') {
+      console.log('🔐 AuthGuard: Redirecting authenticated user to dashboard')
       router.push('/dashboard')
     }
-  }, [loading, isAuthenticated, needsProfileCompletion, requireAuth, redirectTo, router, forceReady])
+  }, [loading, isAuthenticated, needsProfileCompletion, requireAuth, redirectTo, router, forceReady, user])
 
   // Show loading state (unless force ready)
   if (loading && !forceReady) {
@@ -97,6 +100,17 @@ export function AuthGuard({
     )
   }
 
+  // Debug logging
+  console.log('🔐 AuthGuard state:', {
+    loading,
+    isAuthenticated,
+    hasUser: !!user,
+    needsProfileCompletion,
+    requireAuth,
+    forceReady,
+    authError
+  })
+
   // If auth is required but user is not authenticated, don't render children
   // (redirect will happen in useEffect) - but allow force ready to bypass
   if (requireAuth && !isAuthenticated && !forceReady) {
@@ -104,7 +118,12 @@ export function AuthGuard({
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Redirecting...</p>
+          <p className="text-muted-foreground">
+            {authError ? 'Authentication error...' : 'Redirecting...'}
+          </p>
+          {authError && (
+            <p className="text-sm text-red-500">{authError}</p>
+          )}
         </div>
       </div>
     )

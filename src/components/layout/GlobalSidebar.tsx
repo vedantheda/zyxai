@@ -99,8 +99,7 @@ export function GlobalSidebar({ className, userRole = 'admin' }: GlobalSidebarPr
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navigation.map((item: NavigationItem, index: number) => {
-          const isActive = pathname === item.href ||
-            (item.href === '/dashboard' && pathname === '/')
+          const isActive = pathname === item.href
 
           // Add section dividers for better organization (admin only)
           const showDivider = showDividers.includes(index)

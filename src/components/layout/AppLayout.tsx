@@ -6,6 +6,7 @@ import { Menu, Bell, Plus, Brain, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthProvider'
 import { SimpleLoading } from '@/components/ui/simple-loading'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 import NotificationCenter from '@/components/notifications/NotificationCenter'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import GlobalSearch from '@/components/search/GlobalSearch'
@@ -106,7 +107,7 @@ export function AppLayout({
 
   // Show loading during auth initialization
   if (loading) {
-    return <SimpleLoading text={title ? `Loading ${title.toLowerCase()}...` : "Loading..."} />
+    return <PageSkeleton type="generic" />
   }
 
   // Handle unauthenticated state

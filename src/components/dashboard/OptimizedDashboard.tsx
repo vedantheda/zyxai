@@ -13,20 +13,23 @@ import { useQuery } from '@tanstack/react-query'
 import { AgentService } from '@/lib/services/AgentService'
 import { ContactService } from '@/lib/services/ContactService'
 import { CallService } from '@/lib/services/CallService'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuth } from '@/contexts/AuthProvider'
 import { LoadingSkeleton } from '@/lib/optimization/DynamicImports'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
+import { SkeletonStats } from '@/components/ui/skeleton'
+import { SmartSkeleton } from '@/components/ui/with-skeleton'
 import { withPerformanceMonitoring } from '@/lib/optimization/ReactOptimizations'
-import { 
-  Brain, 
-  Phone, 
-  Users, 
-  BarChart3, 
-  TrendingUp, 
+import {
+  Brain,
+  Phone,
+  Users,
+  BarChart3,
+  TrendingUp,
   TrendingDown,
   Activity,
   Clock,
   DollarSign
-} from '@/lib/optimization/IconOptimizer'
+} from 'lucide-react'
 import { FadeIn, StaggerChildren } from '@/components/ui/animated'
 
 // Memoized stat card component
@@ -226,7 +229,7 @@ AgentsOverview.displayName = 'AgentsOverview'
 
 // Main optimized dashboard component
 const OptimizedDashboardContent = memo(() => {
-  const user = useAuthStore(state => state.user)
+  const { user } = useAuth()
   const organizationId = user?.organization_id
 
   // Fetch data using existing services
@@ -286,19 +289,14 @@ const OptimizedDashboardContent = memo(() => {
 
   return (
     <div className="space-y-8">
-      {/* Performance indicator */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-3 bg-muted/50 rounded-lg">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Activity className="h-4 w-4 animate-pulse" />
-            <span>Loading dashboard data...</span>
-          </div>
-        </div>
-      )}
-
       {/* Overview Stats */}
       <FadeIn>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <SmartSkeleton
+          loading={isLoading}
+          data={dashboardStats}
+          skeletonType="stats"
+        >
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Contacts"
             value={dashboardStats.totalContacts}
@@ -331,7 +329,8 @@ const OptimizedDashboardContent = memo(() => {
             trend={dashboardStats.successRate > 80 ? 'up' : dashboardStats.successRate > 60 ? 'stable' : 'down'}
             loading={showSkeleton}
           />
-        </div>
+          </div>
+        </SmartSkeleton>
       </FadeIn>
 
       {/* Agents Overview */}
@@ -415,7 +414,7 @@ export const OptimizedDashboard = withPerformanceMonitoring(
             </p>
           </div>
 
-          <Suspense fallback={<LoadingSkeleton type="card" count={6} className="space-y-6" />}>
+          <Suspense fallback={<PageSkeleton type="dashboard" />}>
             <OptimizedDashboardContent />
           </Suspense>
         </div>

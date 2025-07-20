@@ -101,6 +101,14 @@ export default function SettingsPage() {
   const isAuthenticated = !!user
   const isReady = !authLoading
 
+  // All hooks must be called before any conditional returns
+  useEffect(() => {
+    if (user && isReady && isAuthenticated) {
+      loadUserProfile()
+      loadSecuritySettings()
+    }
+  }, [user, isReady, isAuthenticated])
+
   // Show loading during session sync
   if (authLoading || !isReady) {
     return <LoadingScreen text="Loading settings..." />
@@ -110,13 +118,6 @@ export default function SettingsPage() {
   if (!isAuthenticated) {
     return <LoadingScreen text="Please log in to view settings" />
   }
-
-  useEffect(() => {
-    if (user) {
-      loadUserProfile()
-      loadSecuritySettings()
-    }
-  }, [user])
 
   const loadUserProfile = async () => {
     try {

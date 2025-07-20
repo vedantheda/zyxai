@@ -5,13 +5,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { queryKeys, invalidateQueries } from '@/lib/queryClient'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useNotificationStore } from '@/stores/notificationStore'
 import type { VapiAgent } from '@/stores/vapiStore'
 
 // Fetch all agents for the current organization
 export function useAgents() {
-  const user = useAuthStore((state) => state.user)
+  const { user } = useAuth()
   
   return useQuery({
     queryKey: queryKeys.agents.all,
@@ -69,7 +69,7 @@ export function useAgent(agentId: string) {
 export function useCreateAgent() {
   const queryClient = useQueryClient()
   const addToast = useNotificationStore((state) => state.addToast)
-  const user = useAuthStore((state) => state.user)
+  const { user } = useAuth()
   
   return useMutation({
     mutationFn: async (agentData: Omit<VapiAgent, 'id' | 'organization_id' | 'created_at' | 'updated_at'>): Promise<VapiAgent> => {

@@ -95,7 +95,7 @@ export function ModernSidebar({ className, userRole = 'admin' }: ModernSidebarPr
       <div className="p-4 border-b">
         <FadeIn delay={0.1}>
           <Button className="w-full justify-start" size="sm" asChild>
-            <Link href="/dashboard/agents/new">
+            <Link href="/agents/new">
               <Plus className="w-4 h-4 mr-2" />
               Create Agent
             </Link>

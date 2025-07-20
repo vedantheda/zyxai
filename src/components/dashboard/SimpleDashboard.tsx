@@ -221,19 +221,19 @@ export const SimpleDashboard = memo(() => {
                 icon={Brain}
                 title="Create Your First Agent"
                 description="Set up an AI voice assistant for your business"
-                onClick={() => window.location.href = '/dashboard/agents'}
+                onClick={() => window.location.href = '/agents'}
               />
               <QuickActionButton
                 icon={Users}
                 title="Import Contacts"
                 description="Upload your contact lists to start calling"
-                onClick={() => window.location.href = '/dashboard/contacts'}
+                onClick={() => window.location.href = '/contacts'}
               />
               <QuickActionButton
                 icon={Phone}
                 title="Make Test Call"
                 description="Try out your agent with a demo call"
-                onClick={() => window.location.href = '/dashboard/calls'}
+                onClick={() => window.location.href = '/calls'}
               />
             </div>
           </Card>
@@ -256,10 +256,10 @@ export const SimpleDashboard = memo(() => {
                 Start by creating your first AI agent or importing contacts
               </p>
               <div className="flex justify-center space-x-2">
-                <Button size="sm" onClick={() => window.location.href = '/dashboard/agents'}>
+                <Button size="sm" onClick={() => window.location.href = '/agents'}>
                   Create Agent
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => window.location.href = '/dashboard/contacts'}>
+                <Button size="sm" variant="outline" onClick={() => window.location.href = '/contacts'}>
                   Import Contacts
                 </Button>
               </div>

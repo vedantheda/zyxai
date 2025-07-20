@@ -28,8 +28,8 @@ export const queryClient = new QueryClient({
       // Retry delay with exponential backoff
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       
-      // Refetch on window focus (good for real-time data)
-      refetchOnWindowFocus: true,
+      // Disable refetch on window focus to prevent infinite loading on tab switch
+      refetchOnWindowFocus: false,
       
       // Refetch on reconnect
       refetchOnReconnect: true,

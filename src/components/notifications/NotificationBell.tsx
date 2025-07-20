@@ -27,6 +27,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthProvider'
 
 interface Notification {
   id: string
@@ -41,30 +42,47 @@ interface Notification {
 }
 
 export function NotificationBell() {
+  const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    loadNotifications()
-    
-    // Set up polling for new notifications
-    const interval = setInterval(loadNotifications, 30000) // Poll every 30 seconds
-    
-    return () => clearInterval(interval)
-  }, [])
+    if (user) {
+      loadNotifications()
+
+      // Set up polling for new notifications
+      const interval = setInterval(loadNotifications, 30000) // Poll every 30 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [user])
 
   const loadNotifications = async () => {
+    if (!user) {
+      setNotifications([])
+      setUnreadCount(0)
+      return
+    }
+
     try {
       const response = await fetch('/api/notifications?limit=10&unreadOnly=false')
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications || [])
         setUnreadCount(data.unreadCount || 0)
+      } else if (response.status === 401) {
+        // Handle unauthorized gracefully - user might not be fully authenticated yet
+        console.log('Notifications: User not authenticated yet')
+        setNotifications([])
+        setUnreadCount(0)
       }
     } catch (error) {
       console.error('Failed to load notifications:', error)
+      // Set fallback state
+      setNotifications([])
+      setUnreadCount(0)
     }
   }
 

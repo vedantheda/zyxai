@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, Plus, Settings, Bell, User } from 'lucide-react'
 
 // Import our new stores and hooks
-import { useAuthStore } from '@/stores/authStore'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useUIStore } from '@/stores/uiStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useVapiStore } from '@/stores/vapiStore'
@@ -22,8 +22,9 @@ import { useNotifications, useUnreadNotificationsCount } from '@/hooks/queries/u
 export function EnterpriseStateExample() {
   // ===== ZUSTAND STORES =====
   
-  // Auth store - global authentication state
-  const { user, isAuthenticated, hasRole } = useAuthStore()
+  // Auth context - global authentication state
+  const { user } = useAuth()
+  const isAuthenticated = !!user
   
   // UI store - global UI state
   const { 

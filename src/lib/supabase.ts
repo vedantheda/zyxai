@@ -23,11 +23,22 @@ function createSafeSupabaseClient() {
         detectSessionInUrl: false,
         flowType: 'pkce',
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'zyxai-auth-token'
+        storageKey: 'zyxai-auth-token',
+        // Disable debug logs to clean up terminal
+        debug: false,
+        // Reduce token refresh frequency to prevent conflicts
+        refreshTokenRetryAttempts: 3,
+        refreshTokenRetryDelay: 1000
       },
       global: {
         headers: {
           'X-Client-Info': 'zyxai-client'
+        }
+      },
+      // Add realtime configuration for better connection handling
+      realtime: {
+        params: {
+          eventsPerSecond: 10
         }
       }
     })

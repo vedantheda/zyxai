@@ -223,18 +223,18 @@ export function ClickFeedbackDemo() {
               <h4 className="font-medium mb-2">Link Variants</h4>
               <div className="space-y-2">
                 <div>
-                  <InteractiveLink 
-                    href="/dashboard" 
+                  <InteractiveLink
+                    href="/"
                     haptic={hapticEnabled}
                     sound={soundEnabled}
                   >
                     Default Link Style
                   </InteractiveLink>
                 </div>
-                
+
                 <div>
-                  <ButtonLink 
-                    href="/dashboard/agents" 
+                  <ButtonLink
+                    href="/agents"
                     haptic={hapticEnabled}
                     sound={soundEnabled}
                   >
@@ -269,24 +269,24 @@ export function ClickFeedbackDemo() {
             <div className="pt-4 border-t">
               <h4 className="font-medium mb-2">Navigation Links</h4>
               <div className="space-y-1">
-                <NavLink 
-                  href="/dashboard" 
+                <NavLink
+                  href="/"
                   haptic={hapticEnabled}
                   sound={soundEnabled}
                 >
                   <Home className="w-4 h-4" />
                   Dashboard
                 </NavLink>
-                <NavLink 
-                  href="/dashboard/agents" 
+                <NavLink
+                  href="/agents"
                   haptic={hapticEnabled}
                   sound={soundEnabled}
                 >
                   <Zap className="w-4 h-4" />
                   AI Agents
                 </NavLink>
-                <NavLink 
-                  href="/dashboard/settings" 
+                <NavLink
+                  href="/settings"
                   haptic={hapticEnabled}
                   sound={soundEnabled}
                 >

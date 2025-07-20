@@ -24,14 +24,14 @@ const nextConfig = {
       '@radix-ui/react-tabs',
       'framer-motion'
     ],
+  },
 
-    // Enable turbo mode for faster builds
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  // Turbopack configuration (stable in Next.js 15)
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
   },
@@ -142,9 +142,6 @@ const nextConfig = {
 
   // Generate ETags for better caching
   generateEtags: true,
-
-  // Optimize fonts
-  optimizeFonts: true,
 };
 
 module.exports = nextConfig;

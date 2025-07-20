@@ -6,13 +6,13 @@ import React from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { queryKeys, invalidateQueries } from '@/lib/queryClient'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useNotificationStore } from '@/stores/notificationStore'
 import type { Notification } from '@/stores/notificationStore'
 
 // Fetch all notifications for the current user
 export function useNotifications() {
-  const user = useAuthStore((state) => state.user)
+  const { user } = useAuth()
   
   return useQuery({
     queryKey: queryKeys.notifications.all,
@@ -42,7 +42,7 @@ export function useNotifications() {
 
 // Fetch unread notifications count
 export function useUnreadNotificationsCount() {
-  const user = useAuthStore((state) => state.user)
+  const { user } = useAuth()
   
   return useQuery({
     queryKey: queryKeys.notifications.unread,
@@ -117,7 +117,7 @@ export function useMarkNotificationAsRead() {
 // Mark all notifications as read
 export function useMarkAllNotificationsAsRead() {
   const queryClient = useQueryClient()
-  const user = useAuthStore((state) => state.user)
+  const { user } = useAuth()
   
   return useMutation({
     mutationFn: async (): Promise<void> => {
@@ -202,7 +202,7 @@ export function useDeleteNotification() {
 // Create a new notification (for system use)
 export function useCreateNotification() {
   const queryClient = useQueryClient()
-  const user = useAuthStore((state) => state.user)
+  const { user } = useAuth()
   
   return useMutation({
     mutationFn: async (notificationData: {

@@ -6,6 +6,12 @@ const getHubSpotClient = (accessToken?: string) => {
     return new Client({ accessToken })
   }
 
+  // Use the existing CRM credentials
+  const crmAccessToken = process.env.CRM_ACCESS_TOKEN
+  if (crmAccessToken) {
+    return new Client({ accessToken: crmAccessToken })
+  }
+
   // For development/testing with developer API key
   const developerApiKey = process.env.HUBSPOT_DEVELOPER_API_KEY
   if (developerApiKey) {
@@ -334,6 +340,46 @@ export class HubSpotService {
   }
 
   /**
+   * Get a single contact by ID
+   */
+  static async getContact(accessToken: string, contactId: string): Promise<HubSpotContact> {
+    try {
+      const hubspotClient = getHubSpotClient(accessToken)
+
+      const response = await hubspotClient.crm.contacts.basicApi.getById(
+        contactId,
+        [
+          'firstname',
+          'lastname',
+          'email',
+          'phone',
+          'company',
+          'jobtitle',
+          'lifecyclestage',
+          'hs_lead_status',
+          'createdate',
+          'lastmodifieddate',
+          'address',
+          'city',
+          'state',
+          'zip',
+          'hubspotscore',
+          'lead_source',
+          'zyxai_contact_id',
+          'zyxai_last_call_date',
+          'zyxai_call_count',
+          'zyxai_lead_score'
+        ]
+      )
+
+      return response as HubSpotContact
+    } catch (error) {
+      console.error('Error fetching HubSpot contact:', error)
+      throw new Error('Failed to fetch contact from HubSpot')
+    }
+  }
+
+  /**
    * Get all contacts from HubSpot
    */
   static async getContacts(accessToken: string, limit = 100): Promise<{
@@ -440,7 +486,142 @@ export class HubSpotService {
     }
   }
 
-  // ===== ACTIVITIES =====
+  // ===== ACTIVITIES & ENGAGEMENTS =====
+
+  /**
+   * Get contact engagements (activities)
+   */
+  static async getContactEngagements(
+    contactId: string,
+    options: {
+      limit?: number
+      types?: string[]
+      accessToken?: string
+    } = {}
+  ): Promise<{
+    engagements: any[]
+    hasMore: boolean
+  }> {
+    try {
+      const { limit = 50, types = ['EMAIL', 'CALL', 'MEETING', 'NOTE', 'TASK'], accessToken } = options
+
+      if (!accessToken) {
+        // Return mock data for development
+        return {
+          engagements: [
+            {
+              id: `mock-${contactId}-1`,
+              type: 'EMAIL',
+              properties: {
+                hs_timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+                hs_body_preview: 'Recent email conversation',
+                hs_email_subject: 'Follow up on wholesale inquiry'
+              },
+              associations: { contactIds: [contactId] }
+            },
+            {
+              id: `mock-${contactId}-2`,
+              type: 'CALL',
+              properties: {
+                hs_timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+                hs_call_duration: '180',
+                hs_call_body: 'Discussed wholesale opportunities'
+              },
+              associations: { contactIds: [contactId] }
+            }
+          ],
+          hasMore: false
+        }
+      }
+
+      const hubspotClient = getHubSpotClient(accessToken)
+
+      // Get engagements associated with the contact
+      const response = await hubspotClient.crm.associations.v4.basicApi.getPage(
+        'contact',
+        contactId,
+        'engagement',
+        undefined,
+        limit
+      )
+
+      return {
+        engagements: response.results || [],
+        hasMore: response.paging?.next !== undefined
+      }
+    } catch (error) {
+      console.error('Error getting contact engagements:', error)
+      return { engagements: [], hasMore: false }
+    }
+  }
+
+  /**
+   * Create engagement (activity) in HubSpot
+   */
+  static async createEngagement(options: {
+    type: 'EMAIL' | 'CALL' | 'MEETING' | 'NOTE' | 'TASK'
+    contactId: string
+    properties: Record<string, any>
+    accessToken?: string
+  }): Promise<any> {
+    try {
+      const { type, contactId, properties, accessToken } = options
+
+      if (!accessToken) {
+        console.log('Mock engagement created:', { type, contactId, properties })
+        return { id: `mock-${Date.now()}`, type, properties }
+      }
+
+      const hubspotClient = getHubSpotClient(accessToken)
+
+      // Create the engagement based on type
+      let response
+      switch (type) {
+        case 'EMAIL':
+          response = await hubspotClient.crm.objects.emails.basicApi.create({
+            properties: {
+              hs_timestamp: new Date().toISOString(),
+              ...properties
+            }
+          })
+          break
+        case 'CALL':
+          response = await hubspotClient.crm.objects.calls.basicApi.create({
+            properties: {
+              hs_timestamp: new Date().toISOString(),
+              ...properties
+            }
+          })
+          break
+        case 'NOTE':
+          response = await hubspotClient.crm.objects.notes.basicApi.create({
+            properties: {
+              hs_timestamp: new Date().toISOString(),
+              ...properties
+            }
+          })
+          break
+        default:
+          throw new Error(`Unsupported engagement type: ${type}`)
+      }
+
+      // Associate with contact
+      if (response.id) {
+        await hubspotClient.crm.associations.v4.basicApi.create(
+          type.toLowerCase(),
+          response.id,
+          'contact',
+          contactId,
+          [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 1 }]
+        )
+      }
+
+      return response
+    } catch (error) {
+      console.error('Error creating engagement:', error)
+      throw error
+    }
+  }
 
   /**
    * Log a call activity in HubSpot

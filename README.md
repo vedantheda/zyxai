@@ -1,5 +1,7 @@
 # 🎙️ ZyxAI - AI Voice-Powered Business Automation Platform
 
+<!-- Deployment trigger: 2025-01-20 -->
+
 ## 🎯 Overview
 Enterprise-grade business automation platform powered by advanced AI voice technology. Streamline operations, automate workflows, and enhance customer interactions through intelligent voice assistants.
 

@@ -4,6 +4,7 @@ export {
   Brain,
   Phone,
   Users,
+  UserPlus,
   PhoneCall,
   BarChart3,
   Settings,

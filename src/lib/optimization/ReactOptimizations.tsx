@@ -52,12 +52,12 @@ export const withPerformanceMonitoring = <P extends object>(
       }
     })
 
-    return <Component {...props} />
+    return React.createElement(Component, props)
   })
 }
 
 // Optimized state hook with debouncing
-export const useOptimizedState = <T>(
+export const useOptimizedState = <T,>(
   initialValue: T,
   debounceMs = 0
 ): [T, (value: T | ((prev: T) => T)) => void, T] => {
